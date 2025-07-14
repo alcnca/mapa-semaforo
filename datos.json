@@ -1,0 +1,31 @@
+
+[
+  {
+    "Latitud": 20.743158,
+    "Longitud": -89.47474,
+    "Sucursal": "ACANCEH",
+    "Dias sin Gestion": "3",
+    "Aceptacion": "SI",
+    "Linea": 1034245,
+    "Nombre": "MARTIN CALAN JESUS ADRIAN",
+    "Saldo Total": 299.62,
+    "Porcentaje Pagado": 99.1,
+    "Producto": "ACREI-MOTO CONSUMO",
+    "Dias de Atraso": 84,
+    "Ejecutivo": "JRPUCH"
+  },
+  {
+    "Latitud": 20.435207,
+    "Longitud": -88.095552,
+    "Sucursal": "VALLADOLID",
+    "Dias sin Gestion": "Sin Gestion",
+    "Aceptacion": "NO",
+    "Linea": 1250161,
+    "Nombre": "DZIB MAY MARIA CATALINA",
+    "Saldo Total": 15713.76,
+    "Porcentaje Pagado": 53.61,
+    "Producto": "PERSONAL ACR",
+    "Dias de Atraso": 59,
+    "Ejecutivo": "JGITDZ"
+  }
+]
