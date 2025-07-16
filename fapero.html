@@ -4,14 +4,41 @@
   <meta charset="utf-8">
   <title>Mapa Semáforo</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <style>
-    #map { height: 100vh; margin: 0; }
-    .sucursal-label { background: transparent; color: black; font-size: 10px; font-weight: bold; text-shadow: 0 0 2px white; }
-    .neon-marker { width:10px; height:10px; background:red; border-radius:50%; box-shadow: 0 0 3px red,0 0 6px red; animation:pulse 1.5s infinite; border:1px solid white; }
-    @keyframes pulse {0%{box-shadow:0 0 1px red,0 0 3px red;}50%{box-shadow:0 0 5px red,0 0 10px red;}100%{box-shadow:0 0 1px red,0 0 3px red;}}
-    .filtros { position: absolute; top: 10px; left: 10px; background: rgba(255,255,255,0.9); padding: 5px; border-radius: 5px; z-index:1000; }
-    select { margin-right: 5px; }
-  </style>
+<style>
+  #map { height: 100vh; margin: 0; }
+  .sucursal-label {
+    background: transparent;
+    color: black;
+    font-size: 10px;
+    font-weight: bold;
+    border: none;
+    padding: 0;
+    box-shadow: none;
+  }
+  .neon-marker {
+    width:10px; height:10px;
+    background:red;
+    border-radius:50%;
+    box-shadow: 0 0 3px red, 0 0 6px red;
+    animation: pulse 1.5s infinite;
+    border: 1px solid white;
+  }
+  @keyframes pulse {
+    0% { box-shadow: 0 0 1px red, 0 0 3px red; }
+    50% { box-shadow: 0 0 5px red, 0 0 10px red; }
+    100% { box-shadow: 0 0 1px red, 0 0 3px red; }
+  }
+  .filtros {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: rgba(255,255,255,0.9);
+    padding: 5px;
+    border-radius: 5px;
+    z-index: 1000;
+  }
+  select { margin-right: 5px; }
+</style>
 </head>
 <body>
 
