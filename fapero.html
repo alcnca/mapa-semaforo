@@ -7,7 +7,7 @@
   <style>
     #map { height: 100vh; margin: 0; }
 
-    /* Elimina todo rastro de fondo, bordes y flechas en tooltips */
+    /* Estilo limpio para tooltips */
     .leaflet-tooltip {
       background: transparent !important;
       border: none !important;
@@ -23,7 +23,6 @@
       border-color: transparent !important;
     }
 
-    /* Texto de sucursal: negrita sin marco */
     .sucursal-label {
       background: transparent !important;
       border: none !important;
@@ -82,8 +81,10 @@
     .then(data => initMap(data));
 
   function initMap(data) {
-   const map = L.map('map').setView([17.06, -96.72], 7.5);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+    // Centrar en Oaxaca
+    const map = L.map('map').setView([17.06, -96.72], 7.5);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution:'© OSM'
     }).addTo(map);
 
@@ -129,6 +130,7 @@
       markers.forEach(m => map.removeLayer(m));
       markers = [];
       const fs = selSuc.value, fe = selEje.value;
+
       data.forEach(r => {
         if ((fs !== 'TODAS' && r.Sucursal !== fs) || (fe !== 'TODOS' && r.Ejecutivo !== fe)) return;
         const lat = parseFloat(r.Latitud), lng = parseFloat(r.Longitud);
@@ -154,6 +156,12 @@
         });
         markers.push(mk);
       });
+
+      // Ajustar mapa a marcadores visibles
+      if (markers.length > 0) {
+        const group = L.featureGroup(markers);
+        map.fitBounds(group.getBounds().pad(0.2));
+      }
     }
 
     selSuc.addEventListener('change', () => {
