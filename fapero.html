@@ -1,6 +1,11 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#4CAF50">
+
+<!-- Este es el ícono que aparecerá si agregas a inicio -->
+<link rel="icon" href="icon-192.png" type="image/png">
   <meta charset="utf-8">
   <title>Mapa Semáforo</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -63,7 +68,14 @@
     select { margin-right: 5px; }
   </style>
 </head>
-<body>
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js')
+      .then(() => console.log('SW registrado'))
+      .catch(err => console.error('SW error', err));
+  }
+</script>
+  <body>
 
 <div class="filtros">
   <label>Sucursal: <select id="filtroSucursal"><option value="TODAS">Todas</option></select></label>
