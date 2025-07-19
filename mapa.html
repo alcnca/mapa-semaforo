@@ -71,13 +71,13 @@
     return url.searchParams.get(name);
   }
 
-  const coordinador = getParam('coord') || 'alcnca'; // valor por defecto
-  const dataUrl = 'coordinadores.json';
+  const coordinadorClave = getParam('coord') || 'alcnca';
+  const dataUrl = 'datos.json';
 
   fetch(dataUrl)
     .then(res => res.json())
-    .then(json => {
-      const data = json[coordinador] || [];
+    .then(allData => {
+      const data = allData.filter(r => r.Coordinador.toLowerCase() === coordinadorClave.toLowerCase());
       initMap(data);
     });
 
