@@ -7,20 +7,12 @@
   <style>
     #map { height: 100vh; margin: 0; }
 
-    /* Estilo limpio para tooltips */
     .leaflet-tooltip {
       background: transparent !important;
       border: none !important;
       box-shadow: none !important;
       padding: 0 !important;
       margin: 0 !important;
-    }
-
-    .leaflet-tooltip-left:before,
-    .leaflet-tooltip-right:before,
-    .leaflet-tooltip-top:before,
-    .leaflet-tooltip-bottom:before {
-      border-color: transparent !important;
     }
 
     .sucursal-label {
@@ -35,10 +27,10 @@
     }
 
     .neon-marker {
-      width:10px;
-      height:10px;
-      background:red;
-      border-radius:50%;
+      width: 10px;
+      height: 10px;
+      background: red;
+      border-radius: 50%;
       box-shadow: 0 0 3px red, 0 0 6px red;
       animation: pulse 1.5s infinite;
       border: 1px solid white;
@@ -74,18 +66,26 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-  const dataUrl = 'alcnca.json';
+  function getParam(name) {
+    const url = new URL(window.location.href);
+    return url.searchParams.get(name);
+  }
+
+  const coordinador = getParam('coord') || 'alcnca'; // valor por defecto
+  const dataUrl = 'coordinadores.json';
 
   fetch(dataUrl)
     .then(res => res.json())
-    .then(data => initMap(data));
+    .then(json => {
+      const data = json[coordinador] || [];
+      initMap(data);
+    });
 
   function initMap(data) {
-    // Centrar en Oaxaca
-    const map = L.map('map').setView([20.8, -88.9], 8);
+    const map = L.map('map').setView([17.05, -96.72], 7);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution:'© OSM'
+      attribution: '© OSM'
     }).addTo(map);
 
     function getIcon(a, d) {
@@ -157,7 +157,6 @@
         markers.push(mk);
       });
 
-      // Ajustar mapa a marcadores visibles
       if (markers.length > 0) {
         const group = L.featureGroup(markers);
         map.fitBounds(group.getBounds().pad(0.2));
@@ -175,6 +174,5 @@
     refreshMap();
   }
 </script>
-
 </body>
 </html>
