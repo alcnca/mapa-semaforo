@@ -74,16 +74,6 @@
   const coordinadorClave = getParam('coord') || 'alcnca';
   const dataUrl = 'datos.json';
 
-  let userLat = null;
-  let userLng = null;
-
-  navigator.geolocation.getCurrentPosition(position => {
-    userLat = position.coords.latitude;
-    userLng = position.coords.longitude;
-  }, err => {
-    console.warn("Ubicación no permitida o no disponible");
-  });
-
   fetch(dataUrl)
     .then(res => res.json())
     .then(allData => {
@@ -98,21 +88,15 @@
       attribution: '© OSM'
     }).addTo(map);
 
-    // Mostrar ubicación del usuario
-    if (userLat && userLng) {
-      L.marker([userLat, userLng], {
-        icon: L.icon({
-          iconUrl: 'https://cdn-icons-png.flaticon.com/512/64/64113.png',
-          iconSize: [30, 30],
-          iconAnchor: [15, 30]
-        })
-      }).addTo(map).bindPopup("Tu ubicación");
-    }
-
     function getIcon(a, d) {
       const n = parseInt(d);
       if (n === 88 || n === 89) {
-        return L.divIcon({ className: 'neon-marker', iconSize: [30, 30], iconAnchor: [15, 30], popupAnchor: [0, -30] });
+        return L.divIcon({
+          className: 'neon-marker',
+          iconSize: [30, 30],
+          iconAnchor: [15, 30],
+          popupAnchor: [0, -30]
+        });
       }
       const url = (a.trim().toUpperCase() === 'SI')
         ? 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png'
@@ -145,19 +129,15 @@
     function refreshMap() {
       markers.forEach(m => map.removeLayer(m));
       markers = [];
-
       const fs = selSuc.value, fe = selEje.value;
 
       data.forEach(r => {
         if ((fs !== 'TODAS' && r.Sucursal !== fs) || (fe !== 'TODOS' && r.Ejecutivo !== fe)) return;
-
         const lat = parseFloat(r.Latitud), lng = parseFloat(r.Longitud);
         if (!lat || !lng) return;
-
         const mk = L.marker([lat, lng], { icon: getIcon(r.Aceptacion, r['Dias de Atraso']) }).addTo(map);
-
-        mk.bindPopup(`
-          <strong>${r.Sucursal}</strong><br>
+        mk.bindPopup(
+          `<strong>${r.Sucursal}</strong><br>
           Aceptación: ${r.Aceptacion}<br>
           Días sin gestión: ${r['Dias sin Gestion']}<br>
           Línea: ${r.Linea}<br>
@@ -166,19 +146,14 @@
           % Pagado: ${r['Porcentaje Pagado']}%<br>
           Producto: ${r.Producto}<br>
           Días de atraso: ${r['Dias de Atraso']}<br>
-          Ejecutivo: ${r.Ejecutivo}<br><br>
-          <a href="https://www.google.com/maps/dir/?api=1&origin=${userLat},${userLng}&destination=${lat},${lng}" target="_blank">
-            📍 Ir con Google Maps
-          </a>
-        `);
-
+          Ejecutivo: ${r.Ejecutivo}`
+        );
         mk.bindTooltip(r.Sucursal, {
           permanent: true,
           direction: 'top',
           offset: [0, -10],
           className: 'sucursal-label'
         });
-
         markers.push(mk);
       });
 
