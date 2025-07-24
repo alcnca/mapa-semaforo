@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Mapa Semáforo</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    #map { height: 100vh; margin: 0; }
+
+    .leaflet-tooltip {
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      padding: 0 !important;
+      margin: 0 !important;
+    }
+
+    .sucursal-label {
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      padding: 0 !important;
+      text-shadow: none !important;
+      color: black !important;
+      font-size: 10px;
+      font-weight: bold;
+    }
+
+    .neon-marker {
+      width: 10px;
+      height: 10px;
+      background: red;
+      border-radius: 50%;
+      box-shadow: 0 0 3px red, 0 0 6px red;
+      animation: pulse 1.5s infinite;
+      border: 1px solid white;
+    }
+
+    @keyframes pulse {
+      0% { box-shadow: 0 0 1px red, 0 0 3px red; }
+      50% { box-shadow: 0 0 5px red, 0 0 10px red; }
+      100% { box-shadow: 0 0 1px red, 0 0 3px red; }
+    }
+
+    .filtros {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(255,255,255,0.9);
+      padding: 5px;
+      border-radius: 5px;
+      z-index: 1000;
+    }
+
+    select { margin-right: 5px; }
+  </style>
+</head>
+<body>
+
+<div class="filtros">
+  <label>Sucursal: <select id="filtroSucursal"><option value="TODAS">Todas</option></select></label>
+  <label>Ejecutivo: <select id="filtroEjecutivo"><option value="TODOS">Todos</option></select></label>
+</div>
+
+<div id="map"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+  function getParam(name) {
+    const url = new URL(window.location.href);
+    return url.searchParams.get(name);
+  }
+
+  const coordinadorClave = getParam('coord') || 'alcnca';
+  const dataUrl = 'datos.json';
+
+  let userLat = null;
+  let userLng = null;
+
+  navigator.geolocation.getCurrentPosition(position => {
+    userLat = position.coords.latitude;
+    userLng = position.coords.longitude;
+  }, err => {
+    console.warn("Ubicación no permitida o no disponible");
+  });
+
+  fetch(dataUrl)
+    .then(res => res.json())
+    .then(allData => {
+      const data = allData.filter(r => r.Coordinador.toLowerCase() === coordinadorClave.toLowerCase());
+      initMap(data);
+    });
+
+  function initMap(data) {
+    const map = L.map('map').setView([17.05, -96.72], 7);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OSM'
+    }).addTo(map);
+
+    // Mostrar ubicación del usuario
+    if (userLat && userLng) {
+      L.marker([userLat, userLng], {
+        icon: L.icon({
+          iconUrl: 'https://cdn-icons-png.flaticon.com/512/64/64113.png',
+          iconSize: [30, 30],
+          iconAnchor: [15, 30]
+        })
+      }).addTo(map).bindPopup("Tu ubicación");
+    }
+
+    function getIcon(a, d) {
+      const n = parseInt(d);
+      if (n === 88 || n === 89) {
+        return L.divIcon({ className: 'neon-marker', iconSize: [30, 30], iconAnchor: [15, 30], popupAnchor: [0, -30] });
+      }
+      const url = (a.trim().toUpperCase() === 'SI')
+        ? 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png'
+        : 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png';
+      return L.icon({
+        iconUrl: url,
+        shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+        iconSize: [25, 41],
+        iconAnchor: [12, 41],
+        popupAnchor: [1, -34],
+        shadowSize: [41, 41]
+      });
+    }
+
+    const selSuc = document.getElementById('filtroSucursal'),
+          selEje = document.getElementById('filtroEjecutivo');
+
+    const sucursales = [...new Set(data.map(r => r.Sucursal))];
+    sucursales.forEach(s => selSuc.append(new Option(s, s)));
+    let markers = [];
+
+    function updateExecOptions(selSucValue) {
+      selEje.innerHTML = '<option value="TODOS">Todos</option>';
+      const execs = selSucValue === 'TODAS'
+        ? [...new Set(data.map(r => r.Ejecutivo))]
+        : [...new Set(data.filter(r => r.Sucursal === selSucValue).map(r => r.Ejecutivo))];
+      execs.forEach(e => selEje.append(new Option(e, e)));
+    }
+
+    function refreshMap() {
+      markers.forEach(m => map.removeLayer(m));
+      markers = [];
+
+      const fs = selSuc.value, fe = selEje.value;
+
+      data.forEach(r => {
+        if ((fs !== 'TODAS' && r.Sucursal !== fs) || (fe !== 'TODOS' && r.Ejecutivo !== fe)) return;
+
+        const lat = parseFloat(r.Latitud), lng = parseFloat(r.Longitud);
+        if (!lat || !lng) return;
+
+        const mk = L.marker([lat, lng], { icon: getIcon(r.Aceptacion, r['Dias de Atraso']) }).addTo(map);
+
+        mk.bindPopup(`
+          <strong>${r.Sucursal}</strong><br>
+          Aceptación: ${r.Aceptacion}<br>
+          Días sin gestión: ${r['Dias sin Gestion']}<br>
+          Línea: ${r.Linea}<br>
+          Nombre: ${r.Nombre}<br>
+          Saldo: $${r['Saldo Total']}<br>
+          % Pagado: ${r['Porcentaje Pagado']}%<br>
+          Producto: ${r.Producto}<br>
+          Días de atraso: ${r['Dias de Atraso']}<br>
+          Ejecutivo: ${r.Ejecutivo}<br><br>
+          <a href="https://www.google.com/maps/dir/?api=1&origin=${userLat},${userLng}&destination=${lat},${lng}" target="_blank">
+            📍 Ir con Google Maps
+          </a>
+        `);
+
+        mk.bindTooltip(r.Sucursal, {
+          permanent: true,
+          direction: 'top',
+          offset: [0, -10],
+          className: 'sucursal-label'
+        });
+
+        markers.push(mk);
+      });
+
+      if (markers.length > 0) {
+        const group = L.featureGroup(markers);
+        map.fitBounds(group.getBounds().pad(0.2));
+      }
+    }
+
+    selSuc.addEventListener('change', () => {
+      updateExecOptions(selSuc.value);
+      refreshMap();
+    });
+
+    selEje.addEventListener('change', refreshMap);
+
+    updateExecOptions('TODAS');
+    refreshMap();
+  }
+</script>
+</body>
+</html>
