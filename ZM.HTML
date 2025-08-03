@@ -1,12 +1,17 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="utf-8">
+  <meta charset="utf-8" />
   <title>Mapa Semáforo</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
   <style>
-    #map { height: 100vh; margin: 0; }
-
+    #map {
+      height: 100vh;
+      margin: 0;
+    }
     .leaflet-tooltip {
       background: transparent !important;
       border: none !important;
@@ -14,7 +19,6 @@
       padding: 0 !important;
       margin: 0 !important;
     }
-
     .sucursal-label {
       background: transparent !important;
       border: none !important;
@@ -25,7 +29,6 @@
       font-size: 10px;
       font-weight: bold;
     }
-
     .neon-marker {
       width: 10px;
       height: 10px;
@@ -35,169 +38,265 @@
       animation: pulse 1.5s infinite;
       border: 1px solid white;
     }
-
     @keyframes pulse {
-      0% { box-shadow: 0 0 1px red, 0 0 3px red; }
-      50% { box-shadow: 0 0 5px red, 0 0 10px red; }
-      100% { box-shadow: 0 0 1px red, 0 0 3px red; }
+      0% {
+        box-shadow: 0 0 1px red, 0 0 3px red;
+      }
+      50% {
+        box-shadow: 0 0 5px red, 0 0 10px red;
+      }
+      100% {
+        box-shadow: 0 0 1px red, 0 0 3px red;
+      }
     }
-
     .filtros {
       position: absolute;
       top: 10px;
       left: 10px;
-      background: rgba(255,255,255,0.9);
+      background: rgba(255, 255, 255, 0.9);
       padding: 5px;
       border-radius: 5px;
       z-index: 1000;
     }
-
-    select { margin-right: 5px; }
+    select {
+      margin-right: 5px;
+    }
+    #btnMiUbicacion {
+      position: absolute;
+      top: 60px;
+      left: 10px;
+      z-index: 1100;
+      background: white;
+      padding: 8px;
+      border-radius: 5px;
+      box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
+  <div class="filtros">
+    <label
+      >Sucursal:
+      <select id="filtroSucursal">
+        <option value="TODAS">Todas</option>
+      </select></label
+    >
+    <label
+      >Ejecutivo:
+      <select id="filtroEjecutivo">
+        <option value="TODOS">Todos</option>
+      </select></label
+    >
+  </div>
 
-<div class="filtros">
-  <label>Sucursal: <select id="filtroSucursal"><option value="TODAS">Todas</option></select></label>
-  <label>Ejecutivo: <select id="filtroEjecutivo"><option value="TODOS">Todos</option></select></label>
-</div>
+  <button id="btnMiUbicacion">📍 Mi ubicación</button>
 
-<div id="map"></div>
+  <div id="map"></div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script>
-  function getParam(name) {
-    const url = new URL(window.location.href);
-    return url.searchParams.get(name);
-  }
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    let map;
+    let userMarker;
+    let userLat = null;
+    let userLng = null;
 
-  const coordinadorClave = getParam('coord') || 'alcnca';
-  const dataUrl = 'datos.json';
-
-  let userLat = null;
-  let userLng = null;
-
-  navigator.geolocation.getCurrentPosition(position => {
-    userLat = position.coords.latitude;
-    userLng = position.coords.longitude;
-  }, err => {
-    console.warn("Ubicación no permitida o no disponible");
-  });
-
-  fetch(dataUrl)
-    .then(res => res.json())
-    .then(allData => {
-      const data = allData.filter(r => r.Coordinador.toLowerCase() === coordinadorClave.toLowerCase());
-      initMap(data);
-    });
-
-  function initMap(data) {
-    const map = L.map('map').setView([17.05, -96.72], 7);
-
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OSM'
-    }).addTo(map);
-
-    // Mostrar ubicación del usuario
-    if (userLat && userLng) {
-      L.marker([userLat, userLng], {
-        icon: L.icon({
-          iconUrl: 'https://cdn-icons-png.flaticon.com/512/64/64113.png',
-          iconSize: [30, 30],
-          iconAnchor: [15, 30]
-        })
-      }).addTo(map).bindPopup("Tu ubicación");
+    function getParam(name) {
+      const url = new URL(window.location.href);
+      return url.searchParams.get(name);
     }
 
-    function getIcon(a, d) {
-      const n = parseInt(d);
-      if (n === 88 || n === 89) {
-        return L.divIcon({ className: 'neon-marker', iconSize: [30, 30], iconAnchor: [15, 30], popupAnchor: [0, -30] });
+    const coordinadorClave = getParam("coord") || "alcnca";
+    const dataUrl = "datos.json";
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        userLat = position.coords.latitude;
+        userLng = position.coords.longitude;
+        fetchAndInitMap();
+      },
+      (err) => {
+        console.warn("Ubicación no permitida o no disponible");
+        fetchAndInitMap(); // continuar sin ubicación
       }
-      const url = (a.trim().toUpperCase() === 'SI')
-        ? 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png'
-        : 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png';
-      return L.icon({
-        iconUrl: url,
-        shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-        iconSize: [25, 41],
-        iconAnchor: [12, 41],
-        popupAnchor: [1, -34],
-        shadowSize: [41, 41]
-      });
+    );
+
+    function fetchAndInitMap() {
+      fetch(dataUrl)
+        .then((res) => res.json())
+        .then((allData) => {
+          const data = allData.filter(
+            (r) => r.Coordinador.toLowerCase() === coordinadorClave.toLowerCase()
+          );
+          initMap(data);
+        });
     }
 
-    const selSuc = document.getElementById('filtroSucursal'),
-          selEje = document.getElementById('filtroEjecutivo');
+    function initMap(data) {
+      map = L.map("map").setView([17.05, -96.72], 7);
 
-    const sucursales = [...new Set(data.map(r => r.Sucursal))];
-    sucursales.forEach(s => selSuc.append(new Option(s, s)));
-    let markers = [];
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "© OSM",
+      }).addTo(map);
 
-    function updateExecOptions(selSucValue) {
-      selEje.innerHTML = '<option value="TODOS">Todos</option>';
-      const execs = selSucValue === 'TODAS'
-        ? [...new Set(data.map(r => r.Ejecutivo))]
-        : [...new Set(data.filter(r => r.Sucursal === selSucValue).map(r => r.Ejecutivo))];
-      execs.forEach(e => selEje.append(new Option(e, e)));
-    }
+      // Mostrar ubicación del usuario si está disponible
+      if (userLat && userLng) {
+        userMarker = L.marker([userLat, userLng], {
+          icon: L.icon({
+            iconUrl: "https://cdn-icons-png.flaticon.com/512/64/64113.png",
+            iconSize: [30, 30],
+            iconAnchor: [15, 30],
+          }),
+        })
+          .addTo(map)
+          .bindPopup("Tu ubicación")
+          .openPopup();
+        map.setView([userLat, userLng], 15);
+      }
 
-    function refreshMap() {
-      markers.forEach(m => map.removeLayer(m));
-      markers = [];
+      function getIcon(a, d) {
+        const n = parseInt(d);
+        if (n === 88 || n === 89) {
+          return L.divIcon({
+            className: "neon-marker",
+            iconSize: [30, 30],
+            iconAnchor: [15, 30],
+            popupAnchor: [0, -30],
+          });
+        }
+        const url =
+          a.trim().toUpperCase() === "SI"
+            ? "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png"
+            : "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png";
+        return L.icon({
+          iconUrl: url,
+          shadowUrl:
+            "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+          iconSize: [25, 41],
+          iconAnchor: [12, 41],
+          popupAnchor: [1, -34],
+          shadowSize: [41, 41],
+        });
+      }
 
-      const fs = selSuc.value, fe = selEje.value;
+      const selSuc = document.getElementById("filtroSucursal"),
+        selEje = document.getElementById("filtroEjecutivo");
 
-      data.forEach(r => {
-        if ((fs !== 'TODAS' && r.Sucursal !== fs) || (fe !== 'TODOS' && r.Ejecutivo !== fe)) return;
+      const sucursales = [...new Set(data.map((r) => r.Sucursal))];
+      sucursales.forEach((s) => selSuc.append(new Option(s, s)));
+      let markers = [];
 
-        const lat = parseFloat(r.Latitud), lng = parseFloat(r.Longitud);
-        if (!lat || !lng) return;
+      function updateExecOptions(selSucValue) {
+        selEje.innerHTML = '<option value="TODOS">Todos</option>';
+        const execs =
+          selSucValue === "TODAS"
+            ? [...new Set(data.map((r) => r.Ejecutivo))]
+            : [...new Set(data.filter((r) => r.Sucursal === selSucValue).map((r) => r.Ejecutivo))];
+        execs.forEach((e) => selEje.append(new Option(e, e)));
+      }
 
-        const mk = L.marker([lat, lng], { icon: getIcon(r.Aceptacion, r['Dias de Atraso']) }).addTo(map);
+      function refreshMap() {
+        markers.forEach((m) => map.removeLayer(m));
+        markers = [];
 
-        mk.bindPopup(`
-          <strong>${r.Sucursal}</strong><br>
-          Aceptación: ${r.Aceptacion}<br>
-          Días sin gestión: ${r['Dias sin Gestion']}<br>
-          Línea: ${r.Linea}<br>
-          Nombre: ${r.Nombre}<br>
-          Saldo: $${r['Saldo Total']}<br>
-          % Pagado: ${r['Porcentaje Pagado']}%<br>
-          Producto: ${r.Producto}<br>
-          Días de atraso: ${r['Dias de Atraso']}<br>
-          Ejecutivo: ${r.Ejecutivo}<br><br>
-          <a href="https://www.google.com/maps/dir/?api=1&origin=${userLat},${userLng}&destination=${lat},${lng}" target="_blank">
-            📍 Ir con Google Maps
-          </a>
-        `);
+        const fs = selSuc.value,
+          fe = selEje.value;
 
-        mk.bindTooltip(r.Sucursal, {
-          permanent: true,
-          direction: 'top',
-          offset: [0, -10],
-          className: 'sucursal-label'
+        data.forEach((r) => {
+          if ((fs !== "TODAS" && r.Sucursal !== fs) || (fe !== "TODOS" && r.Ejecutivo !== fe))
+            return;
+
+          const lat = parseFloat(r.Latitud),
+            lng = parseFloat(r.Longitud);
+          if (!lat || !lng) return;
+
+          const mk = L.marker([lat, lng], { icon: getIcon(r.Aceptacion, r["Dias de Atraso"]) }).addTo(map);
+
+          const link =
+            userLat && userLng
+              ? `https://www.google.com/maps/dir/?api=1&origin=${userLat},${userLng}&destination=${lat},${lng}`
+              : `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+
+          mk.bindPopup(`
+            <strong>${r.Sucursal}</strong><br>
+            Aceptación: ${r.Aceptacion}<br>
+            Días sin gestión: ${r["Dias sin Gestion"]}<br>
+            Línea: ${r.Linea}<br>
+            Nombre: ${r.Nombre}<br>
+            Saldo: $${r["Saldo Total"]}<br>
+            % Pagado: ${r["Porcentaje Pagado"]}%<br>
+            Producto: ${r.Producto}<br>
+            Días de atraso: ${r["Dias de Atraso"]}<br>
+            Ejecutivo: ${r.Ejecutivo}<br><br>
+            <a href="${link}" target="_blank">📍 Ir con Google Maps</a>
+          `);
+
+          mk.bindTooltip(r.Sucursal, {
+            permanent: true,
+            direction: "top",
+            offset: [0, -10],
+            className: "sucursal-label",
+          });
+
+          markers.push(mk);
         });
 
-        markers.push(mk);
+        if (markers.length > 0) {
+          const group = L.featureGroup(markers);
+          map.fitBounds(group.getBounds().pad(0.2));
+        }
+      }
+
+      selSuc.addEventListener("change", () => {
+        updateExecOptions(selSuc.value);
+        refreshMap();
       });
 
-      if (markers.length > 0) {
-        const group = L.featureGroup(markers);
-        map.fitBounds(group.getBounds().pad(0.2));
-      }
-    }
+      selEje.addEventListener("change", refreshMap);
 
-    selSuc.addEventListener('change', () => {
-      updateExecOptions(selSuc.value);
+      updateExecOptions("TODAS");
       refreshMap();
-    });
 
-    selEje.addEventListener('change', refreshMap);
+      // Botón para centrar en ubicación actual
+      document.getElementById("btnMiUbicacion").addEventListener("click", () => {
+        if (!map) {
+          alert("El mapa aún no está listo");
+          return;
+        }
 
-    updateExecOptions('TODAS');
-    refreshMap();
-  }
-</script>
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              const lat = position.coords.latitude;
+              const lng = position.coords.longitude;
+
+              if (userMarker) {
+                userMarker.setLatLng([lat, lng]);
+              } else {
+                userMarker = L.marker([lat, lng], {
+                  icon: L.icon({
+                    iconUrl:
+                      "https://cdn-icons-png.flaticon.com/512/64/64113.png",
+                    iconSize: [30, 30],
+                    iconAnchor: [15, 30],
+                  }),
+                })
+                  .addTo(map)
+                  .bindPopup("Tu ubicación")
+                  .openPopup();
+              }
+
+              map.setView([lat, lng], 15);
+            },
+            () => {
+              alert("No se pudo obtener tu ubicación");
+            }
+          );
+        } else {
+          alert("Geolocalización no es soportada por tu navegador");
+        }
+      });
+    }
+  </script>
 </body>
 </html>
