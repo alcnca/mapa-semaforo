@@ -115,7 +115,11 @@
         });
     }
 
-    function initMap() {
+    function initMap() 
+      map.zoomControl.remove();
+// Agrega el control de zoom en la parte inferior derecha
+L.control.zoom({ position: 'bottomright' }).addTo(map);
+    {
       map = L.map("map").setView([17.05, -96.72], 7);
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution: "© OpenStreetMap"
@@ -302,5 +306,6 @@
   </script>
 </body>
 </html>
+
 
 
