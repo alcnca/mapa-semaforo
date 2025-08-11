@@ -94,7 +94,7 @@
     let allData = [];
     let markers = [];
 
-    const dataUrl = "https://raw.githubusercontent.com/alcnca/mapa-semaforo/refs/heads/main/datos2.json";
+    const dataUrl = "datos2.json";
 
     navigator.geolocation.getCurrentPosition(
       pos => { userLat = pos.coords.latitude; userLng = pos.coords.longitude; fetchData(); },
@@ -298,4 +298,5 @@
   </script>
 </body>
 </html>
+
 
