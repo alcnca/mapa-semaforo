@@ -164,7 +164,7 @@
       const selBanda = document.getElementById("filtroBanda");
 
       // Llenar Coordinadores (usando Coordinador2)
-      const coords = [...new Set(allData.map(r => r.Coordinador2))].sort();
+      const coords = [...new Set(allData.map(r => r.Coordinador))].sort();
       coords.forEach(c => selCoord.append(new Option(c, c)));
 
       selCoord.addEventListener("change", () => {
@@ -260,7 +260,7 @@
           Producto: ${r.Producto}<br>
           Días de atraso: ${r["Dias de Atraso"]}<br>
           Ejecutivo: ${r.Ejecutivo}<br>
-          Banda: ${r.BANDA}<br><br>
+          Banda: ${r.Banda}<br><br>
           <a href="${link}" target="_blank">📍 Ir con Google Maps</a>
         `);
 
@@ -303,6 +303,7 @@
   </script>
 </body>
 </html>
+
 
 
 
