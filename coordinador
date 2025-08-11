@@ -1,4 +1,3 @@
-<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
@@ -58,47 +57,51 @@
 <body>
 
 <div class="filtros">
-  <label>Sucursal: <select id="filtroSucursal"><option value="TODAS">Todas</option></select></label>
-  <label>Ejecutivo: <select id="filtroEjecutivo"><option value="TODOS">Todos</option></select></label>
+  <label>Coordinador: 
+    <select id="filtroCoordinador"><option value="TODOS">Todos</option></select>
+  </label>
+  <label>Sucursal: 
+    <select id="filtroSucursal"><option value="TODAS">Todas</option></select>
+  </label>
+  <label>Ejecutivo: 
+    <select id="filtroEjecutivo"><option value="TODOS">Todos</option></select>
+  </label>
+  <label>Banda: 
+    <select id="filtroBanda"><option value="TODAS">Todas</option></select>
+  </label>
 </div>
 
 <div id="map"></div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-  function getParam(name) {
-    const url = new URL(window.location.href);
-    return url.searchParams.get(name);
-  }
-
-  const coordinadorClave = getParam('coord') || 'alcnca';
   const dataUrl = 'datos.json';
-
-  let userLat = null;
-  let userLng = null;
+  let userLat = null, userLng = null, data = [];
+  let markers = [];
+  let map;
 
   navigator.geolocation.getCurrentPosition(position => {
     userLat = position.coords.latitude;
     userLng = position.coords.longitude;
-  }, err => {
+  }, () => {
     console.warn("Ubicación no permitida o no disponible");
   });
 
   fetch(dataUrl)
     .then(res => res.json())
     .then(allData => {
-      const data = allData.filter(r => r.Coordinador.toLowerCase() === coordinadorClave.toLowerCase());
-      initMap(data);
+      data = allData;
+      initMap();
+      loadInitialFilters();
+      refreshMap();
     });
 
-  function initMap(data) {
-    const map = L.map('map').setView([17.05, -96.72], 7);
-
+  function initMap() {
+    map = L.map('map').setView([17.05, -96.72], 7);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OSM'
     }).addTo(map);
 
-    // Mostrar ubicación del usuario
     if (userLat && userLng) {
       L.marker([userLat, userLng], {
         icon: L.icon({
@@ -108,96 +111,140 @@
         })
       }).addTo(map).bindPopup("Tu ubicación");
     }
+  }
 
-    function getIcon(a, d) {
-      const n = parseInt(d);
-      if (n === 88 || n === 89) {
-        return L.divIcon({ className: 'neon-marker', iconSize: [30, 30], iconAnchor: [15, 30], popupAnchor: [0, -30] });
-      }
-      const url = (a.trim().toUpperCase() === 'SI')
-        ? 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png'
-        : 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png';
-      return L.icon({
-        iconUrl: url,
-        shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-        iconSize: [25, 41],
-        iconAnchor: [12, 41],
-        popupAnchor: [1, -34],
-        shadowSize: [41, 41]
-      });
+  function getIcon(a, d) {
+    const n = parseInt(d);
+    if (n === 88 || n === 89) {
+      return L.divIcon({ className: 'neon-marker', iconSize: [30, 30], iconAnchor: [15, 30], popupAnchor: [0, -30] });
     }
+    const url = (a.trim().toUpperCase() === 'SI')
+      ? 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png'
+      : 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png';
+    return L.icon({
+      iconUrl: url,
+      shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+      iconSize: [25, 41],
+      iconAnchor: [12, 41],
+      popupAnchor: [1, -34],
+      shadowSize: [41, 41]
+    });
+  }
 
-    const selSuc = document.getElementById('filtroSucursal'),
-          selEje = document.getElementById('filtroEjecutivo');
+  const selCoord = document.getElementById('filtroCoordinador'),
+        selSuc   = document.getElementById('filtroSucursal'),
+        selEje   = document.getElementById('filtroEjecutivo'),
+        selBanda = document.getElementById('filtroBanda');
 
-    const sucursales = [...new Set(data.map(r => r.Sucursal))];
+  function loadInitialFilters() {
+    const coordinadores = [...new Set(data.map(r => r.Coordinador))];
+    coordinadores.forEach(c => selCoord.append(new Option(c, c)));
+
+    updateSucursales('TODOS');
+    updateEjecutivos('TODOS', 'TODAS');
+    updateBandas('TODOS', 'TODAS', 'TODOS');
+  }
+
+  function updateSucursales(coord) {
+    selSuc.innerHTML = '<option value="TODAS">Todas</option>';
+    let filtrado = coord === 'TODOS' ? data : data.filter(r => r.Coordinador === coord);
+    const sucursales = [...new Set(filtrado.map(r => r.Sucursal))];
     sucursales.forEach(s => selSuc.append(new Option(s, s)));
-    let markers = [];
+  }
 
-    function updateExecOptions(selSucValue) {
-      selEje.innerHTML = '<option value="TODOS">Todos</option>';
-      const execs = selSucValue === 'TODAS'
-        ? [...new Set(data.map(r => r.Ejecutivo))]
-        : [...new Set(data.filter(r => r.Sucursal === selSucValue).map(r => r.Ejecutivo))];
-      execs.forEach(e => selEje.append(new Option(e, e)));
-    }
+  function updateEjecutivos(coord, sucursal) {
+    selEje.innerHTML = '<option value="TODOS">Todos</option>';
+    let filtrado = data;
+    if (coord !== 'TODOS') filtrado = filtrado.filter(r => r.Coordinador === coord);
+    if (sucursal !== 'TODAS') filtrado = filtrado.filter(r => r.Sucursal === sucursal);
+    const ejecutivos = [...new Set(filtrado.map(r => r.Ejecutivo))];
+    ejecutivos.forEach(e => selEje.append(new Option(e, e)));
+  }
 
-    function refreshMap() {
-      markers.forEach(m => map.removeLayer(m));
-      markers = [];
+  function updateBandas(coord, sucursal, ejecutivo) {
+    selBanda.innerHTML = '<option value="TODAS">Todas</option>';
+    let filtrado = data;
+    if (coord !== 'TODOS') filtrado = filtrado.filter(r => r.Coordinador === coord);
+    if (sucursal !== 'TODAS') filtrado = filtrado.filter(r => r.Sucursal === sucursal);
+    if (ejecutivo !== 'TODOS') filtrado = filtrado.filter(r => r.Ejecutivo === ejecutivo);
+    const bandas = [...new Set(filtrado.map(r => r.Banda))];
+    bandas.forEach(b => selBanda.append(new Option(b, b)));
+  }
 
-      const fs = selSuc.value, fe = selEje.value;
+  function refreshMap() {
+    markers.forEach(m => map.removeLayer(m));
+    markers = [];
 
-      data.forEach(r => {
-        if ((fs !== 'TODAS' && r.Sucursal !== fs) || (fe !== 'TODOS' && r.Ejecutivo !== fe)) return;
+    const fc = selCoord.value,
+          fs = selSuc.value,
+          fe = selEje.value,
+          fb = selBanda.value;
 
-        const lat = parseFloat(r.Latitud), lng = parseFloat(r.Longitud);
-        if (!lat || !lng) return;
+    data.forEach(r => {
+      if ((fc !== 'TODOS' && r.Coordinador !== fc) ||
+          (fs !== 'TODAS' && r.Sucursal !== fs) ||
+          (fe !== 'TODOS' && r.Ejecutivo !== fe) ||
+          (fb !== 'TODAS' && r.Banda !== fb)) return;
 
-        const mk = L.marker([lat, lng], { icon: getIcon(r.Aceptacion, r['Dias de Atraso']) }).addTo(map);
+      const lat = parseFloat(r.Latitud), lng = parseFloat(r.Longitud);
+      if (!lat || !lng) return;
 
-        mk.bindPopup(`
-          <strong>${r.Sucursal}</strong><br>
-          Aceptación: ${r.Aceptacion}<br>
-          Días sin gestión: ${r['Dias sin Gestion']}<br>
-          Línea: ${r.Linea}<br>
-          Nombre: ${r.Nombre}<br>
-          Saldo: $${r['Saldo Total']}<br>
-          % Pagado: ${r['Porcentaje Pagado']}%<br>
-          Producto: ${r.Producto}<br>
-          Días de atraso: ${r['Dias de Atraso']}<br>
-          Ejecutivo: ${r.Ejecutivo}<br><br>
-          <a href="https://www.google.com/maps/dir/?api=1&origin=${userLat},${userLng}&destination=${lat},${lng}" target="_blank">
-            📍 Ir con Google Maps
-          </a>
-        `);
+      const mk = L.marker([lat, lng], { icon: getIcon(r.Aceptacion, r['Dias de Atraso']) }).addTo(map);
 
-        mk.bindTooltip(r.Sucursal, {
-          permanent: true,
-          direction: 'top',
-          offset: [0, -10],
-          className: 'sucursal-label'
-        });
+      mk.bindPopup(`
+        <strong>${r.Sucursal}</strong><br>
+        Banda: ${r.Banda}<br>
+        Coordinador: ${r.Coordinador}<br>
+        Aceptación: ${r.Aceptacion}<br>
+        Días sin gestión: ${r['Dias sin Gestion']}<br>
+        Línea: ${r.Linea}<br>
+        Nombre: ${r.Nombre}<br>
+        Saldo: $${r['Saldo Total']}<br>
+        % Pagado: ${r['Porcentaje Pagado']}%<br>
+        Producto: ${r.Producto}<br>
+        Días de atraso: ${r['Dias de Atraso']}<br>
+        Ejecutivo: ${r.Ejecutivo}<br><br>
+        <a href="https://www.google.com/maps/dir/?api=1&origin=${userLat},${userLng}&destination=${lat},${lng}" target="_blank">
+          📍 Ir con Google Maps
+        </a>
+      `);
 
-        markers.push(mk);
+      mk.bindTooltip(r.Sucursal, {
+        permanent: true,
+        direction: 'top',
+        offset: [0, -10],
+        className: 'sucursal-label'
       });
 
-      if (markers.length > 0) {
-        const group = L.featureGroup(markers);
-        map.fitBounds(group.getBounds().pad(0.2));
-      }
-    }
-
-    selSuc.addEventListener('change', () => {
-      updateExecOptions(selSuc.value);
-      refreshMap();
+      markers.push(mk);
     });
 
-    selEje.addEventListener('change', refreshMap);
-
-    updateExecOptions('TODAS');
-    refreshMap();
+    if (markers.length > 0) {
+      const group = L.featureGroup(markers);
+      map.fitBounds(group.getBounds().pad(0.2));
+    }
   }
+
+  // Eventos
+  selCoord.addEventListener('change', () => {
+    updateSucursales(selCoord.value);
+    updateEjecutivos(selCoord.value, 'TODAS');
+    updateBandas(selCoord.value, 'TODAS', 'TODOS');
+    refreshMap();
+  });
+
+  selSuc.addEventListener('change', () => {
+    updateEjecutivos(selCoord.value, selSuc.value);
+    updateBandas(selCoord.value, selSuc.value, 'TODOS');
+    refreshMap();
+  });
+
+  selEje.addEventListener('change', () => {
+    updateBandas(selCoord.value, selSuc.value, selEje.value);
+    refreshMap();
+  });
+
+  selBanda.addEventListener('change', refreshMap);
 </script>
 </body>
 </html>
