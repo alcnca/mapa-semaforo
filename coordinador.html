@@ -96,7 +96,6 @@
 
     const dataUrl = "datos2.json";
 
-    // Obtener ubicación
     navigator.geolocation.getCurrentPosition(
       pos => { userLat = pos.coords.latitude; userLng = pos.coords.longitude; fetchData(); },
       () => { console.warn("Sin ubicación"); fetchData(); }
@@ -115,8 +114,7 @@
         });
     }
 
-    function initMap()
-         {
+    function initMap() {
       map = L.map("map").setView([17.05, -96.72], 7);
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution: "© OpenStreetMap"
@@ -163,7 +161,6 @@
       const selEje = document.getElementById("filtroEjecutivo");
       const selBanda = document.getElementById("filtroBanda");
 
-      // Llenar Coordinadores (usando Coordinador2)
       const coords = [...new Set(allData.map(r => r.Coordinador))].sort();
       coords.forEach(c => selCoord.append(new Option(c, c)));
 
@@ -187,7 +184,6 @@
 
       selBanda.addEventListener("change", refreshMap);
 
-      // Inicializar filtros
       updateSucursales("TODOS");
       updateEjecutivos("TODOS", "TODAS");
       updateBandas("TODOS", "TODAS", "TODOS");
@@ -197,7 +193,7 @@
     function updateSucursales(coordValue) {
       const selSuc = document.getElementById("filtroSucursal");
       selSuc.innerHTML = '<option value="TODAS">Todas</option>';
-      let filtered = coordValue === "TODOS" ? allData : allData.filter(r => r.Coordinador2 === coordValue);
+      let filtered = coordValue === "TODOS" ? allData : allData.filter(r => r.Coordinador === coordValue);
       const sucursales = [...new Set(filtered.map(r => r.Sucursal))].sort();
       sucursales.forEach(s => selSuc.append(new Option(s, s)));
     }
@@ -206,7 +202,7 @@
       const selEje = document.getElementById("filtroEjecutivo");
       selEje.innerHTML = '<option value="TODOS">Todos</option>';
       let filtered = allData;
-      if(coordValue !== "TODOS") filtered = filtered.filter(r => r.Coordinador2 === coordValue);
+      if(coordValue !== "TODOS") filtered = filtered.filter(r => r.Coordinador === coordValue);
       if(sucValue !== "TODAS") filtered = filtered.filter(r => r.Sucursal === sucValue);
       const ejecutivos = [...new Set(filtered.map(r => r.Ejecutivo))].sort();
       ejecutivos.forEach(e => selEje.append(new Option(e, e)));
@@ -216,10 +212,10 @@
       const selBanda = document.getElementById("filtroBanda");
       selBanda.innerHTML = '<option value="TODAS">Todas</option>';
       let filtered = allData;
-      if(coordValue !== "TODOS") filtered = filtered.filter(r => r.Coordinador2 === coordValue);
+      if(coordValue !== "TODOS") filtered = filtered.filter(r => r.Coordinador === coordValue);
       if(sucValue !== "TODAS") filtered = filtered.filter(r => r.Sucursal === sucValue);
       if(ejeValue !== "TODOS") filtered = filtered.filter(r => r.Ejecutivo === ejeValue);
-      const bandas = [...new Set(filtered.map(r => r.BANDA))].sort();
+      const bandas = [...new Set(filtered.map(r => r.Banda))].sort();
       bandas.forEach(b => selBanda.append(new Option(b, b)));
     }
 
@@ -233,10 +229,10 @@
       const bandaFilter = document.getElementById("filtroBanda").value;
 
       let filtered = allData;
-      if(coordFilter !== "TODOS") filtered = filtered.filter(r => r.Coordinador2 === coordFilter);
+      if(coordFilter !== "TODOS") filtered = filtered.filter(r => r.Coordinador === coordFilter);
       if(sucFilter !== "TODAS") filtered = filtered.filter(r => r.Sucursal === sucFilter);
       if(ejeFilter !== "TODOS") filtered = filtered.filter(r => r.Ejecutivo === ejeFilter);
-      if(bandaFilter !== "TODAS") filtered = filtered.filter(r => r.BANDA === bandaFilter);
+      if(bandaFilter !== "TODAS") filtered = filtered.filter(r => r.Banda === bandaFilter);
 
       filtered.forEach(r => {
         const lat = parseFloat(r.Latitud);
@@ -274,7 +270,6 @@
       }
     }
 
-    // Botón "Mi ubicación"
     document.getElementById("btnMiUbicacion").addEventListener("click", () => {
       if(!map) return alert("Mapa no listo");
       if(navigator.geolocation){
@@ -303,9 +298,3 @@
   </script>
 </body>
 </html>
-
-
-
-
-
-
