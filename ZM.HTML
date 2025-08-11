@@ -1,112 +1,129 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<title>Filtros Coordinador, Sucursal, Ejecutivo y Banda</title>
-<style>
-    body { font-family: Arial, sans-serif; padding: 20px; }
-    select { margin: 5px; padding: 5px; }
-</style>
+    <meta charset="UTF-8">
+    <title>Filtros Coordinador - Sucursal - Ejecutivo - Banda</title>
 </head>
 <body>
+    <h2>Filtros dinámicos</h2>
 
-<h2>Filtros dinámicos</h2>
+    <label for="coordinador">Coordinador:</label>
+    <select id="coordinador">
+        <option value="">Seleccione Coordinador</option>
+    </select>
 
-<label>Coordinador:</label>
-<select id="coordinadorSelect">
-    <option value="">-- Selecciona Coordinador --</option>
-</select>
+    <label for="sucursal">Sucursal:</label>
+    <select id="sucursal">
+        <option value="">Seleccione Sucursal</option>
+    </select>
 
-<label>Sucursal:</label>
-<select id="sucursalSelect">
-    <option value="">-- Selecciona Sucursal --</option>
-</select>
+    <label for="ejecutivo">Ejecutivo:</label>
+    <select id="ejecutivo">
+        <option value="">Seleccione Ejecutivo</option>
+    </select>
 
-<label>Ejecutivo:</label>
-<select id="ejecutivoSelect">
-    <option value="">-- Selecciona Ejecutivo --</option>
-</select>
+    <label for="banda">Banda:</label>
+    <select id="banda">
+        <option value="">Seleccione Banda</option>
+    </select>
 
-<label>Banda:</label>
-<select id="bandaSelect">
-    <option value="">-- Selecciona Banda --</option>
-</select>
+    <script>
+        let datos = [];
 
-<script>
-// Datos de ejemplo
-const data = [
-    { coordinador: "Juan Pérez", sucursal: "Sucursal Norte", ejecutivo: "Ana López", banda: "A" },
-    { coordinador: "Juan Pérez", sucursal: "Sucursal Norte", ejecutivo: "Carlos Ruiz", banda: "B" },
-    { coordinador: "Juan Pérez", sucursal: "Sucursal Centro", ejecutivo: "María Gómez", banda: "A" },
-    { coordinador: "Luis Torres", sucursal: "Sucursal Sur", ejecutivo: "Pedro Sánchez", banda: "C" },
-    { coordinador: "Luis Torres", sucursal: "Sucursal Sur", ejecutivo: "Lucía Martínez", banda: "B" },
-    { coordinador: "Luis Torres", sucursal: "Sucursal Este", ejecutivo: "Jorge Díaz", banda: "A" }
-];
+        async function cargarDatos() {
+            try {
+                const response = await fetch('datos.json');
+                datos = await response.json();
+                cargarCoordinadores();
+            } catch (error) {
+                console.error("Error cargando datos.json", error);
+            }
+        }
 
-const coordinadorSelect = document.getElementById("coordinadorSelect");
-const sucursalSelect = document.getElementById("sucursalSelect");
-const ejecutivoSelect = document.getElementById("ejecutivoSelect");
-const bandaSelect = document.getElementById("bandaSelect");
+        function cargarCoordinadores() {
+            const coordinadorSelect = document.getElementById("coordinador");
+            const coordinadoresUnicos = [...new Set(datos.map(d => d.coordinador))];
 
-// Cargar coordinadores únicos al inicio
-const coordinadoresUnicos = [...new Set(data.map(d => d.coordinador))];
-coordinadoresUnicos.forEach(c => {
-    let option = document.createElement("option");
-    option.value = c;
-    option.textContent = c;
-    coordinadorSelect.appendChild(option);
-});
+            coordinadoresUnicos.forEach(coord => {
+                const option = document.createElement("option");
+                option.value = coord;
+                option.textContent = coord;
+                coordinadorSelect.appendChild(option);
+            });
+        }
 
-function actualizarSucursales() {
-    sucursalSelect.innerHTML = "<option value=''>-- Selecciona Sucursal --</option>";
-    ejecutivoSelect.innerHTML = "<option value=''>-- Selecciona Ejecutivo --</option>";
-    bandaSelect.innerHTML = "<option value=''>-- Selecciona Banda --</option>";
-    const sucursales = [...new Set(data
-        .filter(d => d.coordinador === coordinadorSelect.value)
-        .map(d => d.sucursal))];
-    sucursales.forEach(s => {
-        let option = document.createElement("option");
-        option.value = s;
-        option.textContent = s;
-        sucursalSelect.appendChild(option);
-    });
-}
+        function cargarSucursales(coordinador) {
+            const sucursalSelect = document.getElementById("sucursal");
+            sucursalSelect.innerHTML = '<option value="">Seleccione Sucursal</option>';
 
-function actualizarEjecutivos() {
-    ejecutivoSelect.innerHTML = "<option value=''>-- Selecciona Ejecutivo --</option>";
-    bandaSelect.innerHTML = "<option value=''>-- Selecciona Banda --</option>";
-    const ejecutivos = [...new Set(data
-        .filter(d => d.coordinador === coordinadorSelect.value && d.sucursal === sucursalSelect.value)
-        .map(d => d.ejecutivo))];
-    ejecutivos.forEach(e => {
-        let option = document.createElement("option");
-        option.value = e;
-        option.textContent = e;
-        ejecutivoSelect.appendChild(option);
-    });
-}
+            const sucursalesUnicas = [...new Set(
+                datos
+                    .filter(d => d.coordinador === coordinador)
+                    .map(d => d.sucursal)
+            )];
 
-function actualizarBandas() {
-    bandaSelect.innerHTML = "<option value=''>-- Selecciona Banda --</option>";
-    const bandas = [...new Set(data
-        .filter(d => d.coordinador === coordinadorSelect.value &&
-                     d.sucursal === sucursalSelect.value &&
-                     d.ejecutivo === ejecutivoSelect.value)
-        .map(d => d.banda))];
-    bandas.forEach(b => {
-        let option = document.createElement("option");
-        option.value = b;
-        option.textContent = b;
-        bandaSelect.appendChild(option);
-    });
-}
+            sucursalesUnicas.forEach(suc => {
+                const option = document.createElement("option");
+                option.value = suc;
+                option.textContent = suc;
+                sucursalSelect.appendChild(option);
+            });
+        }
 
-// Eventos
-coordinadorSelect.addEventListener("change", actualizarSucursales);
-sucursalSelect.addEventListener("change", actualizarEjecutivos);
-ejecutivoSelect.addEventListener("change", actualizarBandas);
+        function cargarEjecutivos(coordinador, sucursal) {
+            const ejecutivoSelect = document.getElementById("ejecutivo");
+            ejecutivoSelect.innerHTML = '<option value="">Seleccione Ejecutivo</option>';
 
-</script>
+            const ejecutivosUnicos = [...new Set(
+                datos
+                    .filter(d => d.coordinador === coordinador && d.sucursal === sucursal)
+                    .map(d => d.ejecutivo)
+            )];
 
-</body>
-</html>
+            ejecutivosUnicos.forEach(eje => {
+                const option = document.createElement("option");
+                option.value = eje;
+                option.textContent = eje;
+                ejecutivoSelect.appendChild(option);
+            });
+        }
+
+        function cargarBandas(coordinador, sucursal, ejecutivo) {
+            const bandaSelect = document.getElementById("banda");
+            bandaSelect.innerHTML = '<option value="">Seleccione Banda</option>';
+
+            const bandasUnicas = [...new Set(
+                datos
+                    .filter(d => 
+                        d.coordinador === coordinador &&
+                        d.sucursal === sucursal &&
+                        d.ejecutivo === ejecutivo
+                    )
+                    .map(d => d.banda)
+            )];
+
+            bandasUnicas.forEach(ban => {
+                const option = document.createElement("option");
+                option.value = ban;
+                option.textContent = ban;
+                bandaSelect.appendChild(option);
+            });
+        }
+
+        document.getElementById("coordinador").addEventListener("change", function() {
+            const coord = this.value;
+            cargarSucursales(coord);
+            document.getElementById("ejecutivo").innerHTML = '<option value="">Seleccione Ejecutivo</option>';
+            document.getElementById("banda").innerHTML = '<option value="">Seleccione Banda</option>';
+        });
+
+        document.getElementById("sucursal").addEventListener("change", function() {
+            const coord = document.getElementById("coordinador").value;
+            const suc = this.value;
+            cargarEjecutivos(coord, suc);
+            document.getElementById("banda").innerHTML = '<option value="">Seleccione Banda</option>';
+        });
+
+        document.getElementById("ejecutivo").addEventListener("change", function() {
+            const coord = document.getElementById("coordinador").value;
+            const suc = document.getElementById("sucursal").va
