@@ -1,263 +1,112 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-  <meta charset="utf-8" />
-  <title>Mapa Semáforo</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-  <style>
-    #map { height: 100vh; margin: 0; }
-    .leaflet-tooltip {
-      background: transparent !important;
-      border: none !important;
-      box-shadow: none !important;
-      padding: 0 !important;
-      margin: 0 !important;
-    }
-    .sucursal-label {
-      background: transparent !important;
-      border: none !important;
-      box-shadow: none !important;
-      padding: 0 !important;
-      text-shadow: none !important;
-      color: black !important;
-      font-size: 10px;
-      font-weight: bold;
-    }
-    .neon-marker {
-      width: 10px; height: 10px;
-      background: red;
-      border-radius: 50%;
-      box-shadow: 0 0 3px red, 0 0 6px red;
-      animation: pulse 1.5s infinite;
-      border: 1px solid white;
-    }
-    @keyframes pulse {
-      0% { box-shadow: 0 0 1px red, 0 0 3px red; }
-      50% { box-shadow: 0 0 5px red, 0 0 10px red; }
-      100% { box-shadow: 0 0 1px red, 0 0 3px red; }
-    }
-    .filtros {
-      position: absolute;
-      top: 10px; left: 10px;
-      background: rgba(255, 255, 255, 0.9);
-      padding: 5px; border-radius: 5px;
-      z-index: 1000;
-    }
-    select { margin-right: 5px; }
-    #btnMiUbicacion {
-      position: absolute;
-      top: 60px; left: 10px;
-      z-index: 1100;
-      background: white; padding: 8px;
-      border-radius: 5px;
-      box-shadow: 0 0 5px rgba(0,0,0,0.3);
-      cursor: pointer;
-    }
-  </style>
+<meta charset="UTF-8">
+<title>Filtros Coordinador, Sucursal, Ejecutivo y Banda</title>
+<style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    select { margin: 5px; padding: 5px; }
+</style>
 </head>
 <body>
-  <div class="filtros">
-    <label>Coordinador:
-      <select id="filtroCoordinador">
-        <option value="TODOS">Todos</option>
-      </select>
-    </label>
-    <label>Sucursal:
-      <select id="filtroSucursal">
-        <option value="TODAS">Todas</option>
-      </select>
-    </label>
-    <label>Ejecutivo:
-      <select id="filtroEjecutivo">
-        <option value="TODOS">Todos</option>
-      </select>
-    </label>
-  </div>
 
-  <button id="btnMiUbicacion">📍 Mi ubicación</button>
-  <div id="map"></div>
+<h2>Filtros dinámicos</h2>
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script>
-    let map, userMarker;
-    let userLat = null, userLng = null;
-    let allData = [];
-    let markers = [];
+<label>Coordinador:</label>
+<select id="coordinadorSelect">
+    <option value="">-- Selecciona Coordinador --</option>
+</select>
 
-    const dataUrl = "datos.json";
+<label>Sucursal:</label>
+<select id="sucursalSelect">
+    <option value="">-- Selecciona Sucursal --</option>
+</select>
 
-    navigator.geolocation.getCurrentPosition(
-      (pos) => { userLat = pos.coords.latitude; userLng = pos.coords.longitude; fetchData(); },
-      () => { console.warn("Sin ubicación"); fetchData(); }
-    );
+<label>Ejecutivo:</label>
+<select id="ejecutivoSelect">
+    <option value="">-- Selecciona Ejecutivo --</option>
+</select>
 
-    function fetchData() {
-      fetch(dataUrl)
-        .then(res => res.json())
-        .then(data => {
-          allData = data;
-          initMap();
-          initFilters();
-        });
-    }
+<label>Banda:</label>
+<select id="bandaSelect">
+    <option value="">-- Selecciona Banda --</option>
+</select>
 
-    function initMap() {
-      map = L.map("map").setView([17.05, -96.72], 7);
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "© OSM" }).addTo(map);
+<script>
+// Datos de ejemplo
+const data = [
+    { coordinador: "Juan Pérez", sucursal: "Sucursal Norte", ejecutivo: "Ana López", banda: "A" },
+    { coordinador: "Juan Pérez", sucursal: "Sucursal Norte", ejecutivo: "Carlos Ruiz", banda: "B" },
+    { coordinador: "Juan Pérez", sucursal: "Sucursal Centro", ejecutivo: "María Gómez", banda: "A" },
+    { coordinador: "Luis Torres", sucursal: "Sucursal Sur", ejecutivo: "Pedro Sánchez", banda: "C" },
+    { coordinador: "Luis Torres", sucursal: "Sucursal Sur", ejecutivo: "Lucía Martínez", banda: "B" },
+    { coordinador: "Luis Torres", sucursal: "Sucursal Este", ejecutivo: "Jorge Díaz", banda: "A" }
+];
 
-      if (userLat && userLng) {
-        userMarker = L.marker([userLat, userLng], {
-          icon: L.icon({
-            iconUrl: "https://cdn-icons-png.flaticon.com/512/64/64113.png",
-            iconSize: [30, 30],
-            iconAnchor: [15, 30],
-          }),
-        }).addTo(map).bindPopup("Tu ubicación").openPopup();
-        map.setView([userLat, userLng], 15);
-      }
-    }
+const coordinadorSelect = document.getElementById("coordinadorSelect");
+const sucursalSelect = document.getElementById("sucursalSelect");
+const ejecutivoSelect = document.getElementById("ejecutivoSelect");
+const bandaSelect = document.getElementById("bandaSelect");
 
-    function getIcon(a, d) {
-      const n = parseInt(d);
-      if (n === 88 || n === 89) {
-        return L.divIcon({
-          className: "neon-marker",
-          iconSize: [30, 30],
-          iconAnchor: [15, 30],
-          popupAnchor: [0, -30],
-        });
-      }
-      const url = a.trim().toUpperCase() === "SI"
-        ? "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png"
-        : "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png";
-      return L.icon({
-        iconUrl: url,
-        shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-        iconSize: [25, 41],
-        iconAnchor: [12, 41],
-        popupAnchor: [1, -34],
-        shadowSize: [41, 41],
-      });
-    }
+// Cargar coordinadores únicos al inicio
+const coordinadoresUnicos = [...new Set(data.map(d => d.coordinador))];
+coordinadoresUnicos.forEach(c => {
+    let option = document.createElement("option");
+    option.value = c;
+    option.textContent = c;
+    coordinadorSelect.appendChild(option);
+});
 
-    function initFilters() {
-      const selCoord = document.getElementById("filtroCoordinador");
-      const selSuc = document.getElementById("filtroSucursal");
-      const selEje = document.getElementById("filtroEjecutivo");
-
-      // Llenar Coordinadores
-      const coords = [...new Set(allData.map(r => r.Coordinador))];
-      coords.forEach(c => selCoord.append(new Option(c, c)));
-
-      selCoord.addEventListener("change", () => {
-        updateSucursales(selCoord.value);
-        updateEjecutivos(selCoord.value, selSuc.value);
-        refreshMap();
-      });
-
-      selSuc.addEventListener("change", () => {
-        updateEjecutivos(selCoord.value, selSuc.value);
-        refreshMap();
-      });
-
-      selEje.addEventListener("change", refreshMap);
-
-      updateSucursales("TODOS");
-      updateEjecutivos("TODOS", "TODAS");
-      refreshMap();
-    }
-
-    function updateSucursales(coordValue) {
-      const selSuc = document.getElementById("filtroSucursal");
-      selSuc.innerHTML = '<option value="TODAS">Todas</option>';
-      let filtered = coordValue === "TODOS" ? allData : allData.filter(r => r.Coordinador === coordValue);
-      const sucursales = [...new Set(filtered.map(r => r.Sucursal))];
-      sucursales.forEach(s => selSuc.append(new Option(s, s)));
-    }
-
-    function updateEjecutivos(coordValue, sucValue) {
-      const selEje = document.getElementById("filtroEjecutivo");
-      selEje.innerHTML = '<option value="TODOS">Todos</option>';
-      let filtered = allData;
-      if (coordValue !== "TODOS") filtered = filtered.filter(r => r.Coordinador === coordValue);
-      if (sucValue !== "TODAS") filtered = filtered.filter(r => r.Sucursal === sucValue);
-      const ejecutivos = [...new Set(filtered.map(r => r.Ejecutivo))];
-      ejecutivos.forEach(e => selEje.append(new Option(e, e)));
-    }
-
-    function refreshMap() {
-      markers.forEach(m => map.removeLayer(m));
-      markers = [];
-
-      const fs = document.getElementById("filtroSucursal").value;
-      const fe = document.getElementById("filtroEjecutivo").value;
-      const fc = document.getElementById("filtroCoordinador").value;
-
-      let filtered = allData;
-      if (fc !== "TODOS") filtered = filtered.filter(r => r.Coordinador === fc);
-      if (fs !== "TODAS") filtered = filtered.filter(r => r.Sucursal === fs);
-      if (fe !== "TODOS") filtered = filtered.filter(r => r.Ejecutivo === fe);
-
-      filtered.forEach(r => {
-        const lat = parseFloat(r.Latitud), lng = parseFloat(r.Longitud);
-        if (!lat || !lng) return;
-
-        const mk = L.marker([lat, lng], { icon: getIcon(r.Aceptacion, r["Dias de Atraso"]) }).addTo(map);
-
-        const link = userLat && userLng
-          ? `https://www.google.com/maps/dir/?api=1&origin=${userLat},${userLng}&destination=${lat},${lng}`
-          : `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
-
-        mk.bindPopup(`
-          <strong>${r.Sucursal}</strong><br>
-          Aceptación: ${r.Aceptacion}<br>
-          Días sin gestión: ${r["Dias sin Gestion"]}<br>
-          Línea: ${r.Linea}<br>
-          Nombre: ${r.Nombre}<br>
-          Saldo: $${r["Saldo Total"]}<br>
-          % Pagado: ${r["Porcentaje Pagado"]}%<br>
-          Producto: ${r.Producto}<br>
-          Días de atraso: ${r["Dias de Atraso"]}<br>
-          Ejecutivo: ${r.Ejecutivo}<br><br>
-          <a href="${link}" target="_blank">📍 Ir con Google Maps</a>
-        `);
-
-        mk.bindTooltip(r.Sucursal, { permanent: true, direction: "top", offset: [0, -10], className: "sucursal-label" });
-        markers.push(mk);
-      });
-
-      if (markers.length > 0) {
-        const group = L.featureGroup(markers);
-        map.fitBounds(group.getBounds().pad(0.2));
-      }
-    }
-
-    // Botón "Mi ubicación"
-    document.getElementById("btnMiUbicacion").addEventListener("click", () => {
-      if (!map) return alert("Mapa no listo");
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          (pos) => {
-            const lat = pos.coords.latitude, lng = pos.coords.longitude;
-            if (userMarker) {
-              userMarker.setLatLng([lat, lng]);
-            } else {
-              userMarker = L.marker([lat, lng], {
-                icon: L.icon({
-                  iconUrl: "https://cdn-icons-png.flaticon.com/512/64/64113.png",
-                  iconSize: [30, 30],
-                  iconAnchor: [15, 30],
-                }),
-              }).addTo(map).bindPopup("Tu ubicación").openPopup();
-            }
-            map.setView([lat, lng], 15);
-          },
-          () => alert("No se pudo obtener tu ubicación")
-        );
-      } else {
-        alert("Geolocalización no soportada");
-      }
+function actualizarSucursales() {
+    sucursalSelect.innerHTML = "<option value=''>-- Selecciona Sucursal --</option>";
+    ejecutivoSelect.innerHTML = "<option value=''>-- Selecciona Ejecutivo --</option>";
+    bandaSelect.innerHTML = "<option value=''>-- Selecciona Banda --</option>";
+    const sucursales = [...new Set(data
+        .filter(d => d.coordinador === coordinadorSelect.value)
+        .map(d => d.sucursal))];
+    sucursales.forEach(s => {
+        let option = document.createElement("option");
+        option.value = s;
+        option.textContent = s;
+        sucursalSelect.appendChild(option);
     });
-  </script>
+}
+
+function actualizarEjecutivos() {
+    ejecutivoSelect.innerHTML = "<option value=''>-- Selecciona Ejecutivo --</option>";
+    bandaSelect.innerHTML = "<option value=''>-- Selecciona Banda --</option>";
+    const ejecutivos = [...new Set(data
+        .filter(d => d.coordinador === coordinadorSelect.value && d.sucursal === sucursalSelect.value)
+        .map(d => d.ejecutivo))];
+    ejecutivos.forEach(e => {
+        let option = document.createElement("option");
+        option.value = e;
+        option.textContent = e;
+        ejecutivoSelect.appendChild(option);
+    });
+}
+
+function actualizarBandas() {
+    bandaSelect.innerHTML = "<option value=''>-- Selecciona Banda --</option>";
+    const bandas = [...new Set(data
+        .filter(d => d.coordinador === coordinadorSelect.value &&
+                     d.sucursal === sucursalSelect.value &&
+                     d.ejecutivo === ejecutivoSelect.value)
+        .map(d => d.banda))];
+    bandas.forEach(b => {
+        let option = document.createElement("option");
+        option.value = b;
+        option.textContent = b;
+        bandaSelect.appendChild(option);
+    });
+}
+
+// Eventos
+coordinadorSelect.addEventListener("change", actualizarSucursales);
+sucursalSelect.addEventListener("change", actualizarEjecutivos);
+ejecutivoSelect.addEventListener("change", actualizarBandas);
+
+</script>
+
 </body>
 </html>
