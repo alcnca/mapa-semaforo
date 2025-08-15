@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Mapa con Filtros Encadenados</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+  #map { height: 90vh; }
+  .filtros { padding: 10px; background: #f4f4f4; }
+  select { margin: 5px; }
+</style>
+</head>
+<body>
+
+<div class="filtros">
+  <label>Coordinador:
+    <select id="filtroCoordinador"></select>
+  </label>
+  <label>Sucursal:
+    <select id="filtroSucursal"></select>
+  </label>
+  <label>Ejecutivo:
+    <select id="filtroEjecutivo"></select>
+  </label>
+  <label>Banda:
+    <select id="filtroBanda"></select>
+  </label>
+</div>
+
+<div id="map"></div>
+
+<script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
+<script>
+const dataUrl = "datos2.csv";
+let allData = [];
+
+Papa.parse(dataUrl, {
+  download: true,
+  header: true,
+  complete: function(results) {
+    allData = results.data;
+    initMap();
+    initFilters();
+
+function initMap() {
+  map = L.map('map').setView([20.97, -89.62], 6);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19
+  }).addTo(map);
+}
+
+function refreshMap() {
+  // Aquí limpiarías y volverías a agregar los marcadores filtrados
+  console.log("Mapa actualizado con filtros:",
+    document.getElementById("filtroCoordinador").value,
+    document.getElementById("filtroSucursal").value,
+    document.getElementById("filtroEjecutivo").value,
+    document.getElementById("filtroBanda").value
+  );
+}
+
+function updateFilters() {
+  const selCoord = document.getElementById("filtroCoordinador");
+  const selSuc = document.getElementById("filtroSucursal");
+  const selEje = document.getElementById("filtroEjecutivo");
+  const selBanda = document.getElementById("filtroBanda");
+
+  const coordValue = selCoord.value;
+  const sucValuePrev = selSuc.value;
+  const ejeValuePrev = selEje.value;
+  const bandaValuePrev = selBanda.value;
+
+  // --- Actualizar sucursales ---
+  let filteredSuc = allData;
+  if (coordValue !== "TODOS") filteredSuc = filteredSuc.filter(r => r.Coordinador === coordValue);
+  const sucursales = [...new Set(filteredSuc.map(r => r.Sucursal))].sort();
+  selSuc.innerHTML = '<option value="TODAS">Todas</option>';
+  sucursales.forEach(s => selSuc.append(new Option(s, s)));
+  if (sucursales.includes(sucValuePrev)) {
+    selSuc.value = sucValuePrev;
+  } else {
+    selSuc.value = "TODAS";
+  }
+
+  // --- Actualizar ejecutivos ---
+  let filteredEje = filteredSuc;
+  if (selSuc.value !== "TODAS") filteredEje = filteredEje.filter(r => r.Sucursal === selSuc.value);
+  const ejecutivos = [...new Set(filteredEje.map(r => r.Ejecutivo))].sort();
+  selEje.innerHTML = '<option value="TODOS">Todos</option>';
+  ejecutivos.forEach(e => selEje.append(new Option(e, e)));
+  if (ejecutivos.includes(ejeValuePrev)) {
+    selEje.value = ejeValuePrev;
+  } else {
+    selEje.value = "TODOS";
+  }
+
+  // --- Actualizar bandas ---
+  let filteredBanda = filteredEje;
+  if (selEje.value !== "TODOS") filteredBanda = filteredBanda.filter(r => r.Ejecutivo === selEje.value);
+  const bandas = [...new Set(filteredBanda.map(r => r.Banda))].sort();
+  selBanda.innerHTML = '<option value="TODAS">Todas</option>';
+  bandas.forEach(b => selBanda.append(new Option(b, b)));
+  if (bandas.includes(bandaValuePrev)) {
+    selBanda.value = bandaValuePrev;
+  } else {
+    selBanda.value = "TODAS";
+  }
+
+  refreshMap();
+}
+
+function initFilters() {
+  const selCoord = document.getElementById("filtroCoordinador");
+
+  // Llenar Coordinadores
+  const coordinadores = [...new Set(allData.map(r => r.Coordinador))].sort();
+  selCoord.innerHTML = '<option value="TODOS">Todos</option>';
+  coordinadores.forEach(c => selCoord.append(new Option(c, c)));
+
+  // Listeners
+  selCoord.addEventListener("change", updateFilters);
+  document.getElementById("filtroSucursal").addEventListener("change", updateFilters);
+  document.getElementById("filtroEjecutivo").addEventListener("change", updateFilters);
+  document.getElementById("filtroBanda").addEventListener("change", refreshMap);
+
+  updateFilters();
+}
+
+fetch(dataUrl)
+  .then(res => res.json())
+  .then(data => {
+    allData = data;
+    initMap();
+    initFilters();
+  });
+</script>
+
+</body>
+</html>
