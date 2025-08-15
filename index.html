@@ -1,39 +1,133 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<title>Mapa con Filtros Encadenados</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<style>
-  #map { height: 90vh; }
-  .filtros { padding: 10px; background: #f4f4f4; }
-  select { margin: 5px; }
-</style>
+  <meta charset="utf-8" />
+  <title>Mapa Semáforo</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    #map { height: 100vh; margin: 0; }
+    .leaflet-tooltip {
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      font-weight: bold;
+      color: black;
+      text-shadow: 1px 1px 2px white;
+    }
+    .filter-container {
+      position: absolute;
+      top: 10px;
+      left: 50px;
+      z-index: 1000;
+      background: white;
+      padding: 8px;
+      border-radius: 6px;
+      font-family: Arial, sans-serif;
+    }
+    .location-button {
+      position: absolute;
+      bottom: 20px;
+      right: 10px;
+      z-index: 1000;
+      background: white;
+      padding: 6px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+  </style>
 </head>
 <body>
 
-<div class="filtros">
-  <label>Coordinador:
-    <select id="filtroCoordinador"></select>
-  </label>
-  <label>Sucursal:
-    <select id="filtroSucursal"></select>
-  </label>
-  <label>Ejecutivo:
-    <select id="filtroEjecutivo"></select>
-  </label>
-  <label>Banda:
-    <select id="filtroBanda"></select>
-  </label>
+<div class="filter-container">
+  <label>Coordinador:</label>
+  <select id="coordinadorFilter"></select>
+  <label>Banda:</label>
+  <select id="bandaFilter"></select>
 </div>
 
 <div id="map"></div>
+<div class="location-button" onclick="goToMyLocation()">📍 Mi ubicación</div>
 
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
 <script>
-const dataUrl = "datos2.csv";
+const dataUrl = "datos2.csv"; // CSV subido a tu repositorio
+let map;
+let markersLayer;
 let allData = [];
 
+function initMap() {
+  map = L.map('map').setView([20.97, -89.62], 7);
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap'
+  }).addTo(map);
+
+  markersLayer = L.layerGroup().addTo(map);
+
+  refreshMap();
+}
+
+function initFilters() {
+  const coordinadorSelect = document.getElementById("coordinadorFilter");
+  const bandaSelect = document.getElementById("bandaFilter");
+
+  const coordinadores = [...new Set(allData.map(item => item.Coordinador).filter(Boolean))];
+  const bandas = [...new Set(allData.map(item => item.Banda).filter(Boolean))];
+
+  coordinadorSelect.innerHTML = '<option value="">Todos</option>' +
+    coordinadores.map(c => `<option value="${c}">${c}</option>`).join("");
+
+  bandaSelect.innerHTML = '<option value="">Todas</option>' +
+    bandas.map(b => `<option value="${b}">${b}</option>`).join("");
+
+  coordinadorSelect.addEventListener("change", refreshMap);
+  bandaSelect.addEventListener("change", refreshMap);
+}
+
+function refreshMap() {
+  markersLayer.clearLayers();
+
+  const coordinadorFiltro = document.getElementById("coordinadorFilter").value;
+  const bandaFiltro = document.getElementById("bandaFilter").value;
+
+  allData
+    .filter(item => 
+      (!coordinadorFiltro || item.Coordinador === coordinadorFiltro) &&
+      (!bandaFiltro || item.Banda === bandaFiltro)
+    )
+    .forEach(item => {
+      if (!item.Latitud || !item.Longitud) return;
+
+      const marker = L.marker([parseFloat(item.Latitud), parseFloat(item.Longitud)]);
+      marker.bindTooltip(item.Sucursal || "", { permanent: true, direction: 'top' });
+      marker.bindPopup(`
+        <b>Sucursal:</b> ${item.Sucursal || ""}<br>
+        <b>Coordinador:</b> ${item.Coordinador || ""}<br>
+        <b>Banda:</b> ${item.Banda || ""}<br>
+        <button onclick="openGoogleMaps(${item.Latitud}, ${item.Longitud})">Ir en Google Maps</button>
+      `);
+      markersLayer.addLayer(marker);
+    });
+}
+
+function openGoogleMaps(lat, lon) {
+  window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}`, "_blank");
+}
+
+function goToMyLocation() {
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(pos => {
+      const lat = pos.coords.latitude;
+      const lon = pos.coords.longitude;
+      map.setView([lat, lon], 14);
+      L.marker([lat, lon]).addTo(map).bindPopup("Estás aquí").openPopup();
+    });
+  }
+}
+
+// 📌 Cargar CSV con PapaParse
 Papa.parse(dataUrl, {
   download: true,
   header: true,
@@ -41,98 +135,8 @@ Papa.parse(dataUrl, {
     allData = results.data;
     initMap();
     initFilters();
-
-function initMap() {
-  map = L.map('map').setView([20.97, -89.62], 6);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19
-  }).addTo(map);
-}
-
-function refreshMap() {
-  // Aquí limpiarías y volverías a agregar los marcadores filtrados
-  console.log("Mapa actualizado con filtros:",
-    document.getElementById("filtroCoordinador").value,
-    document.getElementById("filtroSucursal").value,
-    document.getElementById("filtroEjecutivo").value,
-    document.getElementById("filtroBanda").value
-  );
-}
-
-function updateFilters() {
-  const selCoord = document.getElementById("filtroCoordinador");
-  const selSuc = document.getElementById("filtroSucursal");
-  const selEje = document.getElementById("filtroEjecutivo");
-  const selBanda = document.getElementById("filtroBanda");
-
-  const coordValue = selCoord.value;
-  const sucValuePrev = selSuc.value;
-  const ejeValuePrev = selEje.value;
-  const bandaValuePrev = selBanda.value;
-
-  // --- Actualizar sucursales ---
-  let filteredSuc = allData;
-  if (coordValue !== "TODOS") filteredSuc = filteredSuc.filter(r => r.Coordinador === coordValue);
-  const sucursales = [...new Set(filteredSuc.map(r => r.Sucursal))].sort();
-  selSuc.innerHTML = '<option value="TODAS">Todas</option>';
-  sucursales.forEach(s => selSuc.append(new Option(s, s)));
-  if (sucursales.includes(sucValuePrev)) {
-    selSuc.value = sucValuePrev;
-  } else {
-    selSuc.value = "TODAS";
   }
-
-  // --- Actualizar ejecutivos ---
-  let filteredEje = filteredSuc;
-  if (selSuc.value !== "TODAS") filteredEje = filteredEje.filter(r => r.Sucursal === selSuc.value);
-  const ejecutivos = [...new Set(filteredEje.map(r => r.Ejecutivo))].sort();
-  selEje.innerHTML = '<option value="TODOS">Todos</option>';
-  ejecutivos.forEach(e => selEje.append(new Option(e, e)));
-  if (ejecutivos.includes(ejeValuePrev)) {
-    selEje.value = ejeValuePrev;
-  } else {
-    selEje.value = "TODOS";
-  }
-
-  // --- Actualizar bandas ---
-  let filteredBanda = filteredEje;
-  if (selEje.value !== "TODOS") filteredBanda = filteredBanda.filter(r => r.Ejecutivo === selEje.value);
-  const bandas = [...new Set(filteredBanda.map(r => r.Banda))].sort();
-  selBanda.innerHTML = '<option value="TODAS">Todas</option>';
-  bandas.forEach(b => selBanda.append(new Option(b, b)));
-  if (bandas.includes(bandaValuePrev)) {
-    selBanda.value = bandaValuePrev;
-  } else {
-    selBanda.value = "TODAS";
-  }
-
-  refreshMap();
-}
-
-function initFilters() {
-  const selCoord = document.getElementById("filtroCoordinador");
-
-  // Llenar Coordinadores
-  const coordinadores = [...new Set(allData.map(r => r.Coordinador))].sort();
-  selCoord.innerHTML = '<option value="TODOS">Todos</option>';
-  coordinadores.forEach(c => selCoord.append(new Option(c, c)));
-
-  // Listeners
-  selCoord.addEventListener("change", updateFilters);
-  document.getElementById("filtroSucursal").addEventListener("change", updateFilters);
-  document.getElementById("filtroEjecutivo").addEventListener("change", updateFilters);
-  document.getElementById("filtroBanda").addEventListener("change", refreshMap);
-
-  updateFilters();
-}
-
-fetch(dataUrl)
-  .then(res => res.json())
-  .then(data => {
-    allData = data;
-    initMap();
-    initFilters();
-  });
+});
 </script>
 
 </body>
