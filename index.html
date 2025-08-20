@@ -1,127 +1,224 @@
 <!DOCTYPE html>
-<html lang="es">
+<html>
 <head>
-  <meta charset="utf-8" />
-  <title>Mapa de Cartera</title>
+  <meta charset="utf-8">
+  <title>Mapa Semáforo</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <style>
-    #map { height: 90vh; margin: 0; }
-    #controls {
-      padding: 10px;
-      background: #f8f8f8;
-      font-family: Arial, sans-serif;
+    #map { height: 100vh; margin: 0; }
+
+    .leaflet-tooltip {
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      padding: 0 !important;
+      margin: 0 !important;
     }
-    select {
-      margin-right: 10px;
+
+    .sucursal-label {
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      padding: 0 !important;
+      text-shadow: none !important;
+      color: black !important;
+      font-size: 10px;
+      font-weight: bold;
+    }
+
+    .neon-marker {
+      width: 10px;
+      height: 10px;
+      background: red;
+      border-radius: 50%;
+      box-shadow: 0 0 3px red, 0 0 6px red;
+      animation: pulse 1.5s infinite;
+      border: 1px solid white;
+    }
+
+    @keyframes pulse {
+      0% { box-shadow: 0 0 1px red, 0 0 3px red; }
+      50% { box-shadow: 0 0 5px red, 0 0 10px red; }
+      100% { box-shadow: 0 0 1px red, 0 0 3px red; }
+    }
+
+    .filtros {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(255,255,255,0.9);
       padding: 5px;
+      border-radius: 5px;
+      z-index: 1000;
     }
+
+    select { margin-right: 5px; }
   </style>
 </head>
 <body>
-  <div id="controls">
-    <label>Coordinador: 
-      <select id="coordinadorFilter">
-        <option value="">Todos</option>
-      </select>
-    </label>
-    <label>Banda: 
-      <select id="bandaFilter">
-        <option value="">Todas</option>
-      </select>
-    </label>
-    <button onclick="refreshMap()">Aplicar filtros</button>
-  </div>
-  <div id="map"></div>
 
-  <script>
-    // Crear mapa
-    const map = L.map("map").setView([20.97, -89.62], 8);
+<div class="filtros">
+  <label>Coordinador: 
+    <select id="filtroCoord"><option value="TODOS">Todos</option></select>
+  </label>
+  <label>Sucursal: 
+    <select id="filtroSucursal"><option value="TODAS">Todas</option></select>
+  </label>
+  <label>Ejecutivo: 
+    <select id="filtroEjecutivo"><option value="TODOS">Todos</option></select>
+  </label>
+  <label>Banda: 
+    <select id="filtroBanda"><option value="TODAS">Todas</option></select>
+  </label>
+</div>
 
-    // Capa base
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: "© OpenStreetMap contributors"
+<div id="map"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<script>
+  const dataUrl = 'datos.csv';
+
+  // Cargar CSV y convertirlo a JSON
+  Papa.parse(dataUrl, {
+    download: true,
+    header: true,
+    dynamicTyping: false,
+    complete: function(results) {
+      initMap(results.data);
+    }
+  });
+
+  function initMap(data) {
+    const map = L.map('map').setView([17.05, -96.72], 7);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OSM'
     }).addTo(map);
 
-    let allData = [];
-    let markersLayer = L.layerGroup().addTo(map);
-
-    // Cargar CSV
-    Papa.parse("datos.csv", {
-      download: true,
-      header: true,
-      complete: function(results) {
-        allData = results.data;
-        populateFilters();
-        refreshMap();
+    function getIcon(a, d) {
+      const n = parseInt(d);
+      if (n === 88 || n === 89) {
+        return L.divIcon({
+          className: 'neon-marker',
+          iconSize: [30, 30],
+          iconAnchor: [15, 30],
+          popupAnchor: [0, -30]
+        });
       }
+      const url = (a.trim().toUpperCase() === 'SI')
+        ? 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png'
+        : 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png';
+      return L.icon({
+        iconUrl: url,
+        shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+        iconSize: [25, 41],
+        iconAnchor: [12, 41],
+        popupAnchor: [1, -34],
+        shadowSize: [41, 41]
+      });
+    }
+
+    const selCoord = document.getElementById('filtroCoord'),
+          selSuc   = document.getElementById('filtroSucursal'),
+          selEje   = document.getElementById('filtroEjecutivo'),
+          selBan   = document.getElementById('filtroBanda');
+
+    // Llenar selects
+    const coords = [...new Set(data.map(r => r.Coordinador))];
+    coords.forEach(c => selCoord.append(new Option(c, c)));
+
+    const sucursales = [...new Set(data.map(r => r.Sucursal))];
+    sucursales.forEach(s => selSuc.append(new Option(s, s)));
+
+    const bandas = [...new Set(data.map(r => r.Banda))];
+    bandas.forEach(b => selBan.append(new Option(b, b)));
+
+    let markers = [];
+
+    function updateExecOptions(selSucValue, selCoordValue, selBanValue) {
+      selEje.innerHTML = '<option value="TODOS">Todos</option>';
+      let filtered = data;
+
+      if (selCoordValue !== 'TODOS') {
+        filtered = filtered.filter(r => r.Coordinador === selCoordValue);
+      }
+      if (selSucValue !== 'TODAS') {
+        filtered = filtered.filter(r => r.Sucursal === selSucValue);
+      }
+      if (selBanValue !== 'TODAS') {
+        filtered = filtered.filter(r => r.Banda === selBanValue);
+      }
+
+      const execs = [...new Set(filtered.map(r => r.Ejecutivo))];
+      execs.forEach(e => selEje.append(new Option(e, e)));
+    }
+
+    function refreshMap() {
+      markers.forEach(m => map.removeLayer(m));
+      markers = [];
+      const fc = selCoord.value,
+            fs = selSuc.value,
+            fe = selEje.value,
+            fb = selBan.value;
+
+      data.forEach(r => {
+        if ((fc !== 'TODOS' && r.Coordinador !== fc) ||
+            (fs !== 'TODAS' && r.Sucursal !== fs) ||
+            (fe !== 'TODOS' && r.Ejecutivo !== fe) ||
+            (fb !== 'TODAS' && r.Banda !== fb)) return;
+
+        const lat = parseFloat(r.Latitud), lng = parseFloat(r.Longitud);
+        if (!lat || !lng) return;
+
+        const mk = L.marker([lat, lng], { icon: getIcon(r.Aceptacion, r['Dias de Atraso']) }).addTo(map);
+        mk.bindPopup(
+          `<strong>${r.Sucursal}</strong><br>
+          Coordinador: ${r.Coordinador}<br>
+          Aceptación: ${r.Aceptacion}<br>
+          Días sin gestión: ${r['Dias sin Gestion']}<br>
+          Línea: ${r.Linea}<br>
+          Banda: ${r.Banda}<br>
+          Nombre: ${r.Nombre}<br>
+          Saldo: ${r['Saldo Total']}<br>
+          % Pagado: ${r['Porcentaje Pagado']}%<br>
+          Producto: ${r.Producto}<br>
+          Días de atraso: ${r['Dias de Atraso']}<br>
+          Ejecutivo: ${r.Ejecutivo}`
+        );
+        mk.bindTooltip(r.Sucursal, {
+          permanent: true,
+          direction: 'top',
+          offset: [0, -10],
+          className: 'sucursal-label'
+        });
+        markers.push(mk);
+      });
+
+      if (markers.length > 0) {
+        const group = L.featureGroup(markers);
+        map.fitBounds(group.getBounds().pad(0.2));
+      }
+    }
+
+    // Eventos
+    selCoord.addEventListener('change', () => {
+      updateExecOptions(selSuc.value, selCoord.value, selBan.value);
+      refreshMap();
+    });
+    selSuc.addEventListener('change', () => {
+      updateExecOptions(selSuc.value, selCoord.value, selBan.value);
+      refreshMap();
+    });
+    selEje.addEventListener('change', refreshMap);
+    selBan.addEventListener('change', () => {
+      updateExecOptions(selSuc.value, selCoord.value, selBan.value);
+      refreshMap();
     });
 
-    // Llenar selects de filtro
-    function populateFilters() {
-      const coordinadorSelect = document.getElementById("coordinadorFilter");
-      const bandaSelect = document.getElementById("bandaFilter");
-
-      const coordinadores = [...new Set(allData.map(d => d.Coordinador).filter(Boolean))];
-      coordinadores.forEach(c => {
-        let opt = document.createElement("option");
-        opt.value = c;
-        opt.textContent = c;
-        coordinadorSelect.appendChild(opt);
-      });
-
-      const bandas = [...new Set(allData.map(d => d.Banda).filter(Boolean))];
-      bandas.forEach(b => {
-        let opt = document.createElement("option");
-        opt.value = b;
-        opt.textContent = b;
-        bandaSelect.appendChild(opt);
-      });
-    }
-
-    // Refrescar mapa con filtros
-    function refreshMap() {
-      markersLayer.clearLayers();
-
-      const coordinadorFiltro = document.getElementById("coordinadorFilter").value;
-      const bandaFiltro = document.getElementById("bandaFilter").value;
-
-      const filtrados = allData.filter(item => {
-        return (!coordinadorFiltro || item.Coordinador === coordinadorFiltro) &&
-               (!bandaFiltro || item.Banda === bandaFiltro);
-      });
-
-      filtrados.forEach(item => {
-        if (!item.Latitud || !item.Longitud) return;
-
-        const lat = parseFloat(item.Latitud);
-        const lng = parseFloat(item.Longitud);
-        if (isNaN(lat) || isNaN(lng)) return;
-
-        const marker = L.marker([lat, lng]).addTo(markersLayer);
-
-        marker.bindPopup(`
-          <b>Sucursal:</b> ${item.Sucursal}<br>
-          <b>Coordinador:</b> ${item.Coordinador}<br>
-          <b>Ejecutivo:</b> ${item.Ejecutivo}<br>
-          <b>Banda:</b> ${item.Banda}<br>
-          <b>Nombre:</b> ${item.Nombre}<br>
-          <b>Saldo Total:</b> ${item["Saldo Total"]}<br>
-          <b>% Pagado:</b> ${item["Porcentaje Pagado"]}%<br>
-          <b>Días sin gestión:</b> ${item["Dias sin Gestion"]}<br>
-          <b>Días de atraso:</b> ${item["Dias de Atraso"]}<br>
-          <b>Línea:</b> ${item.Linea}<br>
-          <b>Producto:</b> ${item.Producto}<br>
-          <button onclick="openGoogleMaps(${lat}, ${lng})">Ir en Google Maps</button>
-        `);
-      });
-    }
-
-    // Función para abrir Google Maps
-    function openGoogleMaps(lat, lng) {
-      window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`);
-    }
-  </script>
+    updateExecOptions('TODAS', 'TODOS', 'TODAS');
+    refreshMap();
+  }
+</script>
 </body>
 </html>
