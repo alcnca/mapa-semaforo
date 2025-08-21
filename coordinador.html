@@ -60,6 +60,7 @@
 <div class="filtros">
   <label>Sucursal: <select id="filtroSucursal"><option value="TODAS">Todas</option></select></label>
   <label>Ejecutivo: <select id="filtroEjecutivo"><option value="TODOS">Todos</option></select></label>
+  <label>Banda: <select id="filtroBanda"><option value="TODAS">Todas</option></select></label>
 </div>
 
 <div id="map"></div>
@@ -112,10 +113,17 @@
     }
 
     const selSuc = document.getElementById('filtroSucursal'),
-          selEje = document.getElementById('filtroEjecutivo');
+          selEje = document.getElementById('filtroEjecutivo'),
+          selBan = document.getElementById('filtroBanda');
 
+    // Sucursales
     const sucursales = [...new Set(data.map(r => r.Sucursal))];
     sucursales.forEach(s => selSuc.append(new Option(s, s)));
+
+    // Bandas
+    const bandas = [...new Set(data.map(r => r.Banda))];
+    bandas.forEach(b => selBan.append(new Option(b, b)));
+
     let markers = [];
 
     function updateExecOptions(selSucValue) {
@@ -129,10 +137,13 @@
     function refreshMap() {
       markers.forEach(m => map.removeLayer(m));
       markers = [];
-      const fs = selSuc.value, fe = selEje.value;
+      const fs = selSuc.value, fe = selEje.value, fb = selBan.value;
 
       data.forEach(r => {
-        if ((fs !== 'TODAS' && r.Sucursal !== fs) || (fe !== 'TODOS' && r.Ejecutivo !== fe)) return;
+        if ((fs !== 'TODAS' && r.Sucursal !== fs) ||
+            (fe !== 'TODOS' && r.Ejecutivo !== fe) ||
+            (fb !== 'TODAS' && r.Banda !== fb)) return;
+
         const lat = parseFloat(r.Latitud), lng = parseFloat(r.Longitud);
         if (!lat || !lng) return;
         const mk = L.marker([lat, lng], { icon: getIcon(r.Aceptacion, r['Dias de Atraso']) }).addTo(map);
@@ -146,7 +157,8 @@
           % Pagado: ${r['Porcentaje Pagado']}%<br>
           Producto: ${r.Producto}<br>
           Días de atraso: ${r['Dias de Atraso']}<br>
-          Ejecutivo: ${r.Ejecutivo}`
+          Ejecutivo: ${r.Ejecutivo}<br>
+          Banda: ${r.Banda}`
         );
         mk.bindTooltip(r.Sucursal, {
           permanent: true,
@@ -167,8 +179,8 @@
       updateExecOptions(selSuc.value);
       refreshMap();
     });
-
     selEje.addEventListener('change', refreshMap);
+    selBan.addEventListener('change', refreshMap);
 
     updateExecOptions('TODAS');
     refreshMap();
