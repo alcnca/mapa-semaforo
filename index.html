@@ -40,13 +40,15 @@
 <body>
 
 <div class="container">
-  <h2>Selecciona un Semáforo</h2>
+  <h2>Selecciona un Semáforo de la Lista</h2>
 
   <label>Tipo de Semáforo: 
     <select id="tipo">
       <option value="coordinadores">Semáforo Coordinadores</option>
       <option value="vencidos">Semáforo Vencidos</option>
       <option value="agro">Semáforo Créditos Agronegocios</option>
+      <option value="mayores">Semáforo Créditos Mayores 50 mil</option>
+       <option value="riesgo">Semáforo Créditos Riesgos Semana</option>
     </select>
   </label>
   <br>
@@ -78,6 +80,10 @@
       url = "semaforo_vencidos.html?coord=" + coord;
     } else if (tipo === "agro") {
       url = "semaforo_agro.html?coord=" + coord;
+    } else if (tipo === "mayores") {
+      url = "semaforo_mayores.html?coord=" + coord;
+     } else if (tipo === "riesgo") {
+      url = "semaforo_riesgo.html?coord=" + coord;
     }
 
     window.location.href = url;
