@@ -232,6 +232,23 @@
     updateExecOptions('TODAS');
     refreshMap();
   }
+  <div id="ultima-actualizacion"></div>
+
+fetch("data.json")
+  .then(res => {
+    const lastModified = res.headers.get("Last-Modified");
+    if (lastModified) {
+      const fecha = new Date(lastModified);
+      document.getElementById("ultima-actualizacion").innerText =
+        "Última actualización: " + fecha.toLocaleString();
+    }
+    return res.json();
+  })
+  .then(data => {
+    // aquí puedes usar el contenido del JSON
+    console.log(data);
+  });
+
 </script>
 </body>
 </html>
