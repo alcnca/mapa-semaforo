@@ -50,6 +50,7 @@
       padding: 5px;
       border-radius: 5px;
       z-index: 1000;
+      font-size: 13px;
     }
 
     /* Botón Home */
@@ -86,6 +87,7 @@
   <label>Sucursal: <select id="filtroSucursal"><option value="TODAS">Todas</option></select></label>
   <label>Ejecutivo: <select id="filtroEjecutivo"><option value="TODOS">Todos</option></select></label>
   <label>Banda: <select id="filtroBanda"><option value="TODAS">Todas</option></select></label>
+  <div id="ultima-actualizacion" style="margin-top:5px; font-size:12px; color:#333;"></div>
 </div>
 
 <!-- Botón Home -->
@@ -123,7 +125,22 @@
   const dataUrl = 'riesgos.json';
 
   fetch(dataUrl)
-    .then(res => res.json())
+    .then(res => {
+      // 🔹 Obtener fecha de última modificación
+      const lastModified = res.headers.get("Last-Modified");
+      if (lastModified) {
+        const fecha = new Date(lastModified);
+        // Mostrar solo la fecha en formato español (ej. 29 de agosto de 2025)
+        const fechaFormateada = fecha.toLocaleDateString("es-MX", {
+          day: "numeric",
+          month: "long",
+          year: "numeric"
+        });
+        document.getElementById("ultima-actualizacion").innerText =
+          "Última actualización: " + fechaFormateada;
+      }
+      return res.json();
+    })
     .then(allData => {
       const data = allData.filter(r => r.Coordinador.toLowerCase() === coordinadorClave.toLowerCase());
       initMap(data);
