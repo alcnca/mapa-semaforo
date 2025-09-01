@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Exhortos de Créditos</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+</head>
+<body class="container py-4">
+
+  <h1 class="mb-4">Exhortos de Créditos</h1>
+
+  <div class="mb-4">
+    <label class="form-label">Días mínimos de atraso:</label>
+    <input type="number" id="diasMinimos" value="30" class="form-control w-25 d-inline-block">
+    <button class="btn btn-primary" onclick="cargarDatos()">Aplicar</button>
+  </div>
+
+  <div id="contenido"></div>
+
+<script>
+const JSON_URL = "https://raw.githubusercontent.com/alcnca/mapa-semaforo/refs/heads/main/datos.json"; // <-- tu JSON en GitHub RAW
+let data = [];
+
+// Cargar y mostrar datos
+async function cargarDatos() {
+  const diasFiltro = parseInt(document.getElementById("diasMinimos").value) || 30;
+
+  const res = await fetch(JSON_URL);
+  data = await res.json();
+
+  // Agrupar por sucursal
+  const sucursales = {};
+  data.forEach(item => {
+    if (!sucursales[item.Sucursal]) sucursales[item.Sucursal] = [];
+    sucursales[item.Sucursal].push(item);
+  });
+
+  const cont = document.getElementById("contenido");
+  cont.innerHTML = "";
+
+  for (let sucursal in sucursales) {
+    const card = document.createElement("div");
+    card.className = "card mb-3";
+
+    const header = document.createElement("div");
+    header.className = "card-header bg-primary text-white";
+    header.textContent = sucursal;
+
+    const body = document.createElement("div");
+    body.className = "card-body";
+
+    const lista = document.createElement("ul");
+    lista.className = "list-group";
+
+    // Agrupar por asesor
+    const asesores = {};
+    sucursales[sucursal].forEach(c => {
+      if (!asesores[c.Nombre]) asesores[c.Nombre] = [];
+      if (parseInt(c["Dias de Atraso"]) > diasFiltro) {
+        asesores[c.Nombre].push(c);
+      }
+    });
+
+    for (let asesor in asesores) {
+      const creditos = asesores[asesor];
+      const total = creditos.reduce((acc, c) => acc + (parseFloat(c["Saldo Total"].replace(/[$,]/g, "")) || 0), 0);
+
+      const li = document.createElement("li");
+      li.className = "list-group-item d-flex justify-content-between align-items-center flex-wrap";
+
+      const info = document.createElement("div");
+      info.innerHTML = `<b>${asesor}</b><br>
+        Créditos: ${creditos.length} | Total: $${total.toLocaleString("es-MX", {minimumFractionDigits:2})}`;
+
+      const btn = document.createElement("button");
+      btn.className = "btn btn-danger btn-sm mt-2 mt-sm-0";
+      btn.textContent = "Exhortar";
+      btn.onclick = () => generarPDF(asesor, sucursal, creditos, diasFiltro);
+
+      li.appendChild(info);
+      li.appendChild(btn);
+      lista.appendChild(li);
+    }
+
+    body.appendChild(lista);
+    card.appendChild(header);
+    card.appendChild(body);
+    cont.appendChild(card);
+  }
+}
+
+// Generar PDF con jsPDF
+function generarPDF(asesor, sucursal, creditos, dias) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+
+  let y = 20;
+  doc.setFontSize(14);
+  doc.text("OFICIO DE SEGUIMIENTO", 105, y, { align: "center" });
+  y += 10;
+  doc.setFontSize(12);
+  doc.text(`Asunto: Créditos con más de ${dias} días de atraso`, 105, y, { align: "center" });
+
+  y += 20;
+  doc.text(`Asesor: ${asesor}`, 20, y);
+  y += 10;
+  doc.text(`Sucursal: ${sucursal}`, 20, y);
+
+  y += 20;
+  doc.text("Lista de créditos:", 20, y);
+  y += 10;
+
+  doc.setFontSize(10);
+  let total = 0;
+  creditos.forEach(c => {
+    doc.text(`Días atraso: ${c["Dias de Atraso"]} | Saldo: ${c["Saldo Total"]} | Banda: ${c["Banda"]}`, 20, y);
+    y += 7;
+    total += parseFloat(c["Saldo Total"].replace(/[$,]/g, "")) || 0;
+  });
+
+  y += 10;
+  doc.setFontSize(12);
+  doc.text(`TOTAL: $${total.toLocaleString("es-MX", { minimumFractionDigits: 2 })}`, 20, y);
+
+  y += 20;
+  doc.setFontSize(11);
+  doc.text("Se exhorta al asesor a dar puntual seguimiento a los créditos enlistados.", 20, y);
+
+  doc.save(`oficio_${asesor.replace(/ /g, "_")}.pdf`);
+}
+
+// Cargar datos al inicio
+cargarDatos();
+</script>
+
+</body>
+</html>
