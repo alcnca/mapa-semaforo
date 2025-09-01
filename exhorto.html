@@ -2,205 +2,165 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Exhortos de Créditos</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-</head>
-<body class="container py-4">
-
-  <h1 class="mb-4">Exhortos de Créditos</h1>
-
-  <div class="row g-3 mb-4">
-    <div class="col-md-3">
-      <label class="form-label">Días mínimos sin gestión:</label>
-      <input type="number" id="diasMinimos" value="15" class="form-control">
-    </div>
-    <div class="col-md-4">
-      <label class="form-label">Sucursal:</label>
-      <select id="sucursalSelect" class="form-select">
-        <option value="">-- Selecciona una sucursal --</option>
-      </select>
-    </div>
-    <div class="col-md-3 d-flex align-items-end">
-      <button class="btn btn-primary w-100" onclick="mostrarAsesores()">Aplicar</button>
-    </div>
-  </div>
-
-  <div id="contenido"></div>
-
-<script>
-const JSON_URL = "https://raw.githubusercontent.com/alcnca/mapa-semaforo/refs/heads/main/datos.json"; // <-- tu JSON RAW
-let data = [];
-
-// Cargar datos y llenar sucursales
-async function cargarDatos() {
-  const res = await fetch(JSON_URL);
-  data = await res.json();
-
-  const sucursales = [...new Set(data.map(item => item.Sucursal))].sort();
-  const select = document.getElementById("sucursalSelect");
-
-  sucursales.forEach(s => {
-    const opt = document.createElement("option");
-    opt.value = s;
-    opt.textContent = s;
-    select.appendChild(opt);
-  });
-}
-
-// Mostrar asesores según sucursal y días
-function mostrarAsesores() {
-  const diasFiltro = parseInt(document.getElementById("diasMinimos").value) || 15;
-  const sucursalSel = document.getElementById("sucursalSelect").value;
-
-  const cont = document.getElementById("contenido");
-  cont.innerHTML = "";
-
-  if (!sucursalSel) {
-    cont.innerHTML = `<div class="alert alert-warning">Selecciona una sucursal.</div>`;
-    return;
-  }
-
-  const registros = data.filter(c => 
-    c.Sucursal === sucursalSel && parseInt(c["Dias sin Gestion"]) > diasFiltro
-  );
-
-  if (registros.length === 0) {
-    cont.innerHTML = `<div class="alert alert-info">No hay créditos con más de ${diasFiltro} días sin gestión en esta sucursal.</div>`;
-    return;
-  }
-
-  // Agrupar por Ejecutivo (asesor)
-  const asesores = {};
-  registros.forEach(c => {
-    if (!asesores[c.Ejecutivo]) asesores[c.Ejecutivo] = [];
-    asesores[c.Ejecutivo].push(c);
-  });
-
-  const lista = document.createElement("div");
-
-  for (let asesor in asesores) {
-    const creditos = asesores[asesor];
-    const total = creditos.reduce((acc, c) => acc + (parseFloat(c["Saldo Total"].replace(/[$,]/g, "")) || 0), 0);
-
-    const card = document.createElement("div");
-    card.className = "card mb-3";
-
-    const body = document.createElement("div");
-    body.className = "card-body";
-
-    body.innerHTML = `<h5>${asesor}</h5>
-      <p>Créditos: ${creditos.length} | Total: $${total.toLocaleString("es-MX", {minimumFractionDigits:2})}</p>`;
-
-    // Botones
-    const btnGroup = document.createElement("div");
-    btnGroup.className = "d-flex gap-2";
-
-    const btnPrev = document.createElement("button");
-    btnPrev.className = "btn btn-info btn-sm";
-    btnPrev.textContent = "Vista previa";
-    btnPrev.onclick = () => vistaPrevia(asesor, creditos);
-
-    const btnPDF = document.createElement("button");
-    btnPDF.className = "btn btn-danger btn-sm";
-    btnPDF.textContent = "Generar PDF";
-    btnPDF.onclick = () => generarPDF(asesor, sucursalSel, creditos, diasFiltro);
-
-    btnGroup.appendChild(btnPrev);
-    btnGroup.appendChild(btnPDF);
-
-    body.appendChild(btnGroup);
-    card.appendChild(body);
-    lista.appendChild(card);
-  }
-
-  cont.appendChild(lista);
-}
-
-// Vista previa en pantalla
-function vistaPrevia(asesor, creditos) {
-  const modal = document.createElement("div");
-  modal.className = "modal fade";
-  modal.tabIndex = -1;
-  modal.innerHTML = `
-    <div class="modal-dialog modal-lg">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">Vista previa - ${asesor}</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body">
-          <ul class="list-group">
-            ${creditos.map(c => `
-              <li class="list-group-item">
-                Crédito: ${c.Linea} | Nombre: ${c.Nombre} | Saldo: ${c["Saldo Total"]} | Días atraso: ${c["Dias de Atraso"]}
-              </li>
-            `).join("")}
-          </ul>
-        </div>
-      </div>
-    </div>
-  `;
-  document.body.appendChild(modal);
-
-  const bsModal = new bootstrap.Modal(modal);
-  bsModal.show();
-  modal.addEventListener("hidden.bs.modal", () => modal.remove());
-}
-
-// Generar PDF
-function generarPDF(asesor, sucursal, creditos, dias) {
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
-
-  let y = 20;
-  doc.setFontSize(14);
-  doc.text("OFICIO DE SEGUIMIENTO", 105, y, { align: "center" });
-  y += 10;
-  doc.setFontSize(12);
-  doc.text(`Asunto: Créditos con más de ${dias} días sin gestión`, 105, y, { align: "center" });
-
-  y += 20;
-  doc.text(`Asesor: ${asesor}`, 20, y);
-  y += 10;
-  doc.text(`Sucursal: ${sucursal}`, 20, y);
-
-  y += 20;
-  doc.text("Lista de créditos:", 20, y);
-  y += 10;
-
-  doc.setFontSize(10);
-  let total = 0;
-  creditos.forEach(c => {
-    doc.text(
-      `Crédito: ${c.Linea} | Nombre: ${c.Nombre} | Saldo: ${c["Saldo Total"]} | Días atraso: ${c["Dias de Atraso"]}`,
-      20, y
-    );
-    y += 7;
-    if (y > 270) { // salto de página
-      doc.addPage();
-      y = 20;
+  <title>Generar Oficios</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background: #f9f9f9;
     }
-    total += parseFloat(c["Saldo Total"].replace(/[$,]/g, "")) || 0;
-  });
+    h2 {
+      color: #333;
+    }
+    select, input, button {
+      margin: 5px;
+      padding: 6px;
+      font-size: 14px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+      font-size: 13px;
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0px 2px 5px rgba(0,0,0,0.1);
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 6px;
+      text-align: center;
+    }
+    th {
+      background: #007acc;
+      color: white;
+      font-weight: bold;
+    }
+    tr:nth-child(even) {
+      background: #f2f2f2;
+    }
+    #oficio {
+      margin-top: 25px;
+      padding: 15px;
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      box-shadow: 0px 2px 5px rgba(0,0,0,0.1);
+    }
+  </style>
+</head>
+<body>
+  <h2>Generador de Oficios</h2>
 
-  y += 10;
-  doc.setFontSize(12);
-  doc.text(`TOTAL: $${total.toLocaleString("es-MX", { minimumFractionDigits: 2 })}`, 20, y);
+  <label for="sucursal">Sucursal:</label>
+  <select id="sucursal"></select>
 
-  y += 20;
-  doc.setFontSize(11);
-  doc.text("Se exhorta al asesor a dar puntual seguimiento a los créditos enlistados.", 20, y);
+  <label for="dias">Días sin gestión mayor a:</label>
+  <input type="number" id="dias" value="30" min="1">
 
-  doc.save(`oficio_${asesor.replace(/ /g, "_")}.pdf`);
-}
+  <button onclick="mostrarVistaPrevia()">Vista previa</button>
+  <button onclick="generarOficio()">Generar Oficio</button>
 
-// Cargar datos al inicio
-cargarDatos();
-</script>
+  <div id="preview"></div>
+  <div id="oficio"></div>
 
-<!-- Bootstrap JS -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    const jsonUrl = "https://raw.githubusercontent.com/alcnca/mapa-semaforo/refs/heads/main/datos.json"; // 🔹 URL de tu JSON en GitHub
+    let datos = [];
 
+    async function cargarDatos() {
+      const resp = await fetch(jsonUrl);
+      datos = await resp.json();
+
+      // obtener sucursales únicas
+      const sucursales = [...new Set(datos.map(d => d.Sucursal))];
+      const select = document.getElementById("sucursal");
+      sucursales.forEach(s => {
+        let opt = document.createElement("option");
+        opt.value = s;
+        opt.textContent = s;
+        select.appendChild(opt);
+      });
+    }
+
+    function mostrarVistaPrevia() {
+      const sucursal = document.getElementById("sucursal").value;
+      const diasFiltro = parseInt(document.getElementById("dias").value);
+
+      const filtrados = datos.filter(d =>
+        d.Sucursal === sucursal && parseInt(d["Dias sin Gestion"]) > diasFiltro
+      );
+
+      if (filtrados.length === 0) {
+        document.getElementById("preview").innerHTML = "<p>No hay registros para esta sucursal y filtro.</p>";
+        return;
+      }
+
+      let tabla = `<table>
+        <tr>
+          <th>Crédito</th>
+          <th>Socio</th>
+          <th>Saldo</th>
+          <th>Días atraso</th>
+          <th>Días sin gestión</th>
+        </tr>`;
+
+      filtrados.forEach(d => {
+        tabla += `<tr>
+          <td>${d.Linea}</td>
+          <td>${d.Nombre}</td>
+          <td>${d["Saldo Total"]}</td>
+          <td>${d["Dias de Atraso"]}</td>
+          <td>${d["Dias sin Gestion"]}</td>
+        </tr>`;
+      });
+
+      tabla += `</table>`;
+      document.getElementById("preview").innerHTML = tabla;
+    }
+
+    function generarOficio() {
+      const sucursal = document.getElementById("sucursal").value;
+      const diasFiltro = parseInt(document.getElementById("dias").value);
+
+      const filtrados = datos.filter(d =>
+        d.Sucursal === sucursal && parseInt(d["Dias sin Gestion"]) > diasFiltro
+      );
+
+      if (filtrados.length === 0) {
+        document.getElementById("oficio").innerHTML = "<p>No hay información para generar oficio.</p>";
+        return;
+      }
+
+      let oficio = `<h3 style="text-align:center;">OFICIO DE SEGUIMIENTO</h3>
+        <p>Por este medio se informa que en la sucursal <b>${sucursal}</b> se han detectado los siguientes créditos con más de ${diasFiltro} días sin gestionar:</p>
+        <table>
+          <tr>
+            <th>Crédito</th>
+            <th>Socio</th>
+            <th>Saldo</th>
+            <th>Días atraso</th>
+            <th>Días sin gestión</th>
+          </tr>`;
+
+      filtrados.forEach(d => {
+        oficio += `<tr>
+          <td>${d.Linea}</td>
+          <td>${d.Nombre}</td>
+          <td>${d["Saldo Total"]}</td>
+          <td>${d["Dias de Atraso"]}</td>
+          <td>${d["Dias sin Gestion"]}</td>
+        </tr>`;
+      });
+
+      oficio += `</table>
+        <p>Se exhorta al asesor correspondiente a dar puntual seguimiento a los créditos enlistados.</p>`;
+
+      document.getElementById("oficio").innerHTML = oficio;
+    }
+
+    cargarDatos();
+  </script>
 </body>
 </html>
