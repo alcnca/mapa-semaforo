@@ -10,87 +10,99 @@
 
   <h1 class="mb-4">Exhortos de Créditos</h1>
 
-  <div class="mb-4">
-    <label class="form-label">Días mínimos de atraso:</label>
-    <input type="number" id="diasMinimos" value="30" class="form-control w-25 d-inline-block">
-    <button class="btn btn-primary" onclick="cargarDatos()">Aplicar</button>
+  <div class="row g-3 mb-4">
+    <div class="col-md-3">
+      <label class="form-label">Días mínimos de atraso:</label>
+      <input type="number" id="diasMinimos" value="30" class="form-control">
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Sucursal:</label>
+      <select id="sucursalSelect" class="form-select">
+        <option value="">-- Selecciona una sucursal --</option>
+      </select>
+    </div>
+    <div class="col-md-3 d-flex align-items-end">
+      <button class="btn btn-primary w-100" onclick="mostrarAsesores()">Aplicar</button>
+    </div>
   </div>
 
   <div id="contenido"></div>
 
 <script>
-const JSON_URL = "https://raw.githubusercontent.com/alcnca/mapa-semaforo/refs/heads/main/datos.json"; // <-- tu JSON en GitHub RAW
+const JSON_URL = "https://raw.githubusercontent.com/alcnca/mapa-semaforo/refs/heads/main/datos.json"; // <-- tu JSON RAW en GitHub
 let data = [];
 
-// Cargar y mostrar datos
+// Cargar datos y llenar sucursales
 async function cargarDatos() {
-  const diasFiltro = parseInt(document.getElementById("diasMinimos").value) || 30;
-
   const res = await fetch(JSON_URL);
   data = await res.json();
 
-  // Agrupar por sucursal
-  const sucursales = {};
-  data.forEach(item => {
-    if (!sucursales[item.Sucursal]) sucursales[item.Sucursal] = [];
-    sucursales[item.Sucursal].push(item);
+  const sucursales = [...new Set(data.map(item => item.Sucursal))].sort();
+  const select = document.getElementById("sucursalSelect");
+
+  sucursales.forEach(s => {
+    const opt = document.createElement("option");
+    opt.value = s;
+    opt.textContent = s;
+    select.appendChild(opt);
   });
+}
+
+// Mostrar asesores según sucursal y días
+function mostrarAsesores() {
+  const diasFiltro = parseInt(document.getElementById("diasMinimos").value) || 30;
+  const sucursalSel = document.getElementById("sucursalSelect").value;
 
   const cont = document.getElementById("contenido");
   cont.innerHTML = "";
 
-  for (let sucursal in sucursales) {
-    const card = document.createElement("div");
-    card.className = "card mb-3";
-
-    const header = document.createElement("div");
-    header.className = "card-header bg-primary text-white";
-    header.textContent = sucursal;
-
-    const body = document.createElement("div");
-    body.className = "card-body";
-
-    const lista = document.createElement("ul");
-    lista.className = "list-group";
-
-    // Agrupar por asesor
-    const asesores = {};
-    sucursales[sucursal].forEach(c => {
-      if (!asesores[c.Nombre]) asesores[c.Nombre] = [];
-      if (parseInt(c["Dias de Atraso"]) > diasFiltro) {
-        asesores[c.Nombre].push(c);
-      }
-    });
-
-    for (let asesor in asesores) {
-      const creditos = asesores[asesor];
-      const total = creditos.reduce((acc, c) => acc + (parseFloat(c["Saldo Total"].replace(/[$,]/g, "")) || 0), 0);
-
-      const li = document.createElement("li");
-      li.className = "list-group-item d-flex justify-content-between align-items-center flex-wrap";
-
-      const info = document.createElement("div");
-      info.innerHTML = `<b>${asesor}</b><br>
-        Créditos: ${creditos.length} | Total: $${total.toLocaleString("es-MX", {minimumFractionDigits:2})}`;
-
-      const btn = document.createElement("button");
-      btn.className = "btn btn-danger btn-sm mt-2 mt-sm-0";
-      btn.textContent = "Exhortar";
-      btn.onclick = () => generarPDF(asesor, sucursal, creditos, diasFiltro);
-
-      li.appendChild(info);
-      li.appendChild(btn);
-      lista.appendChild(li);
-    }
-
-    body.appendChild(lista);
-    card.appendChild(header);
-    card.appendChild(body);
-    cont.appendChild(card);
+  if (!sucursalSel) {
+    cont.innerHTML = `<div class="alert alert-warning">Selecciona una sucursal.</div>`;
+    return;
   }
+
+  const registros = data.filter(c => c.Sucursal === sucursalSel && parseInt(c["Dias de Atraso"]) > diasFiltro);
+
+  if (registros.length === 0) {
+    cont.innerHTML = `<div class="alert alert-info">No hay créditos con más de ${diasFiltro} días en esta sucursal.</div>`;
+    return;
+  }
+
+  // Agrupar por Ejecutivo (asesor)
+  const asesores = {};
+  registros.forEach(c => {
+    if (!asesores[c.Ejecutivo]) asesores[c.Ejecutivo] = [];
+    asesores[c.Ejecutivo].push(c);
+  });
+
+  const lista = document.createElement("ul");
+  lista.className = "list-group";
+
+  for (let asesor in asesores) {
+    const creditos = asesores[asesor];
+    const total = creditos.reduce((acc, c) => acc + (parseFloat(c["Saldo Total"].replace(/[$,]/g, "")) || 0), 0);
+
+    const li = document.createElement("li");
+    li.className = "list-group-item d-flex justify-content-between align-items-center flex-wrap";
+
+    const info = document.createElement("div");
+    info.innerHTML = `<b>${asesor}</b><br>
+      Créditos: ${creditos.length} | Total: $${total.toLocaleString("es-MX", {minimumFractionDigits:2})}`;
+
+    const btn = document.createElement("button");
+    btn.className = "btn btn-danger btn-sm mt-2 mt-sm-0";
+    btn.textContent = "Exhortar";
+    btn.onclick = () => generarPDF(asesor, sucursalSel, creditos, diasFiltro);
+
+    li.appendChild(info);
+    li.appendChild(btn);
+    lista.appendChild(li);
+  }
+
+  cont.appendChild(lista);
 }
 
-// Generar PDF con jsPDF
+// Generar PDF
 function generarPDF(asesor, sucursal, creditos, dias) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
@@ -136,3 +148,4 @@ cargarDatos();
 
 </body>
 </html>
+
