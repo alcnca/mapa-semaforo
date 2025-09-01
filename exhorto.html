@@ -12,8 +12,8 @@
 
   <div class="row g-3 mb-4">
     <div class="col-md-3">
-      <label class="form-label">Días mínimos de atraso:</label>
-      <input type="number" id="diasMinimos" value="30" class="form-control">
+      <label class="form-label">Días mínimos sin gestión:</label>
+      <input type="number" id="diasMinimos" value="15" class="form-control">
     </div>
     <div class="col-md-4">
       <label class="form-label">Sucursal:</label>
@@ -29,7 +29,7 @@
   <div id="contenido"></div>
 
 <script>
-const JSON_URL = "https://raw.githubusercontent.com/alcnca/mapa-semaforo/refs/heads/main/datos.json"; // <-- tu JSON RAW en GitHub
+const JSON_URL = "https://raw.githubusercontent.com/alcnca/mapa-semaforo/refs/heads/main/datos.json"; // <-- tu JSON RAW
 let data = [];
 
 // Cargar datos y llenar sucursales
@@ -50,7 +50,7 @@ async function cargarDatos() {
 
 // Mostrar asesores según sucursal y días
 function mostrarAsesores() {
-  const diasFiltro = parseInt(document.getElementById("diasMinimos").value) || 30;
+  const diasFiltro = parseInt(document.getElementById("diasMinimos").value) || 15;
   const sucursalSel = document.getElementById("sucursalSelect").value;
 
   const cont = document.getElementById("contenido");
@@ -61,10 +61,12 @@ function mostrarAsesores() {
     return;
   }
 
-  const registros = data.filter(c => c.Sucursal === sucursalSel && parseInt(c["Dias de Atraso"]) > diasFiltro);
+  const registros = data.filter(c => 
+    c.Sucursal === sucursalSel && parseInt(c["Dias sin Gestion"]) > diasFiltro
+  );
 
   if (registros.length === 0) {
-    cont.innerHTML = `<div class="alert alert-info">No hay créditos con más de ${diasFiltro} días en esta sucursal.</div>`;
+    cont.innerHTML = `<div class="alert alert-info">No hay créditos con más de ${diasFiltro} días sin gestión en esta sucursal.</div>`;
     return;
   }
 
@@ -75,31 +77,75 @@ function mostrarAsesores() {
     asesores[c.Ejecutivo].push(c);
   });
 
-  const lista = document.createElement("ul");
-  lista.className = "list-group";
+  const lista = document.createElement("div");
 
   for (let asesor in asesores) {
     const creditos = asesores[asesor];
     const total = creditos.reduce((acc, c) => acc + (parseFloat(c["Saldo Total"].replace(/[$,]/g, "")) || 0), 0);
 
-    const li = document.createElement("li");
-    li.className = "list-group-item d-flex justify-content-between align-items-center flex-wrap";
+    const card = document.createElement("div");
+    card.className = "card mb-3";
 
-    const info = document.createElement("div");
-    info.innerHTML = `<b>${asesor}</b><br>
-      Créditos: ${creditos.length} | Total: $${total.toLocaleString("es-MX", {minimumFractionDigits:2})}`;
+    const body = document.createElement("div");
+    body.className = "card-body";
 
-    const btn = document.createElement("button");
-    btn.className = "btn btn-danger btn-sm mt-2 mt-sm-0";
-    btn.textContent = "Exhortar";
-    btn.onclick = () => generarPDF(asesor, sucursalSel, creditos, diasFiltro);
+    body.innerHTML = `<h5>${asesor}</h5>
+      <p>Créditos: ${creditos.length} | Total: $${total.toLocaleString("es-MX", {minimumFractionDigits:2})}</p>`;
 
-    li.appendChild(info);
-    li.appendChild(btn);
-    lista.appendChild(li);
+    // Botones
+    const btnGroup = document.createElement("div");
+    btnGroup.className = "d-flex gap-2";
+
+    const btnPrev = document.createElement("button");
+    btnPrev.className = "btn btn-info btn-sm";
+    btnPrev.textContent = "Vista previa";
+    btnPrev.onclick = () => vistaPrevia(asesor, creditos);
+
+    const btnPDF = document.createElement("button");
+    btnPDF.className = "btn btn-danger btn-sm";
+    btnPDF.textContent = "Generar PDF";
+    btnPDF.onclick = () => generarPDF(asesor, sucursalSel, creditos, diasFiltro);
+
+    btnGroup.appendChild(btnPrev);
+    btnGroup.appendChild(btnPDF);
+
+    body.appendChild(btnGroup);
+    card.appendChild(body);
+    lista.appendChild(card);
   }
 
   cont.appendChild(lista);
+}
+
+// Vista previa en pantalla
+function vistaPrevia(asesor, creditos) {
+  const modal = document.createElement("div");
+  modal.className = "modal fade";
+  modal.tabIndex = -1;
+  modal.innerHTML = `
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Vista previa - ${asesor}</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <ul class="list-group">
+            ${creditos.map(c => `
+              <li class="list-group-item">
+                Crédito: ${c.Linea} | Nombre: ${c.Nombre} | Saldo: ${c["Saldo Total"]} | Días atraso: ${c["Dias de Atraso"]}
+              </li>
+            `).join("")}
+          </ul>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+
+  const bsModal = new bootstrap.Modal(modal);
+  bsModal.show();
+  modal.addEventListener("hidden.bs.modal", () => modal.remove());
 }
 
 // Generar PDF
@@ -112,7 +158,7 @@ function generarPDF(asesor, sucursal, creditos, dias) {
   doc.text("OFICIO DE SEGUIMIENTO", 105, y, { align: "center" });
   y += 10;
   doc.setFontSize(12);
-  doc.text(`Asunto: Créditos con más de ${dias} días de atraso`, 105, y, { align: "center" });
+  doc.text(`Asunto: Créditos con más de ${dias} días sin gestión`, 105, y, { align: "center" });
 
   y += 20;
   doc.text(`Asesor: ${asesor}`, 20, y);
@@ -126,8 +172,15 @@ function generarPDF(asesor, sucursal, creditos, dias) {
   doc.setFontSize(10);
   let total = 0;
   creditos.forEach(c => {
-    doc.text(`Días atraso: ${c["Dias de Atraso"]} | Saldo: ${c["Saldo Total"]} | Banda: ${c["Banda"]}`, 20, y);
+    doc.text(
+      `Crédito: ${c.Linea} | Nombre: ${c.Nombre} | Saldo: ${c["Saldo Total"]} | Días atraso: ${c["Dias de Atraso"]}`,
+      20, y
+    );
     y += 7;
+    if (y > 270) { // salto de página
+      doc.addPage();
+      y = 20;
+    }
     total += parseFloat(c["Saldo Total"].replace(/[$,]/g, "")) || 0;
   });
 
@@ -146,6 +199,8 @@ function generarPDF(asesor, sucursal, creditos, dias) {
 cargarDatos();
 </script>
 
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
 </body>
 </html>
-
