@@ -2,190 +2,243 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Exhorto de Asesores</title>
+  <title>Exhortos de Créditos</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 20px;
-    }
-    select, input, button {
-      margin: 5px;
-      padding: 5px;
-    }
-    table {
-      border-collapse: collapse;
-      margin-top: 10px;
-      font-size: 12px;
-      width: 100%;
-    }
-    th, td {
-      border: 1px solid #999;
-      padding: 4px 6px;
-      text-align: center;
-    }
-    th {
-      background: #f0f0f0;
-    }
-    .oficio {
-      border: 1px solid #ccc;
-      padding: 15px;
-      margin-top: 20px;
-      background: #fafafa;
-    }
-    .encabezado {
-      text-align: center;
-      margin-bottom: 20px;
-    }
-    .encabezado img {
-      width: 500px;
-    }
-    .texto-exhorto {
-      text-align: justify;
-      font-size: 10pt;
-    }
-  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
 </head>
-<body>
+<body class="container py-4">
 
-  <h2>Generador de Exhortos</h2>
+<h1 class="mb-4">Exhortos de Créditos</h1>
 
-  <label for="diasFiltro">Días sin gestión mayores a: </label>
-  <input type="number" id="diasFiltro" value="30" min="0">
+<div class="mb-4 row">
+  <div class="col-md-4">
+    <label class="form-label">Días mínimos sin gestión:</label>
+    <input type="number" id="diasMinimos" value="30" class="form-control">
+  </div>
+  <div class="col-md-4">
+    <label class="form-label">Sucursal:</label>
+    <select id="sucursalSelect" class="form-select"></select>
+  </div>
+  <div class="col-md-4 d-flex align-items-end">
+    <button class="btn btn-primary w-100" onclick="cargarDatos()">Aplicar</button>
+  </div>
+</div>
 
-  <label for="sucursal">Sucursal: </label>
-  <select id="sucursal"></select>
+<div id="contenido"></div>
 
-  <div id="asesoresLista"></div>
-
-  <div id="vistaPrevia" class="oficio" style="display:none;"></div>
-  <button id="btnGenerar" style="display:none;">Generar PDF</button>
-
-  <script>
-    const urlJSON = "https://raw.githubusercontent.com/alcnca/mapa-semaforo/refs/heads/main/datos.json";
-    let data = [];
-    let vistaPrevia = document.getElementById("vistaPrevia");
-    let btnGenerar = document.getElementById("btnGenerar");
-
-    // Cargar JSON
-    fetch(urlJSON)
-      .then(res => res.json())
-      .then(json => {
-        data = json;
-        cargarSucursales();
-      });
-
-    // Cargar sucursales en el select
-    function cargarSucursales() {
-      const sucursalSelect = document.getElementById("sucursal");
-      const sucursales = [...new Set(data.map(d => d.Sucursal))];
-      sucursalSelect.innerHTML = sucursales.map(s => `<option value="${s}">${s}</option>`).join("");
-      sucursalSelect.addEventListener("change", mostrarAsesores);
-      document.getElementById("diasFiltro").addEventListener("input", mostrarAsesores);
-      mostrarAsesores();
-    }
-
-    // Mostrar asesores filtrados
-    function mostrarAsesores() {
-      const dias = parseInt(document.getElementById("diasFiltro").value) || 0;
-      const sucursal = document.getElementById("sucursal").value;
-      const lista = document.getElementById("asesoresLista");
-
-      const filtrados = data.filter(d => d.Sucursal === sucursal && parseInt(d["Dias sin Gestion"]) >= dias);
-
-      const asesores = [...new Set(filtrados.map(d => d.Ejecutivo))];
-
-      lista.innerHTML = asesores.map(a =>
-        `<div>
-          <b>${a}</b> <button onclick="vistaPreviaOficio('${a}', ${dias}, '${sucursal}')">Vista previa</button>
-        </div>`
-      ).join("");
-    }
-
-    // Generar vista previa
-    function vistaPreviaOficio(asesor, dias, sucursal) {
-      const registros = data.filter(d => d.Sucursal === sucursal && d.Ejecutivo === asesor && parseInt(d["Dias sin Gestion"]) >= dias);
-
-      let tabla = `
-        <table>
-          <thead>
+<div class="modal fade" id="vistaPreviaModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Vista Previa del Oficio</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <h6 id="asesorTitulo"></h6>
+        <table class="table table-sm table-bordered text-center align-middle">
+          <thead class="table-light">
             <tr>
               <th>Crédito</th>
-              <th>Socio</th>
+              <th>Nombre del Socio</th>
               <th>Saldo</th>
               <th>Días atraso</th>
               <th>Días sin gestión</th>
             </tr>
           </thead>
-          <tbody>
-      `;
-      registros.forEach(r => {
-        tabla += `
-          <tr>
-            <td>${r.Linea}</td>
-            <td>${r.Nombre}</td>
-            <td>${r["Saldo Total"]}</td>
-            <td>${r["Dias de Atraso"]}</td>
-            <td>${r["Dias sin Gestion"]}</td>
-          </tr>
-        `;
-      });
-      tabla += "</tbody></table>";
+          <tbody id="tablaPreview"></tbody>
+        </table>
+        <h6 class="mt-3 text-end" id="totalPreview"></h6>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+        <button class="btn btn-success" id="btnGenerarPDF">Generar PDF</button>
+      </div>
+    </div>
+  </div>
+</div>
 
-      const exhortoTexto = `
-        <p class="texto-exhorto">
-          Derivado de esta situación se detecta su falta de responsabilidad, compromiso, esmero y dedicación en la ejecución de sus responsabilidades, 
-          por dicha omisión <b>SE LEVANTA EL PRESENTE EXHORTO</b>, para su conocimiento, realizar y para realizar el cumplimiento de dichas actividades, 
-          ya que nos ayuda a llevar un sano control de la cartera, mediante sus etapas de recuperación manteniendo el menor porcentaje de mora en la cartera, 
-          cumpliendo con los objetivos a nivel dirección y cuidando el patrimonio de la cooperativa.<br/><br/>
-          Para el caso de nueva omisión se tomarán las medidas necesarias de manera inmediata.
-        </p>
-      `;
+<script>
+const JSON_URL = "https://raw.githubusercontent.com/alcnca/mapa-semaforo/refs/heads/main/datos.json";
+let data = [];
+let creditosSeleccionados = [];
+let asesorSeleccionado = "";
+let sucursalSeleccionada = "";
 
-      vistaPrevia.innerHTML = `
-        <div class="encabezado">
-          <img src="https://raw.githubusercontent.com/alcnca/mapa-semaforo/main/encabezado.png" alt="Encabezado">
+async function cargarDatos() {
+  const diasFiltro = parseInt(document.getElementById("diasMinimos").value) || 30;
+  sucursalSeleccionada = document.getElementById("sucursalSelect").value;
+
+  if (data.length === 0) {
+    const res = await fetch(JSON_URL);
+    data = await res.json();
+
+    const sucursales = [...new Set(data.map(d => d.Sucursal))];
+    const sel = document.getElementById("sucursalSelect");
+    sel.innerHTML = '<option value="">-- Selecciona --</option>';
+    sucursales.forEach(s => sel.innerHTML += `<option value="${s}">${s}</option>`);
+  }
+
+  if (!sucursalSeleccionada) return;
+
+  const registros = data.filter(d =>
+    d.Sucursal === sucursalSeleccionada &&
+    parseInt(d["Dias sin Gestion"]) > diasFiltro
+  );
+
+  const asesores = {};
+  registros.forEach(r => {
+    if (!asesores[r.Ejecutivo]) asesores[r.Ejecutivo] = [];
+    asesores[r.Ejecutivo].push(r);
+  });
+
+  const cont = document.getElementById("contenido");
+  cont.innerHTML = "";
+
+  for (let asesor in asesores) {
+    const total = asesores[asesor].reduce((acc, r) =>
+      acc + (parseFloat(r["Saldo Total"].replace(/[$,]/g, "")) || 0), 0);
+
+    const card = document.createElement("div");
+    card.className = "card mb-3";
+    card.innerHTML = `
+      <div class="card-header bg-primary text-white">${asesor}</div>
+      <div class="card-body d-flex justify-content-between align-items-center">
+        <div>
+          Créditos: ${asesores[asesor].length}<br>
+          Total: $${total.toLocaleString("es-MX", { minimumFractionDigits: 2 })}
         </div>
-        <h3>Exhorto al Asesor: ${asesor}</h3>
-        <h4>Sucursal: ${sucursal}</h4>
-        ${tabla}
-        ${exhortoTexto}
-      `;
+        <button class="btn btn-warning btn-sm">Vista Previa</button>
+      </div>
+    `;
 
-      vistaPrevia.style.display = "block";
-      btnGenerar.style.display = "inline-block";
+    card.querySelector("button").onclick = () =>
+      mostrarVistaPrevia(asesor, asesores[asesor]);
 
-      btnGenerar.onclick = () => generarPDF(asesor, sucursal, tabla, exhortoTexto);
-    }
+    cont.appendChild(card);
+  }
+}
 
-    // Generar PDF
-    async function generarPDF(asesor, sucursal, tabla, exhortoTexto) {
-      const { jsPDF } = window.jspdf;
-      const pdf = new jsPDF("p", "pt", "a4");
+function mostrarVistaPrevia(asesor, creditos) {
+  asesorSeleccionado = asesor;
+  creditosSeleccionados = creditos;
 
-      // Encabezado
-      const imgUrl = "https://raw.githubusercontent.com/alcnca/mapa-semaforo/main/encabezado.png";
-      const img = new Image();
-      img.src = imgUrl;
-      img.onload = function() {
-        pdf.addImage(img, "PNG", 50, 20, 500, 80);
+  document.getElementById("asesorTitulo").textContent =
+    `Asesor: ${asesor} | Sucursal: ${sucursalSeleccionada}`;
 
-        pdf.setFontSize(12);
-        pdf.text(`Exhorto al Asesor: ${asesor}`, 50, 120);
-        pdf.text(`Sucursal: ${sucursal}`, 50, 140);
+  const tbody = document.getElementById("tablaPreview");
+  tbody.innerHTML = "";
 
-        // Texto y tabla como HTML
-        pdf.html(`<div>${tabla}${exhortoTexto}</div>`, {
-          x: 50,
-          y: 160,
-          html2canvas: { scale: 0.5 },
-          callback: function () {
-            pdf.save(`Exhorto_${asesor}.pdf`);
-          }
-        });
-      };
-    }
-  </script>
+  let total = 0;
+  creditos.forEach(c => {
+    const saldo = parseFloat(c["Saldo Total"].replace(/[$,]/g, "")) || 0;
+    total += saldo;
+    tbody.innerHTML += `
+      <tr>
+        <td>${c.Linea}</td>
+        <td>${c.Nombre}</td>
+        <td>${c["Saldo Total"]}</td>
+        <td>${c["Dias de Atraso"]}</td>
+        <td>${c["Dias sin Gestion"]}</td>
+      </tr>
+    `;
+  });
+
+  document.getElementById("totalPreview").textContent =
+    `TOTAL: $${total.toLocaleString("es-MX", { minimumFractionDigits: 2 })}`;
+
+  const modal = new bootstrap.Modal(document.getElementById("vistaPreviaModal"));
+  modal.show();
+
+  document.getElementById("btnGenerarPDF").onclick = () =>
+    generarPDF(asesorSeleccionado, sucursalSeleccionada, creditosSeleccionados);
+}
+function generarPDF(asesor, sucursal, creditos) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF("p", "pt", "a4");
+
+  const fecha = new Date().toLocaleDateString("es-MX", { day:"2-digit", month:"long", year:"numeric" });
+
+  // Cargar encabezado desde GitHub
+  const imgUrl = "https://raw.githubusercontent.com/alcnca/mapa-semaforo/main/encabezado.png";
+  const img = new Image();
+  img.crossOrigin = "Anonymous";
+  img.src = imgUrl;
+
+  img.onload = function() {
+    // Agregar encabezado
+    doc.addImage(img, "PNG", 50, 20, 500, 80);
+    let y = 120;
+
+    // Fecha
+    doc.setFontSize(10);
+    doc.text(`Fecha: ${fecha}`, 50, y);
+    y += 20;
+
+    // Título
+    doc.setFontSize(14);
+    doc.text("OFICIO DE SEGUIMIENTO", 300, y, { align: "center" });
+    y += 20;
+
+    doc.setFontSize(12);
+    doc.text(`Asunto: Créditos con más de ${document.getElementById("diasMinimos").value} días sin gestión`, 300, y, { align: "center" });
+    y += 30;
+
+    // Destinatario
+    doc.setFontSize(11);
+    doc.text(`Para: ${asesor}`, 50, y);
+    y += 15;
+    doc.text(`Sucursal: ${sucursal}`, 50, y);
+    y += 20;
+
+    // Tabla con créditos
+    const rows = creditos.map(c => [
+      c.Linea, c.Nombre, c["Saldo Total"], c["Dias de Atraso"], c["Dias sin Gestion"]
+    ]);
+
+    doc.autoTable({
+      startY: y,
+      head: [['Crédito','Nombre del Socio','Saldo','Días atraso','Días sin gestión']],
+      body: rows,
+      styles: { fontSize: 9, cellPadding: 2 },
+      headStyles: { fillColor: [220,220,220] },
+      margin: { left: 40, right: 40 }
+    });
+
+    y = doc.lastAutoTable.finalY + 20;
+
+    // Total
+    const totalSaldo = creditos.reduce((acc, c) =>
+      acc + (parseFloat(c["Saldo Total"].replace(/[$,]/g, "")) || 0), 0);
+
+    doc.setFontSize(11);
+    doc.text(`TOTAL: $${totalSaldo.toLocaleString("es-MX", { minimumFractionDigits: 2 })}`, 50, y);
+    y += 30;
+
+    // Exhorto
+    const exhorto = `Derivado de esta situación se detecta su falta de responsabilidad, compromiso, esmero y dedicación en la ejecución de sus responsabilidades, 
+por dicha omisión SE LEVANTA EL PRESENTE EXHORTO, para su conocimiento y cumplimiento de dichas actividades, ya que nos ayuda a llevar un sano control de la cartera, 
+mediante sus etapas de recuperación, manteniendo el menor porcentaje de mora en la cartera, cumpliendo con los objetivos a nivel dirección y cuidando el patrimonio de la cooperativa.
+
+Para el caso de nueva omisión se tomarán las medidas necesarias de manera inmediata.`;
+
+    const splitExhorto = doc.splitTextToSize(exhorto, 500);
+    doc.text(splitExhorto, 50, y);
+    y += splitExhorto.length * 12 + 40;
+
+    // Firma
+    doc.text("_____________________________________", 50, y);
+    y += 15;
+    doc.text("Firma del Coordinador", 50, y);
+
+    // Guardar
+    doc.save(`oficio_${asesor.replace(/ /g,"_")}.pdf`);
+  };
+}
+
+
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
-
