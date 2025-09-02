@@ -159,38 +159,32 @@ function generarPDF(asesor, sucursal, creditos) {
   const doc = new jsPDF();
 
   const fecha = new Date().toLocaleDateString("es-MX", { day:"2-digit", month:"long", year:"numeric" });
-  let y = 20;
+  let y = 15;
 
-  // Encabezado de empresa y fecha
-  <img src="https://github.com/alcnca/mapa-semaforo/blob/main/encabezado.png" ... >
-  doc.setFontSize(16);
-  doc.text("Cooperativa Acreimex", 105, y, { align: "center" });
-  y += 10;
+  // --- LOGO ENCABEZADO ---
+  const img = new Image();
+  img.src = "fde940d2-3a70-4a2c-8e6e-7e994978f19f.png"; // coloca la ruta correcta de tu logo
+  doc.addImage(img, "PNG", 40, y, 130, 25);
+  y += 35;
+
+  // --- FECHA ---
   doc.setFontSize(10);
-  doc.text(`Izamal, Yucatan a ${fecha}`, 20, y,);
+  doc.text(`Fecha: ${fecha}`, 20, y);
   y += 10;
 
-  // Título
-  doc.setFontSize(14);
-  doc.text("OFICIO DE SEGUIMIENTO", 105, y, { align: "center" });
+  // --- TÍTULO ---
+  doc.setFontSize(13);
+  doc.text("OFICIO DE EXHORTO", 105, y, { align: "center" });
+  y += 12;
+
+  // --- DESTINATARIO ---
+  doc.setFontSize(11);
+  doc.text(`Asesor: ${asesor}`, 20, y);
+  y += 6;
+  doc.text(`Sucursal: ${sucursal}`, 20, y);
   y += 10;
-  doc.setFontSize(12);
-  doc.text(`Asunto: Exhorto por Créditos con más de ${document.getElementById("diasMinimos").value} días sin gestión`, 105, y, { align: "center" });
-  y += 15;
 
-  // Destinatario
-  doc.text(`Para: ${asesor}`, 15, y);
-  y += 7;
-doc.text(`Asesor de Credito y Recuperacion Individual`, 15, y);
-  y += 7;
-doc.text(`Sucursal: ${sucursal}`, 15, y);
-  y += 7;
-doc.text(`Presente`, 15, y);
-  y += 7;
-
-  y += 7;
-
-  // Tabla con créditos usando autoTable
+  // --- TABLA DE CRÉDITOS ---
   const rows = creditos.map(c => [
     c.Linea, c.Nombre, c["Saldo Total"], c["Dias de Atraso"], c["Dias sin Gestion"]
   ]);
@@ -199,34 +193,35 @@ doc.text(`Presente`, 15, y);
     startY: y,
     head: [['Crédito','Nombre del Socio','Saldo','Días atraso','Días sin gestión']],
     body: rows,
-    styles: { fontSize: 9, cellPadding: 2 },
-    headStyles: { fillColor: [220,220,220] },
+    styles: { fontSize: 8, cellPadding: 2 },
+    headStyles: { fillColor: [220,220,220], textColor: 20, fontStyle: "bold" },
     margin: { left: 20, right: 20 }
   });
 
   y = doc.lastAutoTable.finalY + 10;
 
-  // Total
+  // --- TOTAL ---
   const totalSaldo = creditos.reduce((acc, c) =>
     acc + (parseFloat(c["Saldo Total"].replace(/[$,]/g, "")) || 0), 0);
-  doc.setFontSize(12);
-  doc.text(`TOTAL: $${totalSaldo.toLocaleString("es-MX", { minimumFractionDigits: 2 })}`, 15, y);
+
+  doc.setFontSize(11);
+  doc.text(`TOTAL: $${totalSaldo.toLocaleString("es-MX", { minimumFractionDigits: 2 })}`, 20, y);
   y += 15;
 
-  // Exhorto y espacio para firma
-const exhortoTexto = 
-`
-<p style="text-align: justify; font-size: 10pt;">
-Derivado de esta situación se detecta su falta de responsabilidad, compromiso, esmero y dedicación en la ejecución de sus responsabilidades, 
-por dicha omisión <b>SE LEVANTA EL PRESENTE EXHORTO</b>, para su conocimiento, realizar y para realizar el cumplimiento de dichas actividades, 
-ya que nos ayuda a llevar un sano control de la cartera, mediante sus etapas de recuperación manteniendo el menor porcentaje de mora en la cartera, 
-cumpliendo con los objetivos a nivel dirección y cuidando el patrimonio de la cooperativa.<br/><br/>
-Para el caso de nueva omisión se tomarán las medidas necesarias de manera inmediata.
-</p>
-`;
-  doc.text("Alonso Canche Castillo", 20, y);
-  y += 5;
-  doc.text("Firma del Coordinador", 20, y);
+  // --- TEXTO DE EXHORTO (JUSTIFICADO, TAMAÑO 10) ---
+  doc.setFontSize(10);
+  const exhorto = 
+    "Derivado de esta situación se detecta su falta de responsabilidad, compromiso, esmero y dedicación en la ejecución de sus responsabilidades, por dicha omisión SE LEVANTA EL PRESENTE EXHORTO, para su conocimiento, realizar y para realizar el cumplimiento de dichas actividades, ya que nos ayuda a llevar un sano control de la cartera, mediante sus etapas de recuperación manteniendo el menor porcentaje de mora en la cartera, cumpliendo con los objetivos a nivel dirección y cuidando el patrimonio de la cooperativa.\n\nPara el caso de nueva omisión se tomarán las medidas necesarias de manera inmediata.";
+
+  const splitText = doc.splitTextToSize(exhorto, 170); // 170 ancho -> texto justificado
+  doc.text(splitText, 20, y, { align: "justify" });
+  y += splitText.length * 5 + 20;
+
+  // --- FIRMA ---
+  doc.setFontSize(11);
+  doc.text("_____________________________________", 70, y);
+  y += 6;
+  doc.text("Firma del Coordinador", 100, y, { align: "center" });
 
   doc.save(`oficio_${asesor.replace(/ /g,"_")}.pdf`);
 }
