@@ -213,21 +213,16 @@ doc.text(`Presente`, 15, y);
   y += 15;
 
   // Exhorto y espacio para firma
-  doc.setFontSize(11);
-  doc.text("Debido a que el Asesor de Crédito y Recuperación es el principal responsable de ejecutar de manera correcta ", 15, y);
-  y += 20;
-    doc.setFontSize(11);
-  doc.text("las etapas del otorgamiento del crédito, ya que el proceso crediticio no termina con el desembolso, sino hasta ", 15, y);
-  y += 20;
-    doc.setFontSize(11);
-  doc.text("la liquidación y recuperación de este. Por lo tanto, está obligado a dar puntual seguimiento y gestión a los", 15, y);
-  y += 20;
-    doc.setFontSize(11);
-  doc.text("créditos que se encuentren en mora, evitando en todo momento el deterioro de su cartera y coadyuvando a tos logros", 15, y);
-  y += 20;
-    doc.setFontSize(11);
-  doc.text("de los objetivos de la sucursal y de la Cooperativa, cumpliendo con la filosofía institucional y la normatividad vigente.", 15, y);
-  y += 20;
+const exhortoTexto = 
+`
+<p style="text-align: justify; font-size: 10pt;">
+Derivado de esta situación se detecta su falta de responsabilidad, compromiso, esmero y dedicación en la ejecución de sus responsabilidades, 
+por dicha omisión <b>SE LEVANTA EL PRESENTE EXHORTO</b>, para su conocimiento, realizar y para realizar el cumplimiento de dichas actividades, 
+ya que nos ayuda a llevar un sano control de la cartera, mediante sus etapas de recuperación manteniendo el menor porcentaje de mora en la cartera, 
+cumpliendo con los objetivos a nivel dirección y cuidando el patrimonio de la cooperativa.<br/><br/>
+Para el caso de nueva omisión se tomarán las medidas necesarias de manera inmediata.
+</p>
+`;
   doc.text("Alonso Canche Castillo", 20, y);
   y += 5;
   doc.text("Firma del Coordinador", 20, y);
