@@ -177,11 +177,11 @@ function generarPDF(asesor, sucursal, creditos) {
 
     // Título
     doc.setFontSize(14);
-    doc.text("OFICIO DE SEGUIMIENTO", 300, y, { align: "center" });
+    doc.text("EXHORTO", 300, y, { align: "center" });
     y += 20;
 
     doc.setFontSize(12);
-    doc.text(`Asunto: Créditos con más de ${document.getElementById("diasMinimos").value} días sin gestión`, 300, y, { align: "center" });
+    doc.text(`Motivo: Tener créditos en su cartera con más de ${document.getElementById("diasMinimos").value} días sin gestión`, 300, y, { align: "center" });
     y += 30;
 
     // Destinatario
@@ -190,6 +190,12 @@ function generarPDF(asesor, sucursal, creditos) {
     y += 15;
     doc.text(`Sucursal: ${sucursal}`, 50, y);
     y += 20;
+    
+    // pretabla
+    const pretabla = `Me permito informarle que derivado de la revisión del seguimiento a los créditos con más de 30 días de atraso de la cartera que usted administra se han detectado los siguientes créditos crecen de gestión y falta de seguimiento en el sistema por el tiempo indicado anteriormente y que a continuación enlisto en la siguiente tabla:.`;
+    const splitpretabla = doc.splitTextToSize(pretabla, 500);
+    doc.text(splitpretabla, 50, y);
+    y += splitpretabla.length * 12 + 40;
 
     // Tabla con créditos
     const rows = creditos.map(c => [
