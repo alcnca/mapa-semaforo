@@ -153,69 +153,146 @@ function mostrarVistaPrevia(asesor, creditos) {
   document.getElementById("btnGenerarPDF").onclick = () =>
     generarPDF(asesorSeleccionado, sucursalSeleccionada, creditosSeleccionados);
 }
-
 function generarPDF(asesor, sucursal, creditos) {
   const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
+  const doc = new jsPDF("p", "pt", "a4");
 
   const fecha = new Date().toLocaleDateString("es-MX", { day:"2-digit", month:"long", year:"numeric" });
-  let y = 20;
 
-  // Encabezado de empresa y fecha
-  doc.setFontSize(16);
-  doc.text("Empresa XYZ", 105, y, { align: "center" });
-  y += 10;
-  doc.setFontSize(10);
-  doc.text(`Fecha: ${fecha}`, 20, y);
-  y += 10;
+  // Imágenes
+  const headerUrl = "https://raw.githubusercontent.com/alcnca/mapa-semaforo/main/encabezado.png";
+  const footerUrl = "https://alcnca.github.io/mapa-semaforo/piepagina.png";
 
-  // Título
-  doc.setFontSize(14);
-  doc.text("OFICIO DE SEGUIMIENTO", 105, y, { align: "center" });
-  y += 10;
-  doc.setFontSize(12);
-  doc.text(`Asunto: Créditos con más de ${document.getElementById("diasMinimos").value} días sin gestión`, 105, y, { align: "center" });
-  y += 15;
+  const headerImg = new Image();
+  headerImg.crossOrigin = "Anonymous";
+  headerImg.src = headerUrl;
 
-  // Destinatario
-  doc.text(`Para: ${asesor}`, 20, y);
-  y += 7;
-  doc.text(`Sucursal: ${sucursal}`, 20, y);
-  y += 10;
+  const footerImg = new Image();
+  footerImg.crossOrigin = "Anonymous";
+  footerImg.src = footerUrl;
 
-  // Tabla con créditos usando autoTable
-  const rows = creditos.map(c => [
-    c.Linea, c.Nombre, c["Saldo Total"], c["Dias de Atraso"], c["Dias sin Gestion"]
-  ]);
+  headerImg.onload = function () {
+    // Agregar encabezado
+    doc.addImage(headerImg, "PNG", 50, 20, 500, 80);
+    let y = 120;
 
-  doc.autoTable({
-    startY: y,
-    head: [['Crédito','Nombre del Socio','Saldo','Días atraso','Días sin gestión']],
-    body: rows,
-    styles: { fontSize: 9, cellPadding: 2 },
-    headStyles: { fillColor: [220,220,220] },
-    margin: { left: 20, right: 20 }
-  });
+    // Fecha
+    doc.setFontSize(10);
+    doc.text(`Fecha: ${fecha}`, 50, y);
+    y += 20;
 
-  y = doc.lastAutoTable.finalY + 10;
+    // Título
+    doc.setFontSize(14);
+    doc.text("EXHORTO", 300, y, { align: "center" });
+    y += 20;
 
-  // Total
-  const totalSaldo = creditos.reduce((acc, c) =>
-    acc + (parseFloat(c["Saldo Total"].replace(/[$,]/g, "")) || 0), 0);
-  doc.setFontSize(12);
-  doc.text(`TOTAL: $${totalSaldo.toLocaleString("es-MX", { minimumFractionDigits: 2 })}`, 20, y);
-  y += 15;
+    doc.setFontSize(12);
+    doc.text(
+      `Motivo: Tener créditos en su cartera con más de ${document.getElementById("diasMinimos").value} días sin gestión`,
+      300,
+      y,
+      { align: "center" }
+    );
+    y += 30;
 
-  // Exhorto y espacio para firma
-  doc.setFontSize(11);
-  doc.text("Se exhorta al asesor a dar puntual seguimiento a los créditos enlistados.", 20, y);
-  y += 25;
-  doc.text("_____________________________________", 20, y);
-  y += 5;
-  doc.text("Firma del Coordinador", 20, y);
+    // Destinatario
+    doc.setFontSize(11);
+    doc.text(`Para: ${asesor}`, 50, y);
+    y += 15;
+    doc.text(`Sucursal: ${sucursal}`, 50, y);
+    y += 20;
 
-  doc.save(`oficio_${asesor.replace(/ /g,"_")}.pdf`);
+    // pretabla con justificación
+    const pretabla = `Me permito informarle que derivado de la revisión del seguimiento a los créditos con más de 30 días de atraso de la cartera que usted administra se han detectado que existen créditos que carecen de gestión y seguimiento en el sistema, por el tiempo indicado en el motivo de la presente y que a continuación enlisto en la siguiente tabla:.`;
+
+    doc.autoTable({
+      startY: y,
+      body: [[pretabla]],
+      theme: "plain",
+      styles: { fontSize: 11, halign: "justify", cellWidth: 500, cellPadding: 2 },
+      margin: { left: 50, right: 50 }
+    });
+
+    y = doc.lastAutoTable.finalY + 20;
+
+    // Tabla con créditos
+    const rows = creditos.map(c => [
+      c.Linea, c.Nombre, c["Saldo Total"], c["Dias de Atraso"], c["Dias sin Gestion"]
+    ]);
+
+    doc.autoTable({
+      startY: y,
+      head: [['Crédito','Nombre del Socio','Saldo','Días atraso','Días sin gestión']],
+      body: rows,
+      styles: { fontSize: 9, cellPadding: 2 },
+      headStyles: { fillColor: [220,220,220] },
+      margin: { left: 40, right: 40 }
+    });
+
+    y = doc.lastAutoTable.finalY + 20;
+
+    // Total
+    const totalSaldo = creditos.reduce((acc, c) =>
+      acc + (parseFloat(c["Saldo Total"].replace(/[$,]/g, "")) || 0), 0);
+
+    doc.setFontSize(11);
+    doc.text(`TOTAL: $${totalSaldo.toLocaleString("es-MX", { minimumFractionDigits: 2 })}`, 50, y);
+    y += 30;
+
+    // exhorto con justificación
+    const exhorto = `Derivado de esta situación se detecta su falta de responsabilidad, compromiso, esmero y dedicación en la ejecución de sus responsabilidades, por dicha omisión SE LEVANTA EL PRESENTE EXHORTO, para su conocimiento y cumplimiento de dichas actividades, ya que nos ayuda a llevar un sano control de la cartera, mediante sus etapas de recuperación, manteniendo el menor porcentaje de mora en la cartera, cumpliendo con los objetivos a nivel dirección y cuidando el patrimonio de la cooperativa.
+    
+Para el caso de nueva omisión se tomarán las medidas necesarias de manera inmediata.`;
+
+    doc.autoTable({
+      startY: y,
+      body: [[exhorto]],
+      theme: "plain",
+      styles: { fontSize: 11, halign: "justify", cellWidth: 500, cellPadding: 2 },
+      margin: { left: 50, right: 50 }
+    });
+
+    // === Firma + Pie de página ===
+    footerImg.onload = function () {
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+
+      // Posición del pie
+      const footerWidth = 500;
+      const footerHeight = 50;
+      const footerX = (pageWidth - footerWidth) / 2;
+      const footerY = pageHeight - footerHeight - 20;
+
+      // Posición de la firma (un poco arriba del pie de página)
+      let firmaY = footerY - 60;
+
+      // Texto 1 (nombre)
+      let text = "ALONSO CANCHE CASTILLO";
+      let textWidth = doc.getTextWidth(text);
+      let x = (pageWidth - textWidth) / 2;
+      doc.text(text, x, firmaY);
+      firmaY += 15;
+
+      // Texto 2 (puesto)
+      text = "COORDINADOR EXTRAJUDICIAL REGIONAL";
+      textWidth = doc.getTextWidth(text);
+      x = (pageWidth - textWidth) / 2;
+      doc.text(text, x, firmaY);
+
+      // Agregar pie de página en todas las páginas
+      const pageCount = doc.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.addImage(footerImg, "PNG", footerX, footerY, footerWidth, footerHeight);
+      }
+
+      // Guardar
+      doc.save(`EXHORTO_${asesor.replace(/ /g, "_")}.pdf`);
+    };
+  };
+
 }
+
 
 </script>
 
