@@ -159,15 +159,21 @@ function generarPDF(asesor, sucursal, creditos) {
 
   const fecha = new Date().toLocaleDateString("es-MX", { day:"2-digit", month:"long", year:"numeric" });
 
-  // Cargar encabezado desde GitHub
-  const imgUrl = "https://raw.githubusercontent.com/alcnca/mapa-semaforo/main/encabezado.png";
-  const img = new Image();
-  img.crossOrigin = "Anonymous";
-  img.src = imgUrl;
+  // Imágenes
+  const headerUrl = "https://raw.githubusercontent.com/alcnca/mapa-semaforo/main/encabezado.png";
+  const footerUrl = "https://alcnca.github.io/mapa-semaforo/piepagina.png";
 
-  img.onload = function() {
+  const headerImg = new Image();
+  headerImg.crossOrigin = "Anonymous";
+  headerImg.src = headerUrl;
+
+  const footerImg = new Image();
+  footerImg.crossOrigin = "Anonymous";
+  footerImg.src = footerUrl;
+
+  headerImg.onload = function () {
     // Agregar encabezado
-    doc.addImage(img, "PNG", 50, 20, 500, 80);
+    doc.addImage(headerImg, "PNG", 50, 20, 500, 80);
     let y = 120;
 
     // Fecha
@@ -181,7 +187,12 @@ function generarPDF(asesor, sucursal, creditos) {
     y += 20;
 
     doc.setFontSize(12);
-    doc.text(`Motivo: Tener créditos en su cartera con más de ${document.getElementById("diasMinimos").value} días sin gestión`, 300, y, { align: "center" });
+    doc.text(
+      `Motivo: Tener créditos en su cartera con más de ${document.getElementById("diasMinimos").value} días sin gestión`,
+      300,
+      y,
+      { align: "center" }
+    );
     y += 30;
 
     // Destinatario
@@ -190,7 +201,7 @@ function generarPDF(asesor, sucursal, creditos) {
     y += 15;
     doc.text(`Sucursal: ${sucursal}`, 50, y);
     y += 20;
-    
+
     // pretabla con justificación
     const pretabla = `Me permito informarle que derivado de la revisión del seguimiento a los créditos con más de 30 días de atraso de la cartera que usted administra se han detectado que existen créditos que carecen de gestión y seguimiento en el sistema, por el tiempo indicado en el motivo de la presente y que a continuación enlisto en la siguiente tabla:.`;
 
@@ -246,22 +257,37 @@ Para el caso de nueva omisión se tomarán las medidas necesarias de manera inme
     // Firma
     const pageWidth = doc.internal.pageSize.getWidth();
 
-    // Texto 1
     let text = "CANCHE CASTILLO ALONSO";
     let textWidth = doc.getTextWidth(text);
     let x = (pageWidth - textWidth) / 2;
     doc.text(text, x, y);
     y += 15;
 
-    // Texto 2
     text = "COORDINADOR DE RECUPERACION";
     textWidth = doc.getTextWidth(text);
     x = (pageWidth - textWidth) / 2;
     doc.text(text, x, y);
- 
-    // Guardar
-    doc.save(`EXHORTO_${asesor.replace(/ /g,"_")}.pdf`);
+
+    // === Pie de página ===
+    footerImg.onload = function () {
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const footerWidth = 500; // ancho de la imagen
+      const footerHeight = 50; // alto de la imagen
+      const footerX = (pageWidth - footerWidth) / 2;
+      const footerY = pageHeight - footerHeight - 20;
+
+      // Agregar en cada página
+      const pageCount = doc.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.addImage(footerImg, "PNG", footerX, footerY, footerWidth, footerHeight);
+      }
+
+      // Guardar
+      doc.save(`EXHORTO_${asesor.replace(/ /g, "_")}.pdf`);
+    };
   };
+
 }
 
 
