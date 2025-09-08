@@ -252,31 +252,34 @@ Para el caso de nueva omisión se tomarán las medidas necesarias de manera inme
       margin: { left: 50, right: 50 }
     });
 
-    y = doc.lastAutoTable.finalY + 40;
-
-    // Firma
-    const pageWidth = doc.internal.pageSize.getWidth();
-
-    let text = "CANCHE CASTILLO ALONSO";
-    let textWidth = doc.getTextWidth(text);
-    let x = (pageWidth - textWidth) / 2;
-    doc.text(text, x, y);
-    y += 15;
-
-    text = "COORDINADOR DE RECUPERACION";
-    textWidth = doc.getTextWidth(text);
-    x = (pageWidth - textWidth) / 2;
-    doc.text(text, x, y);
-
-    // === Pie de página ===
+    // === Firma + Pie de página ===
     footerImg.onload = function () {
+      const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
-      const footerWidth = 500; // ancho de la imagen
-      const footerHeight = 50; // alto de la imagen
+
+      // Posición del pie
+      const footerWidth = 500;
+      const footerHeight = 50;
       const footerX = (pageWidth - footerWidth) / 2;
       const footerY = pageHeight - footerHeight - 20;
 
-      // Agregar en cada página
+      // Posición de la firma (un poco arriba del pie de página)
+      let firmaY = footerY - 60;
+
+      // Texto 1 (nombre)
+      let text = "CANCHE CASTILLO ALONSO";
+      let textWidth = doc.getTextWidth(text);
+      let x = (pageWidth - textWidth) / 2;
+      doc.text(text, x, firmaY);
+      firmaY += 15;
+
+      // Texto 2 (puesto)
+      text = "COORDINADOR DE RECUPERACION";
+      textWidth = doc.getTextWidth(text);
+      x = (pageWidth - textWidth) / 2;
+      doc.text(text, x, firmaY);
+
+      // Agregar pie de página en todas las páginas
       const pageCount = doc.getNumberOfPages();
       for (let i = 1; i <= pageCount; i++) {
         doc.setPage(i);
