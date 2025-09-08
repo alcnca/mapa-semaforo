@@ -244,23 +244,26 @@ Para el caso de nueva omisión se tomarán las medidas necesarias de manera inme
     y = doc.lastAutoTable.finalY + 40;
 
     // Firma
-   // Texto 1
-let text = "CANCHE CASTILLO ALONSO";
-let textWidth = doc.getTextWidth(text);
-let x = (pageWidth - textWidth) / 2;
-doc.text(text, x, y);
-y += 15;
+    const pageWidth = doc.internal.pageSize.getWidth();
 
-// Texto 2
-text = "COORDINADOR DE RECUPERACION";
-textWidth = doc.getTextWidth(text);
-x = (pageWidth - textWidth) / 2;
-doc.text(text, x, y);
+    // Texto 1
+    let text = "CANCHE CASTILLO ALONSO";
+    let textWidth = doc.getTextWidth(text);
+    let x = (pageWidth - textWidth) / 2;
+    doc.text(text, x, y);
+    y += 15;
+
+    // Texto 2
+    text = "COORDINADOR DE RECUPERACION";
+    textWidth = doc.getTextWidth(text);
+    x = (pageWidth - textWidth) / 2;
+    doc.text(text, x, y);
  
     // Guardar
     doc.save(`EXHORTO_${asesor.replace(/ /g,"_")}.pdf`);
   };
 }
+
 
 </script>
 
