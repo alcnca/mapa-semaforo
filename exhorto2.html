@@ -192,7 +192,7 @@ function generarPDF(asesor, sucursal, creditos) {
     y += 20;
     
     // pretabla con justificación
-    const pretabla = `Me permito informarle que derivado de la revisión del seguimiento a los créditos con más de 30 días de atraso de la cartera que usted administra se han detectado los siguientes créditos carecen de gestión y falta de seguimiento en el sistema por el tiempo indicado anteriormente y que a continuación enlisto en la siguiente tabla:.`;
+    const pretabla = `Me permito informarle que derivado de la revisión del seguimiento a los créditos con más de 30 días de atraso de la cartera que usted administra se han detectado que existen créditos que carecen de gestión y seguimiento en el sistema, por el tiempo indicado en el motivo de la presente y que a continuación enlisto en la siguiente tabla:.`;
 
     doc.autoTable({
       startY: y,
@@ -244,12 +244,21 @@ Para el caso de nueva omisión se tomarán las medidas necesarias de manera inme
     y = doc.lastAutoTable.finalY + 40;
 
     // Firma
-    doc.text("CANCHE CASTILLO ALONSO", 50, y);
-    y += 15;
-    doc.text("Coordinador de Recuperacion Regional Zona Maya", 50, y);
+   // Texto 1
+let text = "CANCHE CASTILLO ALONSO";
+let textWidth = doc.getTextWidth(text);
+let x = (pageWidth - textWidth) / 2;
+doc.text(text, x, y);
+y += 15;
 
+// Texto 2
+text = "COORDINADOR DE RECUPERACION";
+textWidth = doc.getTextWidth(text);
+x = (pageWidth - textWidth) / 2;
+doc.text(text, x, y);
+ 
     // Guardar
-    doc.save(`oficio_${asesor.replace(/ /g,"_")}.pdf`);
+    doc.save(`EXHORTO_${asesor.replace(/ /g,"_")}.pdf`);
   };
 }
 
