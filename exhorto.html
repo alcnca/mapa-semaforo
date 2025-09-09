@@ -12,21 +12,31 @@
 <h1 class="mb-4">Exhortos de Créditos</h1>
 
 <div class="mb-4 row">
-  <div class="col-md-4">
+  <div class="col-md-3">
     <label class="form-label">Días mínimos sin gestión:</label>
     <input type="number" id="diasMinimos" value="30" class="form-control">
   </div>
-  <div class="col-md-4">
+  <div class="col-md-3">
     <label class="form-label">Sucursal:</label>
     <select id="sucursalSelect" class="form-select"></select>
   </div>
-  <div class="col-md-4 d-flex align-items-end">
-    <button class="btn btn-primary w-100" onclick="cargarDatos()">Aplicar</button>
+  <div class="col-md-3">
+    <label class="form-label">Coordinador que firma:</label>
+    <select id="coordinadorSelect" class="form-select"></select>
   </div>
+  <div class="col-md-3" id="subFirmanteDiv" style="display:none;">
+    <label class="form-label">Firmante:</label>
+    <select id="subFirmanteSelect" class="form-select"></select>
+  </div>
+</div>
+
+<div class="mb-4">
+  <button class="btn btn-primary w-100" onclick="cargarDatos()">Aplicar</button>
 </div>
 
 <div id="contenido"></div>
 
+<!-- Modal Vista Previa -->
 <div class="modal fade" id="vistaPreviaModal" tabindex="-1">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
@@ -57,6 +67,86 @@
     </div>
   </div>
 </div>
+
+<script>
+const JSON_URL = "https://raw.githubusercontent.com/alcnca/mapa-semaforo/refs/heads/main/datos.json";
+let data = [];
+let creditosSeleccionados = [];
+let asesorSeleccionado = "";
+let sucursalSeleccionada = "";
+
+// Nombres completos de coordinadores
+const nombresCoordinadores = {
+  DASADI: "DANIEL SANCHEZ DIAZ",
+  FAPERO: "FRANCISCO ANTONIO PEREZ RODRIGUEZ",
+  ALCNCA: "ALONSO CANCHE CASTILLO",
+  MCRAVI: "MARLEN CECILIA RAMIREZ VILLANUEVA",
+  INANME: "INES ANDRADE MENDEZ",
+  MISADA: "MARIO ISRAEL SALINAS DAMIAN",
+  OFICINA_CENTRAL: "OFICINA CENTRAL"
+};
+
+// Lista de asistentes Oficina Central
+const oficinaCentral = [
+  { nombre: "SANDRA LORENA PACHECO ROBLES", puesto: "ASISTENTE DE RECUPERACIÓN EXTRAJUDICIAL" },
+  { nombre: "ROLANDO VALERIANO HURTADO", puesto: "ASISTENTE DE RECUPERACIÓN EXTRAJUDICIAL" },
+  { nombre: "ANDREA ACELA MORGA DÁVILA", puesto: "ASISTENTE DE RECUPERACIÓN EXTRAJUDICIAL" },
+  { nombre: "GUSTAVO ESTUDILLO DE LA CRUZ", puesto: "ASISTENTE DE RECUPERACIÓN EXTRAJUDICIAL" }
+];
+
+// Cargar datos al inicio
+window.addEventListener("DOMContentLoaded", async () => {
+  const res = await fetch(JSON_URL);
+  data = await res.json();
+
+  // Llenar select de coordinadores
+  const selCoord = document.getElementById("coordinadorSelect");
+  selCoord.innerHTML = '<option value="">-- Selecciona --</option>';
+  for (let clave in nombresCoordinadores) {
+    selCoord.innerHTML += `<option value="${clave}">${nombresCoordinadores[clave]}</option>`;
+  }
+
+  // Evento de cambio coordinador
+  selCoord.addEventListener("change", () => {
+    const subDiv = document.getElementById("subFirmanteDiv");
+    const subSel = document.getElementById("subFirmanteSelect");
+    const sucSel = document.getElementById("sucursalSelect");
+    subSel.innerHTML = "";
+    sucSel.innerHTML = '<option value="">-- Selecciona --</option>';
+
+    const valorCoord = selCoord.value;
+
+    if (valorCoord === "OFICINA_CENTRAL") {
+      // Mostrar todos los asistentes
+      oficinaCentral.forEach(p => {
+        subSel.innerHTML += `<option value="${p.nombre}">${p.nombre} (${p.puesto})</option>`;
+      });
+      subDiv.style.display = "block";
+
+      // Todas las sucursales
+      const todasSucursales = [...new Set(data.map(d => d.Sucursal))];
+      todasSucursales.forEach(s => sucSel.innerHTML += `<option value="${s}">${s}</option>`);
+
+    } else if (valorCoord) {
+      subDiv.style.display = "none";
+      // Subfirmantes especiales para ALCNCA
+      if (valorCoord === "ALCNCA") {
+        subDiv.style.display = "block";
+        subSel.innerHTML += `<option value="ALCNCA">${nombresCoordinadores["ALCNCA"]} (Coordinador)</option>`;
+        subSel.innerHTML += `<option value="IVANI">IVANI ARCOS LAINES (Gestor Regional Zona Maya)</option>`;
+      }
+      // Filtrar sucursales según coordinador
+      const sucursalesCoord = [...new Set(data.filter(d => d.Coordinador === valorCoord).map(d => d.Sucursal))];
+      sucursalesCoord.forEach(s => sucSel.innerHTML += `<option value="${s}">${s}</option>`);
+    }
+  });
+
+  // Inicializar select de sucursales
+  const sucursales = [...new Set(data.map(d => d.Sucursal))];
+  const selSuc = document.getElementById("sucursalSelect");
+  selSuc.innerHTML = '<option value="">-- Selecciona --</option>';
+  sucursales.forEach(s => selSuc.innerHTML += `<option value="${s}">${s}</option>`);
+});
 
 <script>
 const JSON_URL = "https://raw.githubusercontent.com/alcnca/mapa-semaforo/refs/heads/main/datos.json";
