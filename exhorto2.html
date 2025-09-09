@@ -74,62 +74,91 @@ let data = [];
 let creditosSeleccionados = [];
 let asesorSeleccionado = "";
 let sucursalSeleccionada = "";
-let coordinadores = {}; // Se cargará desde el JSON
 
+// Nombres completos de coordinadores
+const nombresCoordinadores = {
+  DASADI: "DANIEL SANCHEZ DIAZ",
+  FAPERO: "FRANCISCO ANTONIO PEREZ RODRIGUEZ",
+  ALCNCA: "ALONSO CANCHE CASTILLO",
+  MCRAVI: "MARLEN CECILIA RAMIREZ VILLANUEVA",
+  INANME: "INES ANDRADE MENDEZ",
+  MISADA: "MARIO ISRAEL SALINAS DAMIAN",
+  OFICINA_CENTRAL: "OFICINA CENTRAL"
+};
+
+// Lista de asistentes Oficina Central
+const oficinaCentral = [
+  { nombre: "SANDRA LORENA PACHECO ROBLES", puesto: "ASISTENTE DE RECUPERACIÓN EXTRAJUDICIAL" },
+  { nombre: "ROLANDO VALERIANO HURTADO", puesto: "ASISTENTE DE RECUPERACIÓN EXTRAJUDICIAL" },
+  { nombre: "ANDREA ACELA MORGA DÁVILA", puesto: "ASISTENTE DE RECUPERACIÓN EXTRAJUDICIAL" },
+  { nombre: "GUSTAVO ESTUDILLO DE LA CRUZ", puesto: "ASISTENTE DE RECUPERACIÓN EXTRAJUDICIAL" }
+];
+
+// Cargar datos al inicio
+window.addEventListener("DOMContentLoaded", async () => {
+  const res = await fetch(JSON_URL);
+  data = await res.json();
+
+  // Llenar select de coordinadores
+  const selCoord = document.getElementById("coordinadorSelect");
+  selCoord.innerHTML = '<option value="">-- Selecciona --</option>';
+  for (let clave in nombresCoordinadores) {
+    selCoord.innerHTML += `<option value="${clave}">${nombresCoordinadores[clave]}</option>`;
+  }
+
+  // Evento de cambio coordinador
+  selCoord.addEventListener("change", () => {
+    const subDiv = document.getElementById("subFirmanteDiv");
+    const subSel = document.getElementById("subFirmanteSelect");
+    const sucSel = document.getElementById("sucursalSelect");
+    subSel.innerHTML = "";
+    sucSel.innerHTML = '<option value="">-- Selecciona --</option>';
+
+    const valorCoord = selCoord.value;
+
+    if (valorCoord === "OFICINA_CENTRAL") {
+      // Mostrar todos los asistentes
+      oficinaCentral.forEach(p => {
+        subSel.innerHTML += `<option value="${p.nombre}">${p.nombre} (${p.puesto})</option>`;
+      });
+      subDiv.style.display = "block";
+
+      // Todas las sucursales
+      const todasSucursales = [...new Set(data.map(d => d.Sucursal))];
+      todasSucursales.forEach(s => sucSel.innerHTML += `<option value="${s}">${s}</option>`);
+
+    } else if (valorCoord) {
+      subDiv.style.display = "none";
+      // Subfirmantes especiales para ALCNCA
+      if (valorCoord === "ALCNCA") {
+        subDiv.style.display = "block";
+        subSel.innerHTML += `<option value="ALCNCA">${nombresCoordinadores["ALCNCA"]} (Coordinador)</option>`;
+        subSel.innerHTML += `<option value="IVANI">IVANI ARCOS LAINES (Gestor Regional Zona Maya)</option>`;
+      }
+      // Filtrar sucursales según coordinador
+      const sucursalesCoord = [...new Set(data.filter(d => d.Coordinador === valorCoord).map(d => d.Sucursal))];
+      sucursalesCoord.forEach(s => sucSel.innerHTML += `<option value="${s}">${s}</option>`);
+    }
+  });
+
+  // Inicializar select de sucursales
+  const sucursales = [...new Set(data.map(d => d.Sucursal))];
+  const selSuc = document.getElementById("sucursalSelect");
+  selSuc.innerHTML = '<option value="">-- Selecciona --</option>';
+  sucursales.forEach(s => sucSel.innerHTML += `<option value="${s}">${s}</option>`);
+});
+
+// Funciones cargarDatos, mostrarVistaPrevia y generarPDF
 async function cargarDatos() {
   const diasFiltro = parseInt(document.getElementById("diasMinimos").value) || 30;
   sucursalSeleccionada = document.getElementById("sucursalSelect").value;
-
-  if (data.length === 0) {
-    const res = await fetch(JSON_URL);
-    data = await res.json();
-
-    // Sucursales únicas
-    const sucursales = [...new Set(data.map(d => d.Sucursal))];
-    const selSuc = document.getElementById("sucursalSelect");
-    selSuc.innerHTML = '<option value="">-- Selecciona --</option>';
-    sucursales.forEach(s => selSuc.innerHTML += `<option value="${s}">${s}</option>`);
-
-    // Coordinadores únicos
-    coordinadores = {};
-    data.forEach(d => {
-      if (d.Coordinador && !coordinadores[d.Coordinador]) {
-        coordinadores[d.Coordinador] = d.CoordinadorNombre || d.Coordinador;
-      }
-    });
-
-    // Llenar select de coordinadores
-    const selCoord = document.getElementById("coordinadorSelect");
-    selCoord.innerHTML = '<option value="">-- Selecciona --</option>';
-    for (let inicial in coordinadores) {
-      selCoord.innerHTML += `<option value="${inicial}">${inicial}</option>`;
-    }
-
-    // Evento: si es ALCNCA mostrar subopciones
-    selCoord.addEventListener("change", () => {
-      const subDiv = document.getElementById("subFirmanteDiv");
-      const subSel = document.getElementById("subFirmanteSelect");
-      subSel.innerHTML = "";
-
-      if (selCoord.value === "ALCNCA") {
-        subDiv.style.display = "block";
-        subSel.innerHTML += `<option value="ALCNCA">${coordinadores["ALCNCA"]} (Coordinador de Recuperación Extrajudicial)</option>`;
-        subSel.innerHTML += `<option value="IVANI">IVANI ARCOS LAINES (Gestor Regional Zona Maya)</option>`;
-      } else {
-        subDiv.style.display = "none";
-      }
-    });
-  }
-
   if (!sucursalSeleccionada) return;
 
-  // Filtrar registros
   const registros = data.filter(d =>
     d.Sucursal === sucursalSeleccionada &&
     parseInt(d["Dias sin Gestion"]) > diasFiltro
   );
 
-  // Agrupar por asesor
   const asesores = {};
   registros.forEach(r => {
     if (!asesores[r.Ejecutivo]) asesores[r.Ejecutivo] = [];
@@ -155,10 +184,8 @@ async function cargarDatos() {
         <button class="btn btn-warning btn-sm">Vista Previa</button>
       </div>
     `;
-
     card.querySelector("button").onclick = () =>
       mostrarVistaPrevia(asesor, asesores[asesor]);
-
     cont.appendChild(card);
   }
 }
@@ -166,7 +193,6 @@ async function cargarDatos() {
 function mostrarVistaPrevia(asesor, creditos) {
   asesorSeleccionado = asesor;
   creditosSeleccionados = creditos;
-
   document.getElementById("asesorTitulo").textContent =
     `Asesor: ${asesor} | Sucursal: ${sucursalSeleccionada}`;
 
@@ -201,19 +227,16 @@ function mostrarVistaPrevia(asesor, creditos) {
 function generarPDF(asesor, sucursal, creditos) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF("p", "pt", "a4");
-
   const fecha = new Date().toLocaleDateString("es-MX", { day:"2-digit", month:"long", year:"numeric" });
 
   const headerUrl = "https://raw.githubusercontent.com/alcnca/mapa-semaforo/main/encabezado.png";
   const footerUrl = "https://alcnca.github.io/mapa-semaforo/piepagina.png";
 
   const headerImg = new Image();
-  headerImg.crossOrigin = "Anonymous";
-  headerImg.src = headerUrl;
+  headerImg.crossOrigin = "Anonymous"; headerImg.src = headerUrl;
 
   const footerImg = new Image();
-  footerImg.crossOrigin = "Anonymous";
-  footerImg.src = footerUrl;
+  footerImg.crossOrigin = "Anonymous"; footerImg.src = footerUrl;
 
   headerImg.onload = function () {
     doc.addImage(headerImg, "PNG", 50, 20, 500, 80);
@@ -230,9 +253,7 @@ function generarPDF(asesor, sucursal, creditos) {
     doc.setFontSize(12);
     doc.text(
       `Motivo: Tener créditos en su cartera con más de ${document.getElementById("diasMinimos").value} días sin gestión`,
-      300,
-      y,
-      { align: "center" }
+      300, y, { align: "center" }
     );
     y += 30;
 
@@ -242,7 +263,7 @@ function generarPDF(asesor, sucursal, creditos) {
     doc.text(`Sucursal: ${sucursal}`, 50, y);
     y += 20;
 
-    const pretabla = `Me permito informarle que derivado de la revisión del seguimiento...`;
+    const pretabla = `Me permito informarle que derivado de la revisión del seguimiento a los créditos con más de 30 días de atraso de la cartera que usted administra se han detectado que existen créditos que carecen de gestión y seguimiento en el sistema, por el tiempo indicado en el motivo de la presente y que a continuación enlisto en la siguiente tabla:`;
     doc.autoTable({
       startY: y,
       body: [[pretabla]],
@@ -275,7 +296,7 @@ function generarPDF(asesor, sucursal, creditos) {
     doc.text(`TOTAL: $${totalSaldo.toLocaleString("es-MX", { minimumFractionDigits: 2 })}`, 50, y);
     y += 30;
 
-    const exhorto = `Derivado de esta situación...`;
+    const exhorto = `Derivado de esta situación se detecta su falta de responsabilidad, compromiso, esmero y dedicación en la ejecución de sus responsabilidades, por dicha omisión SE LEVANTA EL PRESENTE EXHORTO, para su conocimiento y cumplimiento de dichas actividades, ya que nos ayuda a llevar un sano control de la cartera, mediante sus etapas de recuperación, manteniendo el menor porcentaje de mora en la cartera, cumpliendo con los objetivos a nivel dirección y cuidando el patrimonio de la cooperativa. Para el caso de nueva omisión se tomarán las medidas necesarias de manera inmediata`;
     doc.autoTable({
       startY: y,
       body: [[exhorto]],
@@ -303,13 +324,18 @@ function generarPDF(asesor, sucursal, creditos) {
       const subFirmante = document.getElementById("subFirmanteSelect").value || inicial;
 
       let nombreFirmante = "";
-      let puestoFirmante = "Coordinador de Recuperación Extrajudicial";
+      let puestoFirmante = "";
 
       if (subFirmante === "IVANI") {
         nombreFirmante = "IVANI ARCOS LAINES";
         puestoFirmante = "Gestor Regional Zona Maya";
+      } else if (inicial === "OFICINA_CENTRAL") {
+        nombreFirmante = subFirmante;
+        const asist = oficinaCentral.find(a => a.nombre === subFirmante);
+        puestoFirmante = asist ? asist.puesto : "ASISTENTE";
       } else {
-        nombreFirmante = coordinadores[subFirmante] || "NOMBRE NO DEFINIDO";
+        nombreFirmante = nombresCoordinadores[subFirmante] || "NOMBRE NO DEFINIDO";
+        puestoFirmante = "Coordinador de Recuperación Extrajudicial";
       }
 
       let firmaY = finalY + 40;
