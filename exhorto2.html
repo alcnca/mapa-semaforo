@@ -242,7 +242,10 @@ function generarPDF(asesor, sucursal, creditos) {
     doc.text(`Sucursal: ${sucursal}`, 50, y);
     y += 20;
 
-    const pretabla = `Me permito informarle que derivado de la revisión del seguimiento...`;
+    const pretabla = `Me permito informarle que derivado de la revisión del seguimiento a los créditos con más de 30 días
+de atraso de la cartera que usted administra se han detectado que existen créditos que carecen de
+gestión y seguimiento en el sistema, por el tiempo indicado en el motivo de la presente y que a
+continuación enlisto en la siguiente tabla:`;
     doc.autoTable({
       startY: y,
       body: [[pretabla]],
@@ -275,7 +278,7 @@ function generarPDF(asesor, sucursal, creditos) {
     doc.text(`TOTAL: $${totalSaldo.toLocaleString("es-MX", { minimumFractionDigits: 2 })}`, 50, y);
     y += 30;
 
-    const exhorto = `Derivado de esta situación...`;
+    const exhorto = `Derivado de esta situación se detecta su falta de responsabilidad, compromiso, esmero y dedicación en la ejecución de sus responsabilidades, por dicha omisión SE LEVANTA EL PRESENTE EXHORTO, para su conocimiento y cumplimiento de dichas actividades, ya que nos ayuda a llevar un sano control de la cartera, mediante sus etapas de recuperación, manteniendo el menor porcentaje de mora en la cartera, cumpliendo con los objetivos a nivel dirección y cuidando el patrimonio de la cooperativa. Para el caso de nueva omisión se tomarán las medidas necesarias de manera inmediata.`;
     doc.autoTable({
       startY: y,
       body: [[exhorto]],
