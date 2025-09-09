@@ -12,21 +12,31 @@
 <h1 class="mb-4">Exhortos de Créditos</h1>
 
 <div class="mb-4 row">
-  <div class="col-md-4">
+  <div class="col-md-3">
     <label class="form-label">Días mínimos sin gestión:</label>
     <input type="number" id="diasMinimos" value="30" class="form-control">
   </div>
-  <div class="col-md-4">
+  <div class="col-md-3">
     <label class="form-label">Sucursal:</label>
     <select id="sucursalSelect" class="form-select"></select>
   </div>
-  <div class="col-md-4 d-flex align-items-end">
-    <button class="btn btn-primary w-100" onclick="cargarDatos()">Aplicar</button>
+  <div class="col-md-3">
+    <label class="form-label">Coordinador que firma:</label>
+    <select id="coordinadorSelect" class="form-select"></select>
   </div>
+  <div class="col-md-3" id="subFirmanteDiv" style="display:none;">
+    <label class="form-label">Firmante:</label>
+    <select id="subFirmanteSelect" class="form-select"></select>
+  </div>
+</div>
+
+<div class="mb-4">
+  <button class="btn btn-primary w-100" onclick="cargarDatos()">Aplicar</button>
 </div>
 
 <div id="contenido"></div>
 
+<!-- Modal Vista Previa -->
 <div class="modal fade" id="vistaPreviaModal" tabindex="-1">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
@@ -64,6 +74,7 @@ let data = [];
 let creditosSeleccionados = [];
 let asesorSeleccionado = "";
 let sucursalSeleccionada = "";
+let coordinadores = {}; // Se cargará desde el JSON
 
 async function cargarDatos() {
   const diasFiltro = parseInt(document.getElementById("diasMinimos").value) || 30;
@@ -73,19 +84,52 @@ async function cargarDatos() {
     const res = await fetch(JSON_URL);
     data = await res.json();
 
+    // Sucursales únicas
     const sucursales = [...new Set(data.map(d => d.Sucursal))];
-    const sel = document.getElementById("sucursalSelect");
-    sel.innerHTML = '<option value="">-- Selecciona --</option>';
-    sucursales.forEach(s => sel.innerHTML += `<option value="${s}">${s}</option>`);
+    const selSuc = document.getElementById("sucursalSelect");
+    selSuc.innerHTML = '<option value="">-- Selecciona --</option>';
+    sucursales.forEach(s => selSuc.innerHTML += `<option value="${s}">${s}</option>`);
+
+    // Coordinadores únicos
+    coordinadores = {};
+    data.forEach(d => {
+      if (d.Coordinador && !coordinadores[d.Coordinador]) {
+        coordinadores[d.Coordinador] = d.CoordinadorNombre || d.Coordinador;
+      }
+    });
+
+    // Llenar select de coordinadores
+    const selCoord = document.getElementById("coordinadorSelect");
+    selCoord.innerHTML = '<option value="">-- Selecciona --</option>';
+    for (let inicial in coordinadores) {
+      selCoord.innerHTML += `<option value="${inicial}">${inicial}</option>`;
+    }
+
+    // Evento: si es ALCNCA mostrar subopciones
+    selCoord.addEventListener("change", () => {
+      const subDiv = document.getElementById("subFirmanteDiv");
+      const subSel = document.getElementById("subFirmanteSelect");
+      subSel.innerHTML = "";
+
+      if (selCoord.value === "ALCNCA") {
+        subDiv.style.display = "block";
+        subSel.innerHTML += `<option value="ALCNCA">${coordinadores["ALCNCA"]} (Coordinador de Recuperación Extrajudicial)</option>`;
+        subSel.innerHTML += `<option value="IVANI">IVANI ARCOS LAINES (Gestor Regional Zona Maya)</option>`;
+      } else {
+        subDiv.style.display = "none";
+      }
+    });
   }
 
   if (!sucursalSeleccionada) return;
 
+  // Filtrar registros
   const registros = data.filter(d =>
     d.Sucursal === sucursalSeleccionada &&
     parseInt(d["Dias sin Gestion"]) > diasFiltro
   );
 
+  // Agrupar por asesor
   const asesores = {};
   registros.forEach(r => {
     if (!asesores[r.Ejecutivo]) asesores[r.Ejecutivo] = [];
@@ -153,13 +197,13 @@ function mostrarVistaPrevia(asesor, creditos) {
   document.getElementById("btnGenerarPDF").onclick = () =>
     generarPDF(asesorSeleccionado, sucursalSeleccionada, creditosSeleccionados);
 }
+
 function generarPDF(asesor, sucursal, creditos) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF("p", "pt", "a4");
 
   const fecha = new Date().toLocaleDateString("es-MX", { day:"2-digit", month:"long", year:"numeric" });
 
-  // Imágenes
   const headerUrl = "https://raw.githubusercontent.com/alcnca/mapa-semaforo/main/encabezado.png";
   const footerUrl = "https://alcnca.github.io/mapa-semaforo/piepagina.png";
 
@@ -172,16 +216,13 @@ function generarPDF(asesor, sucursal, creditos) {
   footerImg.src = footerUrl;
 
   headerImg.onload = function () {
-    // Agregar encabezado
     doc.addImage(headerImg, "PNG", 50, 20, 500, 80);
     let y = 120;
 
-    // Fecha
     doc.setFontSize(10);
     doc.text(`Fecha: ${fecha}`, 50, y);
     y += 20;
 
-    // Título
     doc.setFontSize(14);
     doc.text("EXHORTO", 300, y, { align: "center" });
     y += 20;
@@ -195,27 +236,23 @@ function generarPDF(asesor, sucursal, creditos) {
     );
     y += 30;
 
-    // Destinatario
     doc.setFontSize(11);
     doc.text(`Para: ${asesor}`, 50, y);
     y += 15;
     doc.text(`Sucursal: ${sucursal}`, 50, y);
     y += 20;
 
-    // pretabla con justificación
-    const pretabla = `Me permito informarle que derivado de la revisión del seguimiento a los créditos con más de 30 días de atraso de la cartera que usted administra se han detectado que existen créditos que carecen de gestión y seguimiento en el sistema, por el tiempo indicado en el motivo de la presente y que a continuación enlisto en la siguiente tabla:.`;
-
+    const pretabla = `Me permito informarle que derivado de la revisión del seguimiento...`;
     doc.autoTable({
       startY: y,
       body: [[pretabla]],
       theme: "plain",
-      styles: { fontSize: 11, halign: "justify", cellWidth: 500, cellPadding: 2 },
+      styles: { fontSize: 11, halign: "justify", cellWidth: 500 },
       margin: { left: 50, right: 50 }
     });
 
     y = doc.lastAutoTable.finalY + 20;
 
-    // Tabla con créditos
     const rows = creditos.map(c => [
       c.Linea, c.Nombre, c["Saldo Total"], c["Dias de Atraso"], c["Dias sin Gestion"]
     ]);
@@ -224,14 +261,13 @@ function generarPDF(asesor, sucursal, creditos) {
       startY: y,
       head: [['Crédito','Nombre del Socio','Saldo','Días atraso','Días sin gestión']],
       body: rows,
-      styles: { fontSize: 9, cellPadding: 2 },
+      styles: { fontSize: 9 },
       headStyles: { fillColor: [220,220,220] },
       margin: { left: 40, right: 40 }
     });
 
     y = doc.lastAutoTable.finalY + 20;
 
-    // Total
     const totalSaldo = creditos.reduce((acc, c) =>
       acc + (parseFloat(c["Saldo Total"].replace(/[$,]/g, "")) || 0), 0);
 
@@ -239,65 +275,66 @@ function generarPDF(asesor, sucursal, creditos) {
     doc.text(`TOTAL: $${totalSaldo.toLocaleString("es-MX", { minimumFractionDigits: 2 })}`, 50, y);
     y += 30;
 
-    // exhorto con justificación
-    const exhorto = `Derivado de esta situación se detecta su falta de responsabilidad, compromiso, esmero y dedicación en la ejecución de sus responsabilidades, por dicha omisión SE LEVANTA EL PRESENTE EXHORTO, para su conocimiento y cumplimiento de dichas actividades, ya que nos ayuda a llevar un sano control de la cartera, mediante sus etapas de recuperación, manteniendo el menor porcentaje de mora en la cartera, cumpliendo con los objetivos a nivel dirección y cuidando el patrimonio de la cooperativa.
-    
-Para el caso de nueva omisión se tomarán las medidas necesarias de manera inmediata.`;
-
+    const exhorto = `Derivado de esta situación...`;
     doc.autoTable({
       startY: y,
       body: [[exhorto]],
       theme: "plain",
-      styles: { fontSize: 11, halign: "justify", cellWidth: 500, cellPadding: 2 },
+      styles: { fontSize: 11, halign: "justify", cellWidth: 500 },
       margin: { left: 50, right: 50 }
     });
 
-    // === Firma + Pie de página ===
-footerImg.onload = function () {
-  const pageWidth = doc.internal.pageSize.getWidth();
-  const pageHeight = doc.internal.pageSize.getHeight();
+    footerImg.onload = function () {
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const footerWidth = 500;
+      const footerHeight = 50;
+      const footerX = (pageWidth - footerWidth) / 2;
+      const footerY = pageHeight - footerHeight - 20;
 
-  const footerWidth = 500;
-  const footerHeight = 50;
-  const footerX = (pageWidth - footerWidth) / 2;
-  const footerY = pageHeight - footerHeight - 20;
+      let finalY = doc.lastAutoTable.finalY || 120;
+      if (finalY > pageHeight - 120) {
+        doc.addPage();
+        finalY = 100;
+      }
 
-  // Obtener posición final de la última tabla
-  let finalY = doc.lastAutoTable.finalY || 120;
+      // Firmante seleccionado
+      const inicial = document.getElementById("coordinadorSelect").value;
+      const subFirmante = document.getElementById("subFirmanteSelect").value || inicial;
 
-  // Si la firma no cabe en la página, saltamos a otra
-  if (finalY > pageHeight - 120) {
-    doc.addPage();
-    finalY = 100;
-  }
+      let nombreFirmante = "";
+      let puestoFirmante = "Coordinador de Recuperación Extrajudicial";
 
-  // Firma centrada
-  let firmaY = finalY + 40;
-  doc.setFontSize(11);
-  doc.text("Atentamente,", pageWidth / 2, firmaY, { align: "center" });
+      if (subFirmante === "IVANI") {
+        nombreFirmante = "IVANI ARCOS LAINES";
+        puestoFirmante = "Gestor Regional Zona Maya";
+      } else {
+        nombreFirmante = coordinadores[subFirmante] || "NOMBRE NO DEFINIDO";
+      }
 
-  firmaY += 40;
-  doc.text("_______________________________", pageWidth / 2, firmaY, { align: "center" });
+      let firmaY = finalY + 40;
+      doc.setFontSize(11);
+      doc.text("Atentamente,", pageWidth / 2, firmaY, { align: "center" });
 
-  firmaY += 15;
-  doc.text("IVANI LAINES ARCOS", pageWidth / 2, firmaY, { align: "center" });
+      firmaY += 40;
+      doc.text("_______________________________", pageWidth / 2, firmaY, { align: "center" });
 
-  firmaY += 15;
-  doc.text("GESTOR REGIONAL ZONA MAYA", pageWidth / 2, firmaY, { align: "center" });
+      firmaY += 15;
+      doc.text(nombreFirmante, pageWidth / 2, firmaY, { align: "center" });
 
-  // Pie de página en todas las páginas
-  const pageCount = doc.getNumberOfPages();
-  for (let i = 1; i <= pageCount; i++) {
-    doc.setPage(i);
-    doc.addImage(footerImg, "PNG", footerX, footerY, footerWidth, footerHeight);
-  }
+      firmaY += 15;
+      doc.text(puestoFirmante, pageWidth / 2, firmaY, { align: "center" });
 
-  // Guardar PDF
-  doc.save(`EXHORTO_${asesor.replace(/ /g, "_")}.pdf`);
-};
+      const pageCount = doc.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.addImage(footerImg, "PNG", footerX, footerY, footerWidth, footerHeight);
+      }
+
+      doc.save(`EXHORTO_${asesor.replace(/ /g, "_")}.pdf`);
+    };
+  };
 }
-
-
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
