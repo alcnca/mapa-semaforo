@@ -296,8 +296,7 @@ function generarPDF(asesor, sucursal, creditos) {
     doc.text(`TOTAL: $${totalSaldo.toLocaleString("es-MX", { minimumFractionDigits: 2 })}`, 50, y);
     y += 30;
 
-    const exhorto = `Derivado de esta situación se detecta su falta de responsabilidad, compromiso, esmero y dedicación en la ejecución de sus responsabilidades, por dicha omisión SE LEVANTA EL PRESENTE EXHORTO, para su conocimiento y cumplimiento de dichas actividades, ya que nos ayuda a llevar un sano control de la cartera, mediante sus etapas de recuperación, manteniendo el menor porcentaje de mora en la cartera, cumpliendo con los objetivos a nivel dirección y cuidando el patrimonio de la cooperativa.
- Para el caso de nueva omisión se tomarán las medidas necesarias de manera inmediata`;
+    const exhorto = `Derivado de esta situación se detecta su falta de responsabilidad, compromiso, esmero y dedicación en la ejecución de sus responsabilidades, por dicha omisión SE LEVANTA EL PRESENTE EXHORTO, para su conocimiento y cumplimiento de dichas actividades, ya que nos ayuda a llevar un sano control de la cartera, mediante sus etapas de recuperación, manteniendo el menor porcentaje de mora en la cartera, cumpliendo con los objetivos a nivel dirección y cuidando el patrimonio de la cooperativa. Para el caso de nueva omisión se tomarán las medidas necesarias de manera inmediata`;
     doc.autoTable({
       startY: y,
       body: [[exhorto]],
