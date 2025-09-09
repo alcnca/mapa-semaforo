@@ -253,44 +253,48 @@ Para el caso de nueva omisión se tomarán las medidas necesarias de manera inme
     });
 
     // === Firma + Pie de página ===
-    footerImg.onload = function () {
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const pageHeight = doc.internal.pageSize.getHeight();
+footerImg.onload = function () {
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
 
-      // Posición del pie
-      const footerWidth = 500;
-      const footerHeight = 50;
-      const footerX = (pageWidth - footerWidth) / 2;
-      const footerY = pageHeight - footerHeight - 20;
+  const footerWidth = 500;
+  const footerHeight = 50;
+  const footerX = (pageWidth - footerWidth) / 2;
+  const footerY = pageHeight - footerHeight - 20;
 
-      // Posición de la firma (un poco arriba del pie de página)
-      let firmaY = footerY - 60;
+  // Obtener posición final de la última tabla
+  let finalY = doc.lastAutoTable.finalY || 120;
 
-      // Texto 1 (nombre)
-      let text = "IVANI LAINES ARCOS";
-      let textWidth = doc.getTextWidth(text);
-      let x = (pageWidth - textWidth) / 2;
-      doc.text(text, x, firmaY);
-      firmaY += 15;
+  // Si la firma no cabe en la página, saltamos a otra
+  if (finalY > pageHeight - 120) {
+    doc.addPage();
+    finalY = 100;
+  }
 
-      // Texto 2 (puesto)
-      text = "GESTOR REGIONAL ZONA MAYA";
-      textWidth = doc.getTextWidth(text);
-      x = (pageWidth - textWidth) / 2;
-      doc.text(text, x, firmaY);
+  // Firma centrada
+  let firmaY = finalY + 40;
+  doc.setFontSize(11);
+  doc.text("Atentamente,", pageWidth / 2, firmaY, { align: "center" });
 
-      // Agregar pie de página en todas las páginas
-      const pageCount = doc.getNumberOfPages();
-      for (let i = 1; i <= pageCount; i++) {
-        doc.setPage(i);
-        doc.addImage(footerImg, "PNG", footerX, footerY, footerWidth, footerHeight);
-      }
+  firmaY += 40;
+  doc.text("_______________________________", pageWidth / 2, firmaY, { align: "center" });
 
-      // Guardar
-      doc.save(`EXHORTO_${asesor.replace(/ /g, "_")}.pdf`);
-    };
-  };
+  firmaY += 15;
+  doc.text("IVANI LAINES ARCOS", pageWidth / 2, firmaY, { align: "center" });
 
+  firmaY += 15;
+  doc.text("GESTOR REGIONAL ZONA MAYA", pageWidth / 2, firmaY, { align: "center" });
+
+  // Pie de página en todas las páginas
+  const pageCount = doc.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.addImage(footerImg, "PNG", footerX, footerY, footerWidth, footerHeight);
+  }
+
+  // Guardar PDF
+  doc.save(`EXHORTO_${asesor.replace(/ /g, "_")}.pdf`);
+};
 }
 
 
