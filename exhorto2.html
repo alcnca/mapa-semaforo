@@ -75,6 +75,9 @@ let creditosSeleccionados = [];
 let asesorSeleccionado = "";
 let sucursalSeleccionada = "";
 
+// === Fuente DejaVuSans incrustada (recortada para brevedad, puedes pegar el base64 completo) ===
+const fontBase64 = `AAEAAAASAQAABAAgR0RFRrRCsIIAAAC8AAAAYGNtYXAW7n6wAAABHAAAAFRnYXNwAAAAEAAAAXgAAAAIZ2x5ZqJ2uwAAAYAAAAF2GhlYWQYcZ59AAABuAAAADZoaGVhBtwFWAAAAdwAAAAkaG10eEgAAAAAAAH4AAAALGxvY2EBTwC0AAACDAAAABptYXhwAA4AIwAAAjgAAAAgbmFtZZsCK2sAAAKwAAABRXBvc3QAAwAAAAADCAAAAAgAAQAAAAMAAAABAACoAwAAuAMAAIUDtAAAAF4D6gAAAAgD6gAB...`;
+
 // Nombres completos de coordinadores
 const nombresCoordinadores = {
   DASADI: "DANIEL SANCHEZ DIAZ",
@@ -99,14 +102,12 @@ window.addEventListener("DOMContentLoaded", async () => {
   const res = await fetch(JSON_URL);
   data = await res.json();
 
-  // Llenar select de coordinadores
   const selCoord = document.getElementById("coordinadorSelect");
   selCoord.innerHTML = '<option value="">-- Selecciona --</option>';
   for (let clave in nombresCoordinadores) {
     selCoord.innerHTML += `<option value="${clave}">${nombresCoordinadores[clave]}</option>`;
   }
 
-  // Evento de cambio coordinador
   selCoord.addEventListener("change", () => {
     const subDiv = document.getElementById("subFirmanteDiv");
     const subSel = document.getElementById("subFirmanteSelect");
@@ -117,38 +118,30 @@ window.addEventListener("DOMContentLoaded", async () => {
     const valorCoord = selCoord.value;
 
     if (valorCoord === "OFICINA_CENTRAL") {
-      // Mostrar todos los asistentes
       oficinaCentral.forEach(p => {
         subSel.innerHTML += `<option value="${p.nombre}">${p.nombre} (${p.puesto})</option>`;
       });
       subDiv.style.display = "block";
-
-      // Todas las sucursales
       const todasSucursales = [...new Set(data.map(d => d.Sucursal))];
       todasSucursales.forEach(s => sucSel.innerHTML += `<option value="${s}">${s}</option>`);
-
     } else if (valorCoord) {
       subDiv.style.display = "none";
-      // Subfirmantes especiales para ALCNCA
       if (valorCoord === "ALCNCA") {
         subDiv.style.display = "block";
         subSel.innerHTML += `<option value="ALCNCA">${nombresCoordinadores["ALCNCA"]} (Coordinador)</option>`;
         subSel.innerHTML += `<option value="IVANI">IVANI ARCOS LAINES (Gestor Regional Zona Maya)</option>`;
       }
-      // Filtrar sucursales según coordinador
       const sucursalesCoord = [...new Set(data.filter(d => d.Coordinador === valorCoord).map(d => d.Sucursal))];
       sucursalesCoord.forEach(s => sucSel.innerHTML += `<option value="${s}">${s}</option>`);
     }
   });
 
-  // Inicializar select de sucursales
   const sucursales = [...new Set(data.map(d => d.Sucursal))];
   const selSuc = document.getElementById("sucursalSelect");
   selSuc.innerHTML = '<option value="">-- Selecciona --</option>';
-  sucursales.forEach(s => sucSel.innerHTML += `<option value="${s}">${s}</option>`);
+  sucursales.forEach(s => selSuc.innerHTML += `<option value="${s}">${s}</option>`);
 });
 
-// Funciones cargarDatos, mostrarVistaPrevia y generarPDF
 async function cargarDatos() {
   const diasFiltro = parseInt(document.getElementById("diasMinimos").value) || 30;
   sucursalSeleccionada = document.getElementById("sucursalSelect").value;
@@ -227,6 +220,15 @@ function mostrarVistaPrevia(asesor, creditos) {
 function generarPDF(asesor, sucursal, creditos) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF("p", "pt", "a4");
+
+  // Registrar la fuente UTF-8
+  doc.addFileToVFS("DejaVuSans.ttf", fontBase64);
+  doc.addFont("DejaVuSans.ttf", "DejaVuSans", "normal");
+  doc.setFont("DejaVuSans");
+
+function generarPDF(asesor, sucursal, creditos) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF("p", "pt", "a4");
   const fecha = new Date().toLocaleDateString("es-MX", { day:"2-digit", month:"long", year:"numeric" });
 
   const headerUrl = "https://raw.githubusercontent.com/alcnca/mapa-semaforo/main/encabezado.png";
@@ -241,6 +243,11 @@ function generarPDF(asesor, sucursal, creditos) {
   headerImg.onload = function () {
     doc.addImage(headerImg, "PNG", 50, 20, 500, 80);
     let y = 120;
+  
+    // Registrar la fuente UTF-8
+  doc.addFileToVFS("DejaVuSans.ttf", fontBase64);
+  doc.addFont("DejaVuSans.ttf", "DejaVuSans", "normal");
+  doc.setFont("DejaVuSans");
 
     doc.setFontSize(10);
     doc.text(`Fecha: ${fecha}`, 50, y);
