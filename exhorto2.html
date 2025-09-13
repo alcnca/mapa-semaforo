@@ -31,7 +31,7 @@
 </div>
 
 <div class="mb-3 form-check">
-  <input type="checkbox" class="form-check-input" id="soloSinGestion">
+  <input type="checkbox" id="soloSinGestion" class="form-check-input">
   <label class="form-check-label" for="soloSinGestion">Solo créditos sin gestión</label>
 </div>
 
@@ -126,10 +126,7 @@ window.addEventListener("DOMContentLoaded", async () => {
         subSel.innerHTML += `<option value="${p.nombre}">${p.nombre} (${p.puesto})</option>`;
       });
       subDiv.style.display = "block";
-
-      const todasSucursales = [...new Set(data.map(d => d.Sucursal))];
-      todasSucursales.forEach(s => sucSel.innerHTML += `<option value="${s}">${s}</option>`);
-
+      actualizarSucursales(); // Mostrar todas las sucursales
     } else if (valorCoord) {
       subDiv.style.display = "none";
       if (valorCoord === "ALCNCA") {
@@ -138,38 +135,55 @@ window.addEventListener("DOMContentLoaded", async () => {
         subSel.innerHTML += `<option value="IVANI">IVANI ARCOS LAINES (Gestor Regional Zona Maya)</option>`;
       }
       const sucursalesCoord = [...new Set(data.filter(d => d.Coordinador === valorCoord).map(d => d.Sucursal))];
-      sucursalesCoord.forEach(s => sucSel.innerHTML += `<option value="${s}">${s}</option>`);
+      llenarSucursales(sucursalesCoord);
     }
   });
 
-  // Inicializar select de sucursales
-  const sucursales = [...new Set(data.map(d => d.Sucursal))];
-  const selSuc = document.getElementById("sucursalSelect");
-  selSuc.innerHTML = '<option value="">-- Selecciona --</option>';
-  sucursales.forEach(s => selSuc.innerHTML += `<option value="${s}">${s}</option>`);
+  actualizarSucursales();
 });
 
-// Funciones cargarDatos, mostrarVistaPrevia y generarPDF
+// 🔹 Llenar sucursales en el select
+function llenarSucursales(lista) {
+  const selSuc = document.getElementById("sucursalSelect");
+  const sucursalActual = selSuc.value;
+  selSuc.innerHTML = '<option value="">-- Selecciona --</option>';
+  lista.forEach(s => selSuc.innerHTML += `<option value="${s}">${s}</option>`);
+  if (!lista.includes(sucursalActual)) {
+    selSuc.value = "";
+    sucursalSeleccionada = "";
+  } else {
+    selSuc.value = sucursalActual;
+  }
+}
+
+// 🔹 Actualizar sucursales según el checkbox
+function actualizarSucursales() {
+  let sucursales;
+  if (document.getElementById("soloSinGestion").checked) {
+    sucursales = [...new Set(data.filter(d => !d["Dias sin Gestion"] || d["Dias sin Gestion"].trim() === "").map(d => d.Sucursal))];
+  } else {
+    sucursales = [...new Set(data.map(d => d.Sucursal))];
+  }
+  llenarSucursales(sucursales);
+}
+
+// Escuchar cambios en el checkbox
+document.getElementById("soloSinGestion").addEventListener("change", actualizarSucursales);
+
+// Funciones cargarDatos, mostrarVistaPrevia y generarPDF (sin cambios en esta parte)
 async function cargarDatos() {
   const diasFiltro = parseInt(document.getElementById("diasMinimos").value) || 30;
   const soloSinGestion = document.getElementById("soloSinGestion").checked;
-
-  // Deshabilitar campo de días si se selecciona "solo sin gestión"
-  document.getElementById("diasMinimos").disabled = soloSinGestion;
-
   sucursalSeleccionada = document.getElementById("sucursalSelect").value;
   if (!sucursalSeleccionada) return;
 
-  let registros = data.filter(d => d.Sucursal === sucursalSeleccionada);
-
-  if (soloSinGestion) {
-    registros = registros.filter(d => !d["Dias sin Gestion"] || d["Dias sin Gestion"].trim() === "");
-  } else {
-    registros = registros.filter(d =>
-      (!d["Dias sin Gestion"] || d["Dias sin Gestion"].trim() === "") || // siempre incluir sin gestión
-      parseInt(d["Dias sin Gestion"]) > diasFiltro
-    );
-  }
+  const registros = data.filter(d =>
+    d.Sucursal === sucursalSeleccionada &&
+    (
+      (soloSinGestion && (!d["Dias sin Gestion"] || d["Dias sin Gestion"].trim() === "")) ||
+      (!soloSinGestion && (parseInt(d["Dias sin Gestion"]) > diasFiltro || (!d["Dias sin Gestion"] || d["Dias sin Gestion"].trim() === "")))
+    )
+  );
 
   const asesores = {};
   registros.forEach(r => {
