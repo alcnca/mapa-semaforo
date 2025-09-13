@@ -30,6 +30,11 @@
   </div>
 </div>
 
+<div class="mb-3 form-check">
+  <input type="checkbox" id="soloSinGestion" class="form-check-input">
+  <label class="form-check-label" for="soloSinGestion">Solo créditos sin gestión</label>
+</div>
+
 <div class="mb-4">
   <button class="btn btn-primary w-100" onclick="cargarDatos()">Aplicar</button>
 </div>
@@ -117,46 +122,72 @@ window.addEventListener("DOMContentLoaded", async () => {
     const valorCoord = selCoord.value;
 
     if (valorCoord === "OFICINA_CENTRAL") {
-      // Mostrar todos los asistentes
       oficinaCentral.forEach(p => {
         subSel.innerHTML += `<option value="${p.nombre}">${p.nombre} (${p.puesto})</option>`;
       });
       subDiv.style.display = "block";
-
-      // Todas las sucursales
-      const todasSucursales = [...new Set(data.map(d => d.Sucursal))];
-      todasSucursales.forEach(s => sucSel.innerHTML += `<option value="${s}">${s}</option>`);
-
+      actualizarSucursales(); // Mostrar todas las sucursales
     } else if (valorCoord) {
       subDiv.style.display = "none";
-      // Subfirmantes especiales para ALCNCA
       if (valorCoord === "ALCNCA") {
         subDiv.style.display = "block";
         subSel.innerHTML += `<option value="ALCNCA">${nombresCoordinadores["ALCNCA"]} (Coordinador)</option>`;
         subSel.innerHTML += `<option value="IVANI">IVANI ARCOS LAINES (Gestor Regional Zona Maya)</option>`;
       }
-      // Filtrar sucursales según coordinador
       const sucursalesCoord = [...new Set(data.filter(d => d.Coordinador === valorCoord).map(d => d.Sucursal))];
-      sucursalesCoord.forEach(s => sucSel.innerHTML += `<option value="${s}">${s}</option>`);
+      llenarSucursales(sucursalesCoord);
     }
   });
 
-  // Inicializar select de sucursales
-  const sucursales = [...new Set(data.map(d => d.Sucursal))];
-  const selSuc = document.getElementById("sucursalSelect");
-  selSuc.innerHTML = '<option value="">-- Selecciona --</option>';
-  sucursales.forEach(s => sucSel.innerHTML += `<option value="${s}">${s}</option>`);
+  actualizarSucursales();
 });
 
-// Funciones cargarDatos, mostrarVistaPrevia y generarPDF
+// 🔹 Llenar sucursales en el select
+function llenarSucursales(lista) {
+  const selSuc = document.getElementById("sucursalSelect");
+  const sucursalActual = selSuc.value;
+  selSuc.innerHTML = '<option value="">-- Selecciona --</option>';
+  lista.forEach(s => selSuc.innerHTML += `<option value="${s}">${s}</option>`);
+  if (!lista.includes(sucursalActual)) {
+    selSuc.value = "";
+    sucursalSeleccionada = "";
+  } else {
+    selSuc.value = sucursalActual;
+  }
+}
+
+// 🔹 Actualizar sucursales según el checkbox
+function actualizarSucursales() {
+  let sucursales;
+  if (document.getElementById("soloSinGestion").checked) {
+    // Solo sucursales con créditos sin gestión
+    sucursales = [...new Set(
+      data.filter(d => !d["Dias sin Gestion"] || d["Dias sin Gestion"].toString().trim() === "")
+          .map(d => d.Sucursal)
+    )];
+  } else {
+    // Todas las sucursales
+    sucursales = [...new Set(data.map(d => d.Sucursal))];
+  }
+  llenarSucursales(sucursales);
+}
+
+// Escuchar cambios en el checkbox
+document.getElementById("soloSinGestion").addEventListener("change", actualizarSucursales);
+
+// Funciones cargarDatos, mostrarVistaPrevia y generarPDF (sin cambios)
 async function cargarDatos() {
   const diasFiltro = parseInt(document.getElementById("diasMinimos").value) || 30;
+  const soloSinGestion = document.getElementById("soloSinGestion").checked;
   sucursalSeleccionada = document.getElementById("sucursalSelect").value;
   if (!sucursalSeleccionada) return;
 
   const registros = data.filter(d =>
     d.Sucursal === sucursalSeleccionada &&
-    parseInt(d["Dias sin Gestion"]) > diasFiltro
+    (
+      (soloSinGestion && (!d["Dias sin Gestion"] || d["Dias sin Gestion"].toString().trim() === "")) ||
+      (!soloSinGestion && (parseInt(d["Dias sin Gestion"]) > diasFiltro || (!d["Dias sin Gestion"] || d["Dias sin Gestion"].toString().trim() === "")))
+    )
   );
 
   const asesores = {};
@@ -357,7 +388,7 @@ function generarPDF(asesor, sucursal, creditos) {
         doc.addImage(footerImg, "PNG", footerX, footerY, footerWidth, footerHeight);
       }
 
-      doc.save(`EXHORTO_${asesor.replace(/ /g, "_")}.pdf`);
+      doc.save(`Exhorto_${asesor}_${sucursal}.pdf`);
     };
   };
 }
