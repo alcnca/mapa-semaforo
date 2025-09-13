@@ -139,9 +139,25 @@ window.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
-  actualizarSucursales();
-});
 
+});
+// 🔹 Actualizar sucursales según el checkbox
+function actualizarSucursales() {
+  let sucursales;
+  if (document.getElementById("soloSinGestion").checked) {
+    // Solo sucursales con créditos sin gestión
+    sucursales = [...new Set(
+      data.filter(d => !d["Dias sin Gestion"] || d["Dias sin Gestion"].toString().trim() === "")
+          .map(d => d.Sucursal)
+    )];
+  } else {
+// Todas las sucursales
+    sucursales = [...new Set(data.map(d => d.Sucursal))];
+  }
+  llenarSucursales(sucursales);
+}
+
+    
 // 🔹 Llenar sucursales en el select
 function llenarSucursales(lista) {
   const selSuc = document.getElementById("sucursalSelect");
