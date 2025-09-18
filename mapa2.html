@@ -111,7 +111,7 @@ const oficinaCentral = [
 ];
 
 /* =======================
-   Utils de números/moneda
+   Utils
    ======================= */
 function toNumberSafe(val) {
   if (val == null) return 0;
@@ -132,9 +132,6 @@ function parseDiasSinGestion(raw) {
 }
 function estaSinGestion(raw) { return parseDiasSinGestion(raw) === null; }
 
-/* =======================
-   Normalización texto (matching sucursal)
-   ======================= */
 function norm(s) {
   return (s ?? "")
     .toString()
@@ -157,9 +154,7 @@ function getDireccionPorSucursal(sucursal) {
   return found || null;
 }
 
-/* =======================
-   Hora/fecha en letras (CDMX)
-   ======================= */
+/* ===== Fecha/Hora en letras — Zona: CDMX ===== */
 const meses = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
 function numEnEsp(n){
   const u=["cero","uno","dos","tres","cuatro","cinco","seis","siete","ocho","nueve","diez","once","doce","trece","catorce","quince","dieciséis","diecisiete","dieciocho","diecinueve","veinte","veintiuno","veintidós","veintitrés","veinticuatro","veinticinco","veintiséis","veintisiete","veintiocho","veintinueve"];
@@ -174,7 +169,6 @@ function anioEnLetras(y){
 }
 function fechaEnLetrasAhora(){
   const ahora = new Date();
-  // <<< CAMBIADO A ZONA HORARIA DE CDMX >>>
   const local = new Date(ahora.toLocaleString("en-US",{timeZone:"America/Mexico_City"}));
   const h=local.getHours(), m=local.getMinutes(), d=local.getDate(), mm=local.getMonth(), y=local.getFullYear();
   return `${numEnEsp(h)} horas con ${m===0?"cero":numEnEsp(m)} minutos del ${numEnEsp(d)} de ${meses[mm]} de ${anioEnLetras(y)}`;
@@ -227,19 +221,14 @@ La conducta descrita constituye un incumplimiento a lo dispuesto en los numerale
 2. Políticas generales, al no generar ni respaldar las evidencias mínimas de gestión de recuperación (carta invitación, requerimientos, llamadas, mensajería, etc.).
 3.14 Responsabilidades del Asesor de Crédito y Recuperación, al no dar seguimiento diario ni documentar en el sistema las gestiones correspondientes.`;
 
-    // <<< AQUI AGREGO ~8 SALTOS DE LÍNEA AL FINAL >>>
     const determinacion =
 `Determinación:
-Por lo anterior, se procede a formalizar la presente acta como parte del procedimiento tendiente para la aplicación de la medida disciplinaria correspondiente a fin de dejar constancia de las faltas y omisiones cometidas por el Asesor de Crédito y Recuperación, mismas que impactan negativamente en los indicadores de recuperación de cartera de la sucursal.
-Acto posterior, se le concede al socio colaborador el derecho del uso de la palabra con relación a los hechos que anteceden, manifestando:
-
-
-
-
-
-
-
-`;
+Por lo anterior, se procede a formalizar la presente acta como parte del procedimiento tendiente para
+la aplicación de la medida disciplinaria correspondiente a fin de dejar constancia de las faltas y
+omisiones cometidas por el Asesor de Crédito y Recuperación, mismas que impactan negativamente
+en los indicadores de recuperación de cartera de la sucursal.
+Acto posterior, se le concede al socio colaborador el derecho del uso de la palabra con relación a los
+hechos que anteceden, manifestando:`;
 
     const cierre =
 `Leída que fue la presente, se ratifica en todas y cada una de sus partes por los comparecientes.
@@ -248,7 +237,8 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
     return {
       titulo: "ACTA ADMINISTRATIVA",
       subtitulo: "Se levanta la presente ACTA ADMINISTRATIVA",
-      intro, hechos, faltas, determinacion, cierre
+      intro, hechos, faltas, determinacion, cierre,
+      gerenteSucursal: GERENTE
     };
   }
 
@@ -275,7 +265,11 @@ window.addEventListener("DOMContentLoaded", async () => {
       direcciones = dirJson;
     } else if (dirJson && typeof dirJson === "object") {
       const vals = Object.values(dirJson);
-      direcciones = (vals.length && typeof vals[0] === "object") ? vals : [dirJson];
+      if (vals.length && typeof vals[0] === "object") {
+        direcciones = vals;
+      } else {
+        direcciones = [dirJson];
+      }
     } else {
       direcciones = [];
     }
@@ -456,10 +450,25 @@ function generarPDF(asesor, sucursal, creditos, tipo) {
   const footerImg = new Image();
   footerImg.crossOrigin = "Anonymous"; footerImg.src = footerUrl;
 
+  const FOOTER_RESERVE = 90; // reserva para que nada se esconda tras el pie
+
+  function usableBottomY() {
+    const pageHeight = doc.internal.pageSize.getHeight();
+    return pageHeight - FOOTER_RESERVE; // límite inferior utilizable
+  }
+  function ensureSpace(nextY, extra=0) {
+    if (nextY + extra > usableBottomY()) {
+      doc.addPage();
+      return 100; // nueva página, margen superior cómodo
+    }
+    return nextY;
+  }
+
   headerImg.onload = function () {
     doc.addImage(headerImg, "PNG", 50, 20, 500, 80);
     let y = 120;
 
+    // Determinar firmante coordinador para textos
     const inicial = document.getElementById("coordinadorSelect").value;
     const subFirmante = document.getElementById("subFirmanteSelect").value || inicial;
     const firmanteCoord = (inicial === "OFICINA_CENTRAL")
@@ -481,22 +490,22 @@ function generarPDF(asesor, sucursal, creditos, tipo) {
     y += 24;
 
     doc.setFontSize(11);
-    doc.text(`Para: ${asesor}`, 50, y);
-    y += 14;
-    doc.text(`Sucursal: ${sucursal}`, 50, y);
-    y += 16;
+    doc.text(`Para: ${asesor}`, 50, y); y += 14;
+    doc.text(`Sucursal: ${sucursal}`, 50, y); y += 10;
 
-    // Intro (mantiene lista y último punto)
+    // Intro (alineación izquierda, sin “estirar” palabras)
+    y = ensureSpace(y);
     doc.autoTable({
       startY: y,
       body: [[textos.intro]],
       theme: "plain",
-      styles: { fontSize: 11, halign: "justify", cellPadding: 1.5 },
-      margin: { left: 50, right: 50 }
+      styles: { fontSize: 11, halign: "left", overflow: "linebreak", cellPadding: 1.2 },
+      margin: { left: 50, right: 50, bottom: FOOTER_RESERVE }
     });
 
-    // <<< MENOS ESPACIO ENTRE INTRO Y TABLA >>>
-    y = doc.lastAutoTable.finalY + 6; // antes era +12
+    // Pegar la tabla (solo 2pt de separación)
+    y = doc.lastAutoTable.finalY + 2;
+    y = ensureSpace(y, 40);
 
     // Tabla de créditos
     const rows = creditos.map(c => {
@@ -517,66 +526,70 @@ function generarPDF(asesor, sucursal, creditos, tipo) {
       body: rows,
       styles: { fontSize: 9, cellPadding: 1.5, lineWidth: 0.1, valign: "middle" },
       headStyles: { fillColor: [220,220,220] },
-      margin: { left: 40, right: 40 }
+      margin: { left: 40, right: 40, bottom: FOOTER_RESERVE }
     });
-    y = doc.lastAutoTable.finalY + 10;
+    y = doc.lastAutoTable.finalY + 8;
+    y = ensureSpace(y, 20);
 
     // Total
-    const totalSaldo = creditos.reduce((acc, c) => acc + toNumberSafe(c["Saldo Total"]), 0);
     doc.setFontSize(11);
-    doc.text(`TOTAL: ${totalSaldo.toLocaleString("es-MX", { style: "currency", currency: "MXN" })}`, 50, y);
-    y += 16;
+    doc.text(`TOTAL: ${creditos.reduce((acc, c) => acc + toNumberSafe(c["Saldo Total"]), 0).toLocaleString("es-MX", { style: "currency", currency: "MXN" })}`, 50, y);
+    y += 12;
 
     if (tipo === "acta") {
       // Hechos
+      y = ensureSpace(y);
       doc.autoTable({
         startY: y,
         body: [[textos.hechos]],
         theme: "plain",
-        styles: { fontSize: 11, halign: "justify", cellPadding: 1.5 },
-        margin: { left: 50, right: 50 }
+        styles: { fontSize: 11, halign: "left", overflow: "linebreak", cellPadding: 1.2 },
+        margin: { left: 50, right: 50, bottom: FOOTER_RESERVE }
       });
-      y = doc.lastAutoTable.finalY + 10;
+      y = doc.lastAutoTable.finalY + 6;
 
       // Faltas
+      y = ensureSpace(y);
       doc.autoTable({
         startY: y,
         body: [[textos.faltas]],
         theme: "plain",
-        styles: { fontSize: 11, halign: "justify", cellPadding: 1.5 },
-        margin: { left: 50, right: 50 }
+        styles: { fontSize: 11, halign: "left", overflow: "linebreak", cellPadding: 1.2 },
+        margin: { left: 50, right: 50, bottom: FOOTER_RESERVE }
       });
-      y = doc.lastAutoTable.finalY + 10;
+      y = doc.lastAutoTable.finalY + 6;
 
-      // Determinación (incluye 8 saltos de línea al final)
+      // Determinación
+      y = ensureSpace(y);
       doc.autoTable({
         startY: y,
         body: [[textos.determinacion]],
         theme: "plain",
-        styles: { fontSize: 11, halign: "justify", cellPadding: 1.5 },
-        margin: { left: 50, right: 50 }
+        styles: { fontSize: 11, halign: "left", overflow: "linebreak", cellPadding: 1.2 },
+        margin: { left: 50, right: 50, bottom: FOOTER_RESERVE }
       });
-      y = doc.lastAutoTable.finalY + 10;
+
+      // Espacio de ~8 saltos de línea (96pt)
+      y = doc.lastAutoTable.finalY + 96;
 
       // Cierre
+      y = ensureSpace(y);
       doc.autoTable({
         startY: y,
         body: [[textos.cierre]],
         theme: "plain",
-        styles: { fontSize: 11, halign: "justify", cellPadding: 1.5 },
-        margin: { left: 50, right: 50 }
+        styles: { fontSize: 11, halign: "left", overflow: "linebreak", cellPadding: 1.2 },
+        margin: { left: 50, right: 50, bottom: FOOTER_RESERVE }
       });
-      y = doc.lastAutoTable.finalY + 22;
+      y = doc.lastAutoTable.finalY + 18;
 
       // ===== Firmas (4) al final (no pie) =====
       const pageWidth = doc.internal.pageSize.getWidth();
-      const pageHeight = doc.internal.pageSize.getHeight();
-      if (y > pageHeight - 220) { doc.addPage(); y = 100; }
-
       const colW = (pageWidth - 100 - 40) / 2; // márgenes 50, gap 40
       const x1 = 50, x2 = 50 + colW + 40;
 
       function firmaBlock(x, y0, nombre, puesto) {
+        y0 = ensureSpace(y0, 90);
         doc.setFontSize(11);
         doc.line(x + 10, y0 + 40, x + colW - 10, y0 + 40);
         doc.text(nombre || "__________________________", x + colW/2, y0 + 56, { align: "center" });
@@ -590,34 +603,35 @@ function generarPDF(asesor, sucursal, creditos, tipo) {
       y = firmaBlock(x2, y - 90, asesor, "Asesor de Créditos y Recuperación Individual");
 
       // Fila 2: Gerente de Sucursal / Gerente de Recuperación Extrajudicial
-      let y2 = y + 10;
-      if (y2 > pageHeight - 150) { doc.addPage(); y2 = 100; }
       const dir = getDireccionPorSucursal(sucursal) || {};
       const gerenteNombre = (dir.GERENTE || "");
+      let y2 = y + 6;
       y2 = firmaBlock(x1, y2, gerenteNombre, "Gerente de Sucursal");
       firmaBlock(x2, y2 - 90, "Adan Gutierrez Hernandez", "Gerente de Recuperación Extrajudicial");
 
     } else {
-      // EXHORTO – párrafo de cierre estándar
+      // EXHORTO – cierre y firma
+      y = ensureSpace(y);
       const { postTabla } = textos;
       doc.autoTable({
         startY: y,
         body: [[postTabla]],
         theme: "plain",
-        styles: { fontSize: 11, halign: "justify", cellPadding: 1.5 },
-        margin: { left: 50, right: 50 }
+        styles: { fontSize: 11, halign: "left", overflow: "linebreak", cellPadding: 1.2 },
+        margin: { left: 50, right: 50, bottom: FOOTER_RESERVE }
       });
-      y = doc.lastAutoTable.finalY + 22;
+      y = doc.lastAutoTable.finalY + 18;
 
-      // Firma única para exhorto (coordinador)
       const pageWidth = doc.internal.pageSize.getWidth();
-      const pageHeight = doc.internal.pageSize.getHeight();
-      if (y > pageHeight - 180) { doc.addPage(); y = 100; }
+      y = ensureSpace(y, 120);
       doc.setFontSize(11);
       doc.text("Atentamente,", pageWidth / 2, y, { align: "center" });
-      y += 36;
+      y += 30;
       doc.text("_______________________________", pageWidth / 2, y, { align: "center" });
       y += 14;
+
+      const inicial = document.getElementById("coordinadorSelect").value;
+      const subFirmante = document.getElementById("subFirmanteSelect").value || inicial;
 
       let nombreFirmante, puestoFirmante;
       if (subFirmante === "IVANI") {
@@ -636,7 +650,7 @@ function generarPDF(asesor, sucursal, creditos, tipo) {
       doc.text(puestoFirmante, pageWidth / 2, y, { align: "center" });
     }
 
-    // Pie gráfico institucional (no mueve firmas)
+    // Pie gráfico institucional (se dibuja encima, pero ya reservamos espacio)
     footerImg.onload = function () {
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
