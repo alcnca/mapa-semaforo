@@ -86,7 +86,7 @@ const URL_DIRECCION = "https://raw.githubusercontent.com/alcnca/mapa-semaforo/re
    Estado
    ======================= */
 let data = [];            // datos.json (créditos)
-let direcciones = [];     // Direccion.json (puede ser lista o objeto; normalizamos a lista)
+let direcciones = [];     // Direccion.json (lista normalizada)
 let creditosSeleccionados = [];
 let asesorSeleccionado = "";
 let sucursalSeleccionada = "";
@@ -133,37 +133,32 @@ function parseDiasSinGestion(raw) {
 function estaSinGestion(raw) { return parseDiasSinGestion(raw) === null; }
 
 /* =======================
-   Normalización texto (para matching sucursal)
+   Normalización texto (matching sucursal)
    ======================= */
 function norm(s) {
   return (s ?? "")
     .toString()
-    .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // quita acentos
-    .replace(/\s+/g, " ")                             // colapsa espacios
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
     .trim()
     .toUpperCase();
 }
-
-/* Encuentra el registro de Direccion.json que corresponde a la sucursal seleccionada */
 function getDireccionPorSucursal(sucursal) {
   const sNorm = norm(sucursal);
-  // Intento 1: match exacto por Nombre_Sucursal
   let found = direcciones.find(d => norm(d.Nombre_Sucursal) === sNorm);
   if (found) return found;
-  // Intento 2: buscar por campos alternativos comunes
   found = direcciones.find(d =>
     norm(d.SUCURSAL) === sNorm ||
     norm(d.Sucursal) === sNorm ||
     norm(d.Nombre) === sNorm
   );
   if (found) return found;
-  // Intento 3: incluye/empieza con (más laxo)
-  found = direcciones.find(d => norm(d.Nombre_Sucursal).includes(sNorm));
+  found = direcciones.find(d => norm(d.Nombre_Sucursal || "").includes(sNorm));
   return found || null;
 }
 
 /* =======================
-   Hora/fecha en letras (America/Cancun)
+   Hora/fecha en letras (CDMX)
    ======================= */
 const meses = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
 function numEnEsp(n){
@@ -179,7 +174,8 @@ function anioEnLetras(y){
 }
 function fechaEnLetrasAhora(){
   const ahora = new Date();
-  const local = new Date(ahora.toLocaleString("es-MX",{timeZone:"America/Mexico_City"}));
+  // <<< CAMBIADO A ZONA HORARIA DE CDMX >>>
+  const local = new Date(ahora.toLocaleString("en-US",{timeZone:"America/Mexico_City"}));
   const h=local.getHours(), m=local.getMinutes(), d=local.getDate(), mm=local.getMonth(), y=local.getFullYear();
   return `${numEnEsp(h)} horas con ${m===0?"cero":numEnEsp(m)} minutos del ${numEnEsp(d)} de ${meses[mm]} de ${anioEnLetras(y)}`;
 }
@@ -189,7 +185,6 @@ function fechaEnLetrasAhora(){
    ======================= */
 function getTextosDocumento(tipo, diasMinimos, asesor, sucursal, firmanteCoord) {
   if (tipo === "acta") {
-    // Buscar datos de dirección por sucursal seleccionada:
     const dir = getDireccionPorSucursal(sucursal) || {};
     const MUNICIPIO = (dir.MUNICIPIO || "________________").toString().trim();
     const ESTADO = (dir.ESTADO || "________________").toString().trim();
@@ -212,26 +207,39 @@ En términos de lo dispuesto en el Manual de Gestión de Recuperación de Carter
 • Mantener actualizada la información del socio acreditado, avales o garantes, a fin de facilitar su localización.
 • Utilizar los mecanismos autorizados para la gestión de cobranza (llamadas telefónicas, visitas, mensajería SMS o WhatsApp, notificaciones escritas, etc.), siempre con respeto y dentro del horario permitido.
 • Registrar en el sistema informático las negociaciones, acuerdos o compromisos de pago establecidos con el socio, así como anexar físicamente al expediente los documentos correspondientes, cuando aplique.`;
+
     const hechos =
 `Hechos:
 Se hace constar que el C. ${asesor}, en su calidad de Asesor de Crédito y Recuperación, omitió realizar la gestión de seguimiento a los créditos señalados en la tabla anterior, mismos que presentan un atraso considerable hasta la fecha de la presente acta.
 
 De la revisión efectuada al sistema informático, se constató lo siguiente:
+
 • No existen registros de llamadas, visitas domiciliarias, mensajes, ni cartas de cobranza en los plazos correspondientes, y si bien lo existieran no se encuetran actualizadad
 • No se documentaron convenios, acuerdos o compromisos de pago con el socio deudor ni con sus avales.
 • Se incumplió con la obligación de prevenir el incremento del atraso, al no dar seguimiento oportuno desde los primeros días de mora.`;
 
     const faltas =
-`Faltas y omisiones detectadas: La conducta descrita constituye un incumplimiento a lo dispuesto en los numerales:
+`Faltas y omisiones detectadas:
+La conducta descrita constituye un incumplimiento a lo dispuesto en los numerales:
+
 1.4 Formalidades para desempeñar las gestiones de cobro, al no registrar ni evidenciar convenios, acuerdos o contactos con el socio.
 1.5 La recuperación es parte integral del ciclo crediticio, al no aplicar las políticas de prevención y recuperación administrativa.
 2. Políticas generales, al no generar ni respaldar las evidencias mínimas de gestión de recuperación (carta invitación, requerimientos, llamadas, mensajería, etc.).
 3.14 Responsabilidades del Asesor de Crédito y Recuperación, al no dar seguimiento diario ni documentar en el sistema las gestiones correspondientes.`;
 
+    // <<< AQUI AGREGO ~8 SALTOS DE LÍNEA AL FINAL >>>
     const determinacion =
 `Determinación:
 Por lo anterior, se procede a formalizar la presente acta como parte del procedimiento tendiente para la aplicación de la medida disciplinaria correspondiente a fin de dejar constancia de las faltas y omisiones cometidas por el Asesor de Crédito y Recuperación, mismas que impactan negativamente en los indicadores de recuperación de cartera de la sucursal.
-Acto posterior, se le concede al socio colaborador el derecho del uso de la palabra con relación a los hechos que anteceden, manifestando:`;
+Acto posterior, se le concede al socio colaborador el derecho del uso de la palabra con relación a los hechos que anteceden, manifestando:
+
+
+
+
+
+
+
+`;
 
     const cierre =
 `Leída que fue la presente, se ratifica en todas y cada una de sus partes por los comparecientes.
@@ -240,8 +248,7 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
     return {
       titulo: "ACTA ADMINISTRATIVA",
       subtitulo: "Se levanta la presente ACTA ADMINISTRATIVA",
-      intro, hechos, faltas, determinacion, cierre,
-      gerenteSucursal: GERENTE
+      intro, hechos, faltas, determinacion, cierre
     };
   }
 
@@ -264,19 +271,11 @@ window.addEventListener("DOMContentLoaded", async () => {
     data = await resDatos.json();
 
     const dirJson = await resDir.json();
-    // Normaliza Direccion.json a lista
     if (Array.isArray(dirJson)) {
       direcciones = dirJson;
     } else if (dirJson && typeof dirJson === "object") {
-      // Si es un objeto con posibles múltiples propiedades de sucursales,
-      // intentamos armar lista de sus valores:
       const vals = Object.values(dirJson);
-      // Si la primera entrada luce como objeto con campos esperados, lo usamos:
-      if (vals.length && typeof vals[0] === "object") {
-        direcciones = vals;
-      } else {
-        direcciones = [dirJson];
-      }
+      direcciones = (vals.length && typeof vals[0] === "object") ? vals : [dirJson];
     } else {
       direcciones = [];
     }
@@ -461,14 +460,12 @@ function generarPDF(asesor, sucursal, creditos, tipo) {
     doc.addImage(headerImg, "PNG", 50, 20, 500, 80);
     let y = 120;
 
-    // Determinar firmante coordinador para textos
     const inicial = document.getElementById("coordinadorSelect").value;
     const subFirmante = document.getElementById("subFirmanteSelect").value || inicial;
     const firmanteCoord = (inicial === "OFICINA_CENTRAL")
       ? (subFirmante || "__________________________")
       : (nombresCoordinadores[subFirmante] || "__________________________");
 
-    // Textos (el acta toma Municip/Estado/Sucursal/Dirección/Gerente de Direccion.json según la sucursal elegida)
     const textos = getTextosDocumento(tipo, diasMinimos, asesor, sucursal, firmanteCoord);
 
     doc.setFontSize(10);
@@ -489,7 +486,7 @@ function generarPDF(asesor, sucursal, creditos, tipo) {
     doc.text(`Sucursal: ${sucursal}`, 50, y);
     y += 16;
 
-    // Intro
+    // Intro (mantiene lista y último punto)
     doc.autoTable({
       startY: y,
       body: [[textos.intro]],
@@ -497,7 +494,9 @@ function generarPDF(asesor, sucursal, creditos, tipo) {
       styles: { fontSize: 11, halign: "justify", cellPadding: 1.5 },
       margin: { left: 50, right: 50 }
     });
-    y = doc.lastAutoTable.finalY + 12;
+
+    // <<< MENOS ESPACIO ENTRE INTRO Y TABLA >>>
+    y = doc.lastAutoTable.finalY + 6; // antes era +12
 
     // Tabla de créditos
     const rows = creditos.map(c => {
@@ -549,7 +548,7 @@ function generarPDF(asesor, sucursal, creditos, tipo) {
       });
       y = doc.lastAutoTable.finalY + 10;
 
-      // Determinación
+      // Determinación (incluye 8 saltos de línea al final)
       doc.autoTable({
         startY: y,
         body: [[textos.determinacion]],
@@ -567,7 +566,7 @@ function generarPDF(asesor, sucursal, creditos, tipo) {
         styles: { fontSize: 11, halign: "justify", cellPadding: 1.5 },
         margin: { left: 50, right: 50 }
       });
-      y = doc.lastAutoTable.finalY + 10;
+      y = doc.lastAutoTable.finalY + 22;
 
       // ===== Firmas (4) al final (no pie) =====
       const pageWidth = doc.internal.pageSize.getWidth();
