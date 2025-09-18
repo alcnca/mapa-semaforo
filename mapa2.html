@@ -85,8 +85,8 @@ const URL_DIRECCION = "https://raw.githubusercontent.com/alcnca/mapa-semaforo/re
 /* =======================
    Estado
    ======================= */
-let data = [];
-let direccion = null; // Direccion.json
+let data = [];            // datos.json (créditos)
+let direcciones = [];     // Direccion.json (puede ser lista o objeto; normalizamos a lista)
 let creditosSeleccionados = [];
 let asesorSeleccionado = "";
 let sucursalSeleccionada = "";
@@ -133,6 +133,36 @@ function parseDiasSinGestion(raw) {
 function estaSinGestion(raw) { return parseDiasSinGestion(raw) === null; }
 
 /* =======================
+   Normalización texto (para matching sucursal)
+   ======================= */
+function norm(s) {
+  return (s ?? "")
+    .toString()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // quita acentos
+    .replace(/\s+/g, " ")                             // colapsa espacios
+    .trim()
+    .toUpperCase();
+}
+
+/* Encuentra el registro de Direccion.json que corresponde a la sucursal seleccionada */
+function getDireccionPorSucursal(sucursal) {
+  const sNorm = norm(sucursal);
+  // Intento 1: match exacto por Nombre_Sucursal
+  let found = direcciones.find(d => norm(d.Nombre_Sucursal) === sNorm);
+  if (found) return found;
+  // Intento 2: buscar por campos alternativos comunes
+  found = direcciones.find(d =>
+    norm(d.SUCURSAL) === sNorm ||
+    norm(d.Sucursal) === sNorm ||
+    norm(d.Nombre) === sNorm
+  );
+  if (found) return found;
+  // Intento 3: incluye/empieza con (más laxo)
+  found = direcciones.find(d => norm(d.Nombre_Sucursal).includes(sNorm));
+  return found || null;
+}
+
+/* =======================
    Hora/fecha en letras (America/Cancun)
    ======================= */
 const meses = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
@@ -149,7 +179,7 @@ function anioEnLetras(y){
 }
 function fechaEnLetrasAhora(){
   const ahora = new Date();
-  const local = new Date(ahora.toLocaleString("en-US",{timeZone:"America/Cancun"}));
+  const local = new Date(ahora.toLocaleString("es-MX",{timeZone:"America/Mexico_City"}));
   const h=local.getHours(), m=local.getMinutes(), d=local.getDate(), mm=local.getMonth(), y=local.getFullYear();
   return `${numEnEsp(h)} horas con ${m===0?"cero":numEnEsp(m)} minutos del ${numEnEsp(d)} de ${meses[mm]} de ${anioEnLetras(y)}`;
 }
@@ -159,12 +189,13 @@ function fechaEnLetrasAhora(){
    ======================= */
 function getTextosDocumento(tipo, diasMinimos, asesor, sucursal, firmanteCoord) {
   if (tipo === "acta") {
-    // Tomar datos de Direccion.json (con fallback a líneas)
-    const MUNICIPIO = (direccion?.MUNICIPIO || "________________").toString().trim();
-    const ESTADO = (direccion?.ESTADO || "________________").toString().trim();
-    const NOMBRE_SUCURSAL = (direccion?.Nombre_Sucursal || sucursal || "________________").toString().trim();
-    const DIRECCION = (direccion?.DIRECCION || "________________").toString().trim();
-    const GERENTE = (direccion?.GERENTE || "__________________________").toString().trim();
+    // Buscar datos de dirección por sucursal seleccionada:
+    const dir = getDireccionPorSucursal(sucursal) || {};
+    const MUNICIPIO = (dir.MUNICIPIO || "________________").toString().trim();
+    const ESTADO = (dir.ESTADO || "________________").toString().trim();
+    const NOMBRE_SUCURSAL = (dir.Nombre_Sucursal || sucursal || "________________").toString().trim();
+    const DIRECCION = (dir.DIRECCION || "________________").toString().trim();
+    const GERENTE = (dir.GERENTE || "__________________________").toString().trim();
 
     const FECHA_INICIO_LETRAS = fechaEnLetrasAhora();
     const FECHA_CIERRE_LETRAS = fechaEnLetrasAhora();
@@ -181,21 +212,17 @@ En términos de lo dispuesto en el Manual de Gestión de Recuperación de Carter
 • Mantener actualizada la información del socio acreditado, avales o garantes, a fin de facilitar su localización.
 • Utilizar los mecanismos autorizados para la gestión de cobranza (llamadas telefónicas, visitas, mensajería SMS o WhatsApp, notificaciones escritas, etc.), siempre con respeto y dentro del horario permitido.
 • Registrar en el sistema informático las negociaciones, acuerdos o compromisos de pago establecidos con el socio, así como anexar físicamente al expediente los documentos correspondientes, cuando aplique.`;
-
     const hechos =
 `Hechos:
 Se hace constar que el C. ${asesor}, en su calidad de Asesor de Crédito y Recuperación, omitió realizar la gestión de seguimiento a los créditos señalados en la tabla anterior, mismos que presentan un atraso considerable hasta la fecha de la presente acta.
 
 De la revisión efectuada al sistema informático, se constató lo siguiente:
-
 • No existen registros de llamadas, visitas domiciliarias, mensajes, ni cartas de cobranza en los plazos correspondientes, y si bien lo existieran no se encuetran actualizadad
 • No se documentaron convenios, acuerdos o compromisos de pago con el socio deudor ni con sus avales.
 • Se incumplió con la obligación de prevenir el incremento del atraso, al no dar seguimiento oportuno desde los primeros días de mora.`;
 
     const faltas =
-`Faltas y omisiones detectadas:
-La conducta descrita constituye un incumplimiento a lo dispuesto en los numerales:
-
+`Faltas y omisiones detectadas: La conducta descrita constituye un incumplimiento a lo dispuesto en los numerales:
 1.4 Formalidades para desempeñar las gestiones de cobro, al no registrar ni evidenciar convenios, acuerdos o contactos con el socio.
 1.5 La recuperación es parte integral del ciclo crediticio, al no aplicar las políticas de prevención y recuperación administrativa.
 2. Políticas generales, al no generar ni respaldar las evidencias mínimas de gestión de recuperación (carta invitación, requerimientos, llamadas, mensajería, etc.).
@@ -235,7 +262,24 @@ window.addEventListener("DOMContentLoaded", async () => {
       fetch(URL_DIRECCION, { cache: "no-store" })
     ]);
     data = await resDatos.json();
-    direccion = await resDir.json();
+
+    const dirJson = await resDir.json();
+    // Normaliza Direccion.json a lista
+    if (Array.isArray(dirJson)) {
+      direcciones = dirJson;
+    } else if (dirJson && typeof dirJson === "object") {
+      // Si es un objeto con posibles múltiples propiedades de sucursales,
+      // intentamos armar lista de sus valores:
+      const vals = Object.values(dirJson);
+      // Si la primera entrada luce como objeto con campos esperados, lo usamos:
+      if (vals.length && typeof vals[0] === "object") {
+        direcciones = vals;
+      } else {
+        direcciones = [dirJson];
+      }
+    } else {
+      direcciones = [];
+    }
   } catch (e) {
     alert("Error cargando datos: " + e.message);
     return;
@@ -424,7 +468,7 @@ function generarPDF(asesor, sucursal, creditos, tipo) {
       ? (subFirmante || "__________________________")
       : (nombresCoordinadores[subFirmante] || "__________________________");
 
-    // Textos
+    // Textos (el acta toma Municip/Estado/Sucursal/Dirección/Gerente de Direccion.json según la sucursal elegida)
     const textos = getTextosDocumento(tipo, diasMinimos, asesor, sucursal, firmanteCoord);
 
     doc.setFontSize(10);
@@ -523,7 +567,7 @@ function generarPDF(asesor, sucursal, creditos, tipo) {
         styles: { fontSize: 11, halign: "justify", cellPadding: 1.5 },
         margin: { left: 50, right: 50 }
       });
-      y = doc.lastAutoTable.finalY + 22;
+      y = doc.lastAutoTable.finalY + 10;
 
       // ===== Firmas (4) al final (no pie) =====
       const pageWidth = doc.internal.pageSize.getWidth();
@@ -549,7 +593,8 @@ function generarPDF(asesor, sucursal, creditos, tipo) {
       // Fila 2: Gerente de Sucursal / Gerente de Recuperación Extrajudicial
       let y2 = y + 10;
       if (y2 > pageHeight - 150) { doc.addPage(); y2 = 100; }
-      const gerenteNombre = (direccion?.GERENTE || "");
+      const dir = getDireccionPorSucursal(sucursal) || {};
+      const gerenteNombre = (dir.GERENTE || "");
       y2 = firmaBlock(x1, y2, gerenteNombre, "Gerente de Sucursal");
       firmaBlock(x2, y2 - 90, "Adan Gutierrez Hernandez", "Gerente de Recuperación Extrajudicial");
 
