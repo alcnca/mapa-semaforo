@@ -1,178 +1,123 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-  <meta charset="utf-8">
-  <title>Mapa Semáforo</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <meta charset="utf-8" />
+  <title>Acta Administrativa – Primera Parte</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    #map { height: 100vh; margin: 0; }
-
-    .leaflet-tooltip {
-      background: transparent !important;
-      border: none !important;
-      box-shadow: none !important;
-      padding: 0 !important;
-      margin: 0 !important;
-    }
-
-    .sucursal-label {
-      background: transparent !important;
-      border: none !important;
-      box-shadow: none !important;
-      padding: 0 !important;
-      text-shadow: none !important;
-      color: black !important;
-      font-size: 10px;
-      font-weight: bold;
-    }
-
-    .neon-marker {
-      width: 10px;
-      height: 10px;
-      background: red;
-      border-radius: 50%;
-      box-shadow: 0 0 3px red, 0 0 6px red;
-      animation: pulse 1.5s infinite;
-      border: 1px solid white;
-    }
-
-    @keyframes pulse {
-      0% { box-shadow: 0 0 1px red, 0 0 3px red; }
-      50% { box-shadow: 0 0 5px red, 0 0 10px red; }
-      100% { box-shadow: 0 0 1px red, 0 0 3px red; }
-    }
-
-    .filtros {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      background: rgba(255,255,255,0.9);
-      padding: 5px;
-      border-radius: 5px;
-      z-index: 1000;
-    }
-
-    select { margin-right: 5px; }
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;line-height:1.4;padding:16px;max-width:850px;margin:auto}
+    .bloque{white-space:pre-wrap;font-size:15px}
+    .muted{color:#666;font-size:12px;margin-top:8px}
   </style>
 </head>
 <body>
+  <h1>Acta Administrativa — Primer Párrafo</h1>
+  <div id="salida" class="bloque">Cargando datos…</div>
+  <div class="muted">Fuente: Direccion.json + datos.json</div>
 
-<div class="filtros">
-  <label>Sucursal: <select id="filtroSucursal"><option value="TODAS">Todas</option></select></label>
-  <label>Ejecutivo: <select id="filtroEjecutivo"><option value="TODOS">Todos</option></select></label>
-</div>
-
-<div id="map"></div>
-
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-  function getParam(name) {
-    const url = new URL(window.location.href);
-    return url.searchParams.get(name);
+(async function(){
+  // URLs exactas que compartiste:
+  const URL_DIRECCION = "https://raw.githubusercontent.com/alcnca/mapa-semaforo/refs/heads/main/Direccion.json";
+  const URL_DATOS     = "https://raw.githubusercontent.com/alcnca/mapa-semaforo/refs/heads/main/datos.json";
+
+  // Utilidad: número a texto (0–59) en español, para horas/minutos
+  function numEnEsp(n){
+    const unidades = ["cero","uno","dos","tres","cuatro","cinco","seis","siete","ocho","nueve","diez","once","doce","trece","catorce","quince",
+                      "dieciséis","diecisiete","dieciocho","diecinueve","veinte","veintiuno","veintidós","veintitrés","veinticuatro","veinticinco",
+                      "veintiséis","veintisiete","veintiocho","veintinueve"];
+    if (n < 30) return unidades[n];
+    const decenas = ["", "", "", "treinta", "cuarenta", "cincuenta"];
+    const d = Math.floor(n/10), u = n%10;
+    return u === 0 ? decenas[d] : `${decenas[d]} y ${unidades[u]}`;
+  }
+  // Utilidad: año en letras muy simple (2000–2099)
+  function anioEnLetras(y){
+    // y = 2025 → "dos mil veinticinco"
+    const mapaAnios = {
+      2000:"dos mil",2001:"dos mil uno",2002:"dos mil dos",2003:"dos mil tres",2004:"dos mil cuatro",2005:"dos mil cinco",
+      2006:"dos mil seis",2007:"dos mil siete",2008:"dos mil ocho",2009:"dos mil nueve",
+      2010:"dos mil diez",2011:"dos mil once",2012:"dos mil doce",2013:"dos mil trece",2014:"dos mil catorce",
+      2015:"dos mil quince",2016:"dos mil dieciséis",2017:"dos mil diecisiete",2018:"dos mil dieciocho",2019:"dos mil diecinueve",
+      2020:"dos mil veinte",2021:"dos mil veintiuno",2022:"dos mil veintidós",2023:"dos mil veintitrés",2024:"dos mil veinticuatro",
+      2025:"dos mil veinticinco",2026:"dos mil veintiséis",2027:"dos mil veintisiete",2028:"dos mil veintiocho",2029:"dos mil veintinueve"
+    };
+    return mapaAnios[y] || y.toString();
+  }
+  // Utilidad: mes en español
+  const meses = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+
+  // Hora/fecha actual en America/Cancun (sin DST)
+  function fechaActualEnLetras(){
+    try{
+      const ahora = new Date();
+      // Forzamos zona declarando opciones de formato; texto final lo componemos nosotros
+      const opts = { timeZone: "America/Cancun", hour12: false };
+      const fmt = new Intl.DateTimeFormat("es-MX", {
+        ...opts, year: "numeric", month: "numeric", day: "numeric", hour: "2-digit", minute:"2-digit"
+      }).formatToParts(ahora).reduce((acc,p)=>{acc[p.type]=p.value;return acc;},{});
+      const h = parseInt(fmt.hour,10);
+      const m = parseInt(fmt.minute,10);
+      // Re-creamos fecha en esa zona con toLocaleString para extraer mes/día/año confiables
+      const fechaMX = new Date(ahora.toLocaleString("en-US", { timeZone: "America/Cancun" }));
+      const dia = fechaMX.getDate();
+      const mes = fechaMX.getMonth(); // 0-11
+      const anio = fechaMX.getFullYear();
+      const hTxt = numEnEsp(h);
+      const mTxt = m===0 ? "cero" : numEnEsp(m);
+      const diaTxt = numEnEsp(dia);
+      const mesTxt = meses[mes];
+      const anioTxt = anioEnLetras(anio);
+      // “diecisiete horas con dieciséis minutos del dieciocho de septiembre de dos mil veinticinco”
+      return `${hTxt} horas con ${mTxt} minutos del ${diaTxt} de ${mesTxt} de ${anioTxt}`;
+    }catch(e){
+      // Fallback simple
+      return "____ horas con ____ minutos del ____ de ____ de ____";
+    }
   }
 
-  const coordinadorClave = getParam('coord') || 'alcnca';
-  const dataUrl = 'datos.json';
-
-  fetch(dataUrl)
-    .then(res => res.json())
-    .then(allData => {
-      const data = allData.filter(r => r.Coordinador.toLowerCase() === coordinadorClave.toLowerCase());
-      initMap(data);
-    });
-
-  function initMap(data) {
-    const map = L.map('map').setView([17.05, -96.72], 7);
-
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OSM'
-    }).addTo(map);
-
-    function getIcon(a, d) {
-      const n = parseInt(d);
-      if (n === 88 || n === 89) {
-        return L.divIcon({
-          className: 'neon-marker',
-          iconSize: [30, 30],
-          iconAnchor: [15, 30],
-          popupAnchor: [0, -30]
-        });
-      }
-      const url = (a.trim().toUpperCase() === 'SI')
-        ? 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png'
-        : 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png';
-      return L.icon({
-        iconUrl: url,
-        shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-        iconSize: [25, 41],
-        iconAnchor: [12, 41],
-        popupAnchor: [1, -34],
-        shadowSize: [41, 41]
-      });
-    }
-
-    const selSuc = document.getElementById('filtroSucursal'),
-          selEje = document.getElementById('filtroEjecutivo');
-
-    const sucursales = [...new Set(data.map(r => r.Sucursal))];
-    sucursales.forEach(s => selSuc.append(new Option(s, s)));
-    let markers = [];
-
-    function updateExecOptions(selSucValue) {
-      selEje.innerHTML = '<option value="TODOS">Todos</option>';
-      const execs = selSucValue === 'TODAS'
-        ? [...new Set(data.map(r => r.Ejecutivo))]
-        : [...new Set(data.filter(r => r.Sucursal === selSucValue).map(r => r.Ejecutivo))];
-      execs.forEach(e => selEje.append(new Option(e, e)));
-    }
-
-    function refreshMap() {
-      markers.forEach(m => map.removeLayer(m));
-      markers = [];
-      const fs = selSuc.value, fe = selEje.value;
-
-      data.forEach(r => {
-        if ((fs !== 'TODAS' && r.Sucursal !== fs) || (fe !== 'TODOS' && r.Ejecutivo !== fe)) return;
-        const lat = parseFloat(r.Latitud), lng = parseFloat(r.Longitud);
-        if (!lat || !lng) return;
-        const mk = L.marker([lat, lng], { icon: getIcon(r.Aceptacion, r['Dias de Atraso']) }).addTo(map);
-        mk.bindPopup(
-          `<strong>${r.Sucursal}</strong><br>
-          Aceptación: ${r.Aceptacion}<br>
-          Días sin gestión: ${r['Dias sin Gestion']}<br>
-          Línea: ${r.Linea}<br>
-          Nombre: ${r.Nombre}<br>
-          Saldo: $${r['Saldo Total']}<br>
-          % Pagado: ${r['Porcentaje Pagado']}%<br>
-          Producto: ${r.Producto}<br>
-          Días de atraso: ${r['Dias de Atraso']}<br>
-          Ejecutivo: ${r.Ejecutivo}`
-        );
-        mk.bindTooltip(r.Sucursal, {
-          permanent: true,
-          direction: 'top',
-          offset: [0, -10],
-          className: 'sucursal-label'
-        });
-        markers.push(mk);
-      });
-
-      if (markers.length > 0) {
-        const group = L.featureGroup(markers);
-        map.fitBounds(group.getBounds().pad(0.2));
-      }
-    }
-
-    selSuc.addEventListener('change', () => {
-      updateExecOptions(selSuc.value);
-      refreshMap();
-    });
-
-    selEje.addEventListener('change', refreshMap);
-
-    updateExecOptions('TODAS');
-    refreshMap();
+  // Descarga segura de JSON
+  async function getJSON(url){
+    const r = await fetch(url, {cache:"no-store"});
+    if(!r.ok) throw new Error("No se pudo cargar: "+url);
+    return r.json();
   }
+
+  let dir = {}, datos = {};
+  try{
+    [dir, datos] = await Promise.all([
+      getJSON(URL_DIRECCION),
+      getJSON(URL_DATOS)
+    ]);
+  }catch(e){
+    document.getElementById("salida").textContent =
+      "Error al cargar los JSON. Verifica que las URLs estén accesibles.\n\n"+e;
+    return;
+  }
+
+  // Extraemos campos (con fallback a cadena vacía)
+  const MUNICIPIO       = (dir?.MUNICIPIO || "").toString().trim();
+  const ESTADO          = (dir?.ESTADO || "").toString().trim().replace(/^\s+/, "");
+  const NOMBRE_SUCURSAL = (dir?.Nombre_Sucursal || "").toString().trim();
+  const DIRECCION       = (dir?.DIRECCION || "").toString().trim();
+  const GERENTE         = (dir?.GERENTE || "").toString().trim();
+
+  const COORDINADOR     = (datos?.coordinador || "").toString().trim();
+  const EJECUTIVO       = (datos?.Ejecutivo   || "").toString().trim();
+
+  const fechaLetras = fechaActualEnLetras();
+
+  // Redactamos el párrafo exactamente como pediste:
+  const parrafo = `En el Municipio de ${MUNICIPIO}, ${ESTADO}, en la sucursal de ${NOMBRE_SUCURSAL}, `+
+  `siendo las ${fechaLetras}, estando presentes en las instalaciones de la COOPERATIVA ACREIMEX S.C. de A.P. de R.L. de C.V., `+
+  `con domicilio en ${DIRECCION}, los ciudadanos ${COORDINADOR}, que ostenta el puesto de Coordinador de Recuperación y `+
+  `${EJECUTIVO} con el puesto de asesor de créditos y recuperación individual. `+
+  `Estando presentes en su carácter de testigos los ciudadanos ${GERENTE} que ostenta el puesto de Gerente de Sucursal y `+
+  `Adan Gutierrez Hernandez con el puesto de Gerente de Recuperación Extrajudicial, a quienes les constan los hechos que dan origen al levantamiento de la presente acta.\n\n`+
+  `A continuación, el ciudadano ${COORDINADOR}, narra a los comparecientes los hechos y las razones por las cuales se procede a levantar la presente acta administrativa que consiste en lo siguiente:`;
+
+  document.getElementById("salida").textContent = parrafo;
+})();
 </script>
 </body>
 </html>
