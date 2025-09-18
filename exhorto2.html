@@ -13,14 +13,6 @@
 
 <div class="mb-4 row g-3">
   <div class="col-md-3">
-    <label class="form-label">Tipo de documento:</label>
-    <select id="tipoDocumento" class="form-select">
-      <option value="exhorto" selected>Exhorto</option>
-      <option value="acta">Acta Administrativa</option>
-    </select>
-    <div class="form-text">Mismo formato; cambia el texto interno.</div>
-  </div>
-  <div class="col-md-3">
     <label class="form-label">Días mínimos sin gestión:</label>
     <input type="number" id="diasMinimos" value="30" class="form-control">
     <div class="form-text">Se usa cuando NO está activado "Solo créditos sin gestión".</div>
@@ -33,7 +25,7 @@
     <label class="form-label">Coordinador que firma:</label>
     <select id="coordinadorSelect" class="form-select"></select>
   </div>
-  <div class="col-md-4" id="subFirmanteDiv" style="display:none;">
+  <div class="col-md-3" id="subFirmanteDiv" style="display:none;">
     <label class="form-label">Firmante:</label>
     <select id="subFirmanteSelect" class="form-select"></select>
   </div>
@@ -74,9 +66,11 @@
         </table>
         <h6 class="mt-3 text-end" id="totalPreview"></h6>
       </div>
-      <div class="modal-footer">
+      <div class="modal-footer gap-2">
         <button class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-        <button class="btn btn-success" id="btnGenerarPDF">Generar PDF</button>
+        <!-- Botones para elegir tipo justo antes de imprimir -->
+        <button class="btn btn-success" id="btnGenerarExhorto">Generar Exhorto</button>
+        <button class="btn btn-outline-success" id="btnGenerarActa">Generar Acta Administrativa</button>
       </div>
     </div>
   </div>
@@ -141,17 +135,15 @@ function estaSinGestion(raw) {
 
 /* =======================
    Textos por tipo de documento
-   (Edita libremente estos textos después)
+   (Edita libremente los del ACTA después)
    ======================= */
 function getTextosDocumento(tipo, diasMinimos) {
   if (tipo === "acta") {
-    // ======= EDITABLE: Contenido del Acta Administrativa =======
     const subtitulo = "Se levanta la presente ACTA ADMINISTRATIVA";
     const intro = `Con fundamento en las políticas internas y derivado de la revisión del seguimiento a la cartera, se hace constar que existen créditos con ausencia de gestión conforme a los parámetros institucionales. A continuación, se detallan los créditos detectados para su conocimiento y efectos correspondientes.`;
     const postTabla = `La presente acta administrativa tiene por objeto dejar constancia de los hechos observados y requerir la regularización inmediata de las gestiones de seguimiento, bajo apercibimiento de las medidas conducentes conforme a la normativa interna.`;
     return { titulo: "ACTA ADMINISTRATIVA", subtitulo, intro, postTabla };
   }
-  // ======= EXHORTO (por defecto) =======
   const subtitulo = `Motivo: Tener créditos en su cartera con más de ${diasMinimos} días sin gestión`;
   const intro = `Me permito informarle que, derivado de la revisión del seguimiento a los créditos con más de 30 días de atraso de la cartera que usted administra, se han detectado créditos que carecen de gestión y seguimiento en el sistema, por el tiempo indicado en el motivo de la presente y que a continuación se enlistan:`;
   const postTabla = `Derivado de esta situación se detecta su falta de responsabilidad, compromiso, esmero y dedicación en la ejecución de sus responsabilidades; por dicha omisión SE LEVANTA EL PRESENTE EXHORTO para su conocimiento y cumplimiento de dichas actividades, ya que nos ayuda a llevar un sano control de la cartera, manteniendo el menor porcentaje de mora y cuidando el patrimonio de la cooperativa. Para el caso de nueva omisión se tomarán las medidas necesarias de manera inmediata.`;
@@ -279,10 +271,7 @@ async function cargarDatos() {
     const card = document.createElement("div");
     card.className = "card mb-3";
     card.innerHTML = `
-      <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-        <span>${asesor}</span>
-        <span class="badge bg-light text-dark">${document.getElementById("tipoDocumento").value === "acta" ? "Acta" : "Exhorto"}</span>
-      </div>
+      <div class="card-header bg-primary text-white">${asesor}</div>
       <div class="card-body d-flex justify-content-between align-items-center">
         <div>
           Créditos: ${asesores[asesor].length}<br>
@@ -331,14 +320,18 @@ function mostrarVistaPrevia(asesor, creditos) {
   document.getElementById("totalPreview").textContent =
     `TOTAL: ${total.toLocaleString("es-MX", { style: "currency", currency: "MXN" })}`;
 
+  // Enlazar los dos botones del modal para generar el tipo elegido
+  document.getElementById("btnGenerarExhorto").onclick = () =>
+    generarPDF(asesorSeleccionado, sucursalSeleccionada, creditosSeleccionados, "exhorto");
+
+  document.getElementById("btnGenerarActa").onclick = () =>
+    generarPDF(asesorSeleccionado, sucursalSeleccionada, creditosSeleccionados, "acta");
+
   const modal = new bootstrap.Modal(document.getElementById("vistaPreviaModal"));
   modal.show();
-
-  document.getElementById("btnGenerarPDF").onclick = () =>
-    generarPDF(asesorSeleccionado, sucursalSeleccionada, creditosSeleccionados);
 }
 
-function generarPDF(asesor, sucursal, creditos) {
+function generarPDF(asesor, sucursal, creditos, tipo) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF("p", "pt", "a4");
 
@@ -346,6 +339,7 @@ function generarPDF(asesor, sucursal, creditos) {
   doc.setLineHeightFactor(1.0);
 
   const fecha = new Date().toLocaleDateString("es-MX", { day:"2-digit", month:"long", year:"numeric" });
+  const diasMinimos = parseInt(document.getElementById("diasMinimos").value) || 30;
 
   const headerUrl = "https://raw.githubusercontent.com/alcnca/mapa-semaforo/main/encabezado.png";
   const footerUrl = "https://alcnca.github.io/mapa-semaforo/piepagina.png";
@@ -360,9 +354,7 @@ function generarPDF(asesor, sucursal, creditos) {
     doc.addImage(headerImg, "PNG", 50, 20, 500, 80);
     let y = 120;
 
-    // Selección de tipo de documento y textos
-    const tipo = document.getElementById("tipoDocumento").value; // "exhorto" | "acta"
-    const diasMinimos = parseInt(document.getElementById("diasMinimos").value) || 30;
+    // Textos por tipo
     const { titulo, subtitulo, intro, postTabla } = getTextosDocumento(tipo, diasMinimos);
 
     doc.setFontSize(10);
@@ -383,7 +375,7 @@ function generarPDF(asesor, sucursal, creditos) {
     doc.text(`Sucursal: ${sucursal}`, 50, y);
     y += 16;
 
-    // Párrafo introductorio
+    // Intro
     doc.autoTable({
       startY: y,
       body: [[intro]],
@@ -424,7 +416,7 @@ function generarPDF(asesor, sucursal, creditos) {
     doc.text(`TOTAL: ${totalSaldo.toLocaleString("es-MX", { style: "currency", currency: "MXN" })}`, 50, y);
     y += 16;
 
-    // Párrafo de cierre según tipo
+    // Cierre
     doc.autoTable({
       startY: y,
       body: [[postTabla]],
@@ -472,7 +464,7 @@ function generarPDF(asesor, sucursal, creditos) {
     firmaY += 14;
     doc.text(puestoFirmante, pageWidth / 2, firmaY, { align: "center" });
 
-    // Pie gráfico institucional (no afecta la posición de la firma)
+    // Pie gráfico institucional (no afecta la firma)
     footerImg.onload = function () {
       const footerWidth = 500;
       const footerHeight = 50;
