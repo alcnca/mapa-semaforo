@@ -505,7 +505,7 @@ function generarPDF(asesor, sucursal, creditos, tipo) {
 
     // Tabla pegada (2pt)
     y = doc.lastAutoTable.finalY + 2;
-    y = ensureSpace(y, 40);
+    y = ensureSpace(y, 10);
 
     // Tabla de créditos
     const rows = creditos.map(c => {
@@ -529,7 +529,7 @@ function generarPDF(asesor, sucursal, creditos, tipo) {
       margin: { left: 40, right: 40, bottom: FOOTER_RESERVE }
     });
     y = doc.lastAutoTable.finalY + 8;
-    y = ensureSpace(y, 20);
+    y = ensureSpace(y, 10);
 
     // Total
     doc.setFontSize(11);
