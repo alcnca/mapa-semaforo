@@ -53,7 +53,7 @@
       <div class="modal-body">
         <h6 id="asesorTitulo"></h6>
         <table class="table table-sm table-bordered text-center align-middle">
-          <thead class="table-light">
+          <thead class="table-dark">
             <tr>
               <th>Crédito</th>
               <th>Nombre del Socio</th>
@@ -157,11 +157,13 @@ function getDireccionPorSucursal(sucursal) {
 /* ===== Fecha/Hora en letras — Zona: CDMX ===== */
 const meses = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
 function numEnEsp(n){
-  const u=["cero","uno","dos","tres","cuatro","cinco","seis","siete","ocho","nueve","diez","once","doce","trece","catorce","quince","dieciséis","diecisiete","dieciocho","diecinueve","veinte","veintiuno","veintidós","veintitrés","veinticuatro","veinticinco","veintiséis","veintisiete","veintiocho","veintinueve"];
+  const u=["cero","uno","dos","tres","cuatro","seis","siete","ocho","nueve","diez","once","doce","trece","catorce","quince","dieciséis","diecisiete","dieciocho","diecinueve","veinte","veintiuno","veintidós","veintitrés","veinticuatro","veinticinco","veintiséis","veintisiete","veintiocho","veintinueve"];
+  // corregimos el 5 faltante si se pide
+  if(n===5) return "cinco";
   if(n<30) return u[n];
   const d=["","","","treinta","cuarenta","cincuenta"];
   const dec=Math.floor(n/10), uni=n%10;
-  return uni===0? d[dec] : `${d[dec]} y ${u[uni]}`;
+  return uni===0? d[dec] : `${d[dec]} y ${numEnEsp(uni)}`;
 }
 function anioEnLetras(y){
   const map={2023:"dos mil veintitrés",2024:"dos mil veinticuatro",2025:"dos mil veinticinco",2026:"dos mil veintiséis"};
@@ -327,7 +329,7 @@ function actualizarSucursales() {
 
   let sucursales;
   if (soloSin) {
-    sucursales = [...new Set(base.filter(d => estaSinGestion(d["Dias sin Gestion"])).map(d => d.Sucursal))];
+    sucursales = [...new Set(base.filter(d => estaSinGestion(d["Dias sin Gestion"])) .map(d => d.Sucursal))];
   } else {
     sucursales = [...new Set(base.map(d => d.Sucursal))];
   }
@@ -431,6 +433,45 @@ function mostrarVistaPrevia(asesor, creditos) {
 }
 
 /* =======================
+   Helpers de párrafo inteligente (justificar salvo que sea corto)
+   ======================= */
+function isShortParagraph(doc, text, usableWidth) {
+  const lines = doc.splitTextToSize(text, usableWidth);
+  if (lines.length === 0) return true;
+  if (lines.length === 1) {
+    const w = doc.getTextWidth(lines[0]);
+    return w < usableWidth * 0.6; // 60% del ancho => línea corta
+  }
+  const lastW = doc.getTextWidth(lines[lines.length - 1]);
+  return lastW < usableWidth * 0.4; // última línea muy corta
+}
+function addParagraphSmart(doc, text, startY, opts = {}) {
+  const FOOTER_RESERVE = opts.footerReserve ?? 90;
+  const marginLeft = opts.marginLeft ?? 50;
+  const marginRight = opts.marginRight ?? 50;
+  const pageW = doc.internal.pageSize.getWidth();
+  const usableWidth = pageW - marginLeft - marginRight;
+
+  const halign = isShortParagraph(doc, text, usableWidth) ? "left" : "justify";
+
+  const usableBottom = doc.internal.pageSize.getHeight() - FOOTER_RESERVE;
+  if (startY > usableBottom) {
+    doc.addPage();
+    startY = 100;
+  }
+
+  doc.autoTable({
+    startY,
+    body: [[text]],
+    theme: "plain",
+    styles: { fontSize: 11, halign, cellPadding: 1.2 },
+    margin: { left: marginLeft, right: marginRight, bottom: FOOTER_RESERVE }
+  });
+
+  return doc.lastAutoTable.finalY || startY;
+}
+
+/* =======================
    PDF
    ======================= */
 function generarPDF(asesor, sucursal, creditos, tipo) {
@@ -473,7 +514,7 @@ function generarPDF(asesor, sucursal, creditos, tipo) {
     const subFirmante = document.getElementById("subFirmanteSelect").value || inicial;
     const firmanteCoord = (inicial === "OFICINA_CENTRAL")
       ? (subFirmante || "__________________________")
-      : (nombresCoordinadores[subFirmante] || "__________________________");
+      : (nombresCoordinadores[subFirmante] || nombresCoordinadores[inicial] || "__________________________");
 
     const textos = getTextosDocumento(tipo, diasMinimos, asesor, sucursal, firmanteCoord);
 
@@ -493,21 +534,12 @@ function generarPDF(asesor, sucursal, creditos, tipo) {
     doc.text(`Para: ${asesor}`, 50, y); y += 14;
     doc.text(`Sucursal: ${sucursal}`, 50, y); y += 10;
 
-    // Intro (JUSTIFICADO)
-    y = ensureSpace(y);
-    doc.autoTable({
-      startY: y,
-      body: [[textos.intro]],
-      theme: "plain",
-      styles: { fontSize: 11, halign: "justify", cellPadding: 1.2 },
-      margin: { left: 50, right: 50, bottom: FOOTER_RESERVE }
-    });
-
-    // Tabla pegada (2pt)
-    y = doc.lastAutoTable.finalY + 2;
+    // Intro (inteligente: justificar salvo que sea corto)
+    y = addParagraphSmart(doc, textos.intro, y, { footerReserve: FOOTER_RESERVE });
+    y = (doc.lastAutoTable?.finalY || y) + 2;
     y = ensureSpace(y, 10);
 
-    // Tabla de créditos
+    // Tabla de créditos — encabezado negro / texto blanco
     const rows = creditos.map(c => {
       const dsgParsed = parseDiasSinGestion(c["Dias sin Gestion"]);
       const dsgDisplay = (dsgParsed === null) ? "SIN GESTIÓN" : dsgParsed;
@@ -522,66 +554,39 @@ function generarPDF(asesor, sucursal, creditos, tipo) {
 
     doc.autoTable({
       startY: y,
-      head: [['Crédito','Nombre del Socio','Saldo','Días atraso','Días sin gestión']],
+      head: [["Crédito","Nombre del Socio","Saldo","Días atraso","Días sin gestión"]],
       body: rows,
       styles: { fontSize: 9, cellPadding: 1.5, lineWidth: 0.1, valign: "middle" },
-      headStyles: { fillColor: [220,220,220] },
+      headStyles: { fillColor: [0,0,0], textColor: [255,255,255], halign: "center" },
       margin: { left: 40, right: 40, bottom: FOOTER_RESERVE }
     });
-    y = doc.lastAutoTable.finalY + 8;
+    y = (doc.lastAutoTable?.finalY || y) + 8;
     y = ensureSpace(y, 10);
 
     // Total
     doc.setFontSize(11);
-    doc.text(`TOTAL: ${creditos.reduce((acc, c) => acc + toNumberSafe(c["Saldo Total"]), 0).toLocaleString("es-MX", { style: "currency", currency: "MXN" })}`, 50, y);
+    const totalImporte = creditos.reduce((acc, c) => acc + toNumberSafe(c["Saldo Total"]), 0);
+    doc.text(`TOTAL: ${totalImporte.toLocaleString("es-MX", { style: "currency", currency: "MXN" })}`, 50, y);
     y += 12;
 
     if (tipo === "acta") {
       // Hechos
-      y = ensureSpace(y);
-      doc.autoTable({
-        startY: y,
-        body: [[textos.hechos]],
-        theme: "plain",
-        styles: { fontSize: 11, halign: "justify", cellPadding: 1.2 },
-        margin: { left: 50, right: 50, bottom: FOOTER_RESERVE }
-      });
-      y = doc.lastAutoTable.finalY + 6;
+      y = addParagraphSmart(doc, textos.hechos, y, { footerReserve: FOOTER_RESERVE });
+      y = (doc.lastAutoTable?.finalY || y) + 6;
 
       // Faltas
-      y = ensureSpace(y);
-      doc.autoTable({
-        startY: y,
-        body: [[textos.faltas]],
-        theme: "plain",
-        styles: { fontSize: 11, halign: "justify", cellPadding: 1.2 },
-        margin: { left: 50, right: 50, bottom: FOOTER_RESERVE }
-      });
-      y = doc.lastAutoTable.finalY + 6;
+      y = addParagraphSmart(doc, textos.faltas, y, { footerReserve: FOOTER_RESERVE });
+      y = (doc.lastAutoTable?.finalY || y) + 6;
 
       // Determinación
-      y = ensureSpace(y);
-      doc.autoTable({
-        startY: y,
-        body: [[textos.determinacion]],
-        theme: "plain",
-        styles: { fontSize: 11, halign: "justify", cellPadding: 1.2 },
-        margin: { left: 50, right: 50, bottom: FOOTER_RESERVE }
-      });
+      y = addParagraphSmart(doc, textos.determinacion, y, { footerReserve: FOOTER_RESERVE });
 
       // Espacio ~8 saltos de línea (96pt)
-      y = doc.lastAutoTable.finalY + 96;
+      y = (doc.lastAutoTable?.finalY || y) + 96;
 
       // Cierre
-      y = ensureSpace(y);
-      doc.autoTable({
-        startY: y,
-        body: [[textos.cierre]],
-        theme: "plain",
-        styles: { fontSize: 11, halign: "justify", cellPadding: 1.2 },
-        margin: { left: 50, right: 50, bottom: FOOTER_RESERVE }
-      });
-      y = doc.lastAutoTable.finalY + 18;
+      y = addParagraphSmart(doc, textos.cierre, y, { footerReserve: FOOTER_RESERVE });
+      y = (doc.lastAutoTable?.finalY || y) + 18;
 
       // ===== Firmas (4) =====
       const pageWidth = doc.internal.pageSize.getWidth();
@@ -611,16 +616,9 @@ function generarPDF(asesor, sucursal, creditos, tipo) {
 
     } else {
       // EXHORTO – cierre y firma
-      y = ensureSpace(y);
       const { postTabla } = textos;
-      doc.autoTable({
-        startY: y,
-        body: [[postTabla]],
-        theme: "plain",
-        styles: { fontSize: 11, halign: "justify", cellPadding: 1.2 },
-        margin: { left: 50, right: 50, bottom: FOOTER_RESERVE }
-      });
-      y = doc.lastAutoTable.finalY + 18;
+      y = addParagraphSmart(doc, postTabla, y, { footerReserve: FOOTER_RESERVE });
+      y = (doc.lastAutoTable?.finalY || y) + 18;
 
       const pageWidth = doc.internal.pageSize.getWidth();
       y = ensureSpace(y, 120);
@@ -631,6 +629,8 @@ function generarPDF(asesor, sucursal, creditos, tipo) {
       y += 14;
 
       let nombreFirmante, puestoFirmante;
+      const inicial = document.getElementById("coordinadorSelect").value;
+      const subFirmante = document.getElementById("subFirmanteSelect").value || inicial;
       if (subFirmante === "IVANI") {
         nombreFirmante = "IVANI ARCOS LAINES";
         puestoFirmante = "Gestor Regional Zona Maya";
@@ -639,7 +639,7 @@ function generarPDF(asesor, sucursal, creditos, tipo) {
         const asist = oficinaCentral.find(a => a.nombre === subFirmante);
         puestoFirmante = asist ? asist.puesto : "ASISTENTE";
       } else {
-        nombreFirmante = nombresCoordinadores[subFirmante] || "NOMBRE NO DEFINIDO";
+        nombreFirmante = nombresCoordinadores[subFirmante] || nombresCoordinadores[inicial] || "NOMBRE NO DEFINIDO";
         puestoFirmante = "Coordinador de Recuperación Extrajudicial";
       }
       doc.text(nombreFirmante, pageWidth / 2, y, { align: "center" });
