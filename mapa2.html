@@ -157,13 +157,11 @@ function getDireccionPorSucursal(sucursal) {
 /* ===== Fecha/Hora en letras — Zona: CDMX ===== */
 const meses = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
 function numEnEsp(n){
-  const u=["cero","uno","dos","tres","cuatro","seis","siete","ocho","nueve","diez","once","doce","trece","catorce","quince","dieciséis","diecisiete","dieciocho","diecinueve","veinte","veintiuno","veintidós","veintitrés","veinticuatro","veinticinco","veintiséis","veintisiete","veintiocho","veintinueve"];
-  // corregimos el 5 faltante si se pide
-  if(n===5) return "cinco";
+  const u=["cero","uno","dos","tres","cuatro","cinco","seis","siete","ocho","nueve","diez","once","doce","trece","catorce","quince","dieciséis","diecisiete","dieciocho","diecinueve","veinte","veintiuno","veintidós","veintitrés","veinticuatro","veinticinco","veintiséis","veintisiete","veintiocho","veintinueve"];
   if(n<30) return u[n];
   const d=["","","","treinta","cuarenta","cincuenta"];
   const dec=Math.floor(n/10), uni=n%10;
-  return uni===0? d[dec] : `${d[dec]} y ${numEnEsp(uni)}`;
+  return uni===0? d[dec] : `${d[dec]} y ${u[uni]}`;
 }
 function anioEnLetras(y){
   const map={2023:"dos mil veintitrés",2024:"dos mil veinticuatro",2025:"dos mil veinticinco",2026:"dos mil veintiséis"};
@@ -329,7 +327,7 @@ function actualizarSucursales() {
 
   let sucursales;
   if (soloSin) {
-    sucursales = [...new Set(base.filter(d => estaSinGestion(d["Dias sin Gestion"])) .map(d => d.Sucursal))];
+    sucursales = [...new Set(base.filter(d => estaSinGestion(d["Dias sin Gestion"])).map(d => d.Sucursal))];
   } else {
     sucursales = [...new Set(base.map(d => d.Sucursal))];
   }
@@ -433,26 +431,12 @@ function mostrarVistaPrevia(asesor, creditos) {
 }
 
 /* =======================
-   Helpers de párrafo inteligente (justificar salvo que sea corto)
+   Párrafo (siempre justificado) helper
    ======================= */
-function isShortParagraph(doc, text, usableWidth) {
-  const lines = doc.splitTextToSize(text, usableWidth);
-  if (lines.length === 0) return true;
-  if (lines.length === 1) {
-    const w = doc.getTextWidth(lines[0]);
-    return w < usableWidth * 0.6; // 60% del ancho => línea corta
-  }
-  const lastW = doc.getTextWidth(lines[lines.length - 1]);
-  return lastW < usableWidth * 0.4; // última línea muy corta
-}
-function addParagraphSmart(doc, text, startY, opts = {}) {
+function addParagraph(doc, text, startY, opts = {}) {
   const FOOTER_RESERVE = opts.footerReserve ?? 90;
   const marginLeft = opts.marginLeft ?? 50;
   const marginRight = opts.marginRight ?? 50;
-  const pageW = doc.internal.pageSize.getWidth();
-  const usableWidth = pageW - marginLeft - marginRight;
-
-  const halign = isShortParagraph(doc, text, usableWidth) ? "left" : "justify";
 
   const usableBottom = doc.internal.pageSize.getHeight() - FOOTER_RESERVE;
   if (startY > usableBottom) {
@@ -464,11 +448,11 @@ function addParagraphSmart(doc, text, startY, opts = {}) {
     startY,
     body: [[text]],
     theme: "plain",
-    styles: { fontSize: 11, halign, cellPadding: 1.2 },
-    margin: { left: marginLeft, right: marginRight, bottom: FOOTER_RESERVE }
+    styles: { fontSize: 11, halign: "justify", cellPadding: 1.2 },
+    margin: { top: 0, left: marginLeft, right: marginRight, bottom: FOOTER_RESERVE }
   });
 
-  return doc.lastAutoTable.finalY || startY;
+  return (doc.lastAutoTable && doc.lastAutoTable.finalY) || startY;
 }
 
 /* =======================
@@ -511,10 +495,15 @@ function generarPDF(asesor, sucursal, creditos, tipo) {
 
     // Determinar firmante coordinador para textos
     const inicial = document.getElementById("coordinadorSelect").value;
-    const subFirmante = document.getElementById("subFirmanteSelect").value || inicial;
-    const firmanteCoord = (inicial === "OFICINA_CENTRAL")
-      ? (subFirmante || "__________________________")
-      : (nombresCoordinadores[subFirmante] || nombresCoordinadores[inicial] || "__________________________");
+    const subFirmanteVal = document.getElementById("subFirmanteSelect").value || inicial;
+    let firmanteCoord;
+    if (inicial === "OFICINA_CENTRAL") {
+      firmanteCoord = subFirmanteVal || "__________________________";
+    } else if (subFirmanteVal && nombresCoordinadores[subFirmanteVal]) {
+      firmanteCoord = nombresCoordinadores[subFirmanteVal];
+    } else {
+      firmanteCoord = nombresCoordinadores[inicial] || "__________________________";
+    }
 
     const textos = getTextosDocumento(tipo, diasMinimos, asesor, sucursal, firmanteCoord);
 
@@ -534,12 +523,13 @@ function generarPDF(asesor, sucursal, creditos, tipo) {
     doc.text(`Para: ${asesor}`, 50, y); y += 14;
     doc.text(`Sucursal: ${sucursal}`, 50, y); y += 10;
 
-    // Intro (inteligente: justificar salvo que sea corto)
-    y = addParagraphSmart(doc, textos.intro, y, { footerReserve: FOOTER_RESERVE });
-    y = (doc.lastAutoTable?.finalY || y) + 2;
+    // Intro (SIEMPRE JUSTIFICADO)
+    y = addParagraph(doc, textos.intro, y, { footerReserve: FOOTER_RESERVE });
+
+    // ===== Tabla de créditos (ACTA/EXHORTO) — SOLO 1 salto (12pt) de separación =====
+    y = ((doc.lastAutoTable && doc.lastAutoTable.finalY) || y) + 12; // ~1 renglón
     y = ensureSpace(y, 10);
 
-    // Tabla de créditos — encabezado negro / texto blanco
     const rows = creditos.map(c => {
       const dsgParsed = parseDiasSinGestion(c["Dias sin Gestion"]);
       const dsgDisplay = (dsgParsed === null) ? "SIN GESTIÓN" : dsgParsed;
@@ -554,39 +544,41 @@ function generarPDF(asesor, sucursal, creditos, tipo) {
 
     doc.autoTable({
       startY: y,
-      head: [["Crédito","Nombre del Socio","Saldo","Días atraso","Días sin gestión"]],
+      head: [['Crédito','Nombre del Socio','Saldo','Días atraso','Días sin gestión']],
       body: rows,
       styles: { fontSize: 9, cellPadding: 1.5, lineWidth: 0.1, valign: "middle" },
-      headStyles: { fillColor: [0,0,0], textColor: [255,255,255], halign: "center" },
-      margin: { left: 40, right: 40, bottom: FOOTER_RESERVE }
+      headStyles: { fillColor: [0, 0, 0], textColor: [255, 255, 255], halign: "center" },
+      margin: { top: 0, left: 40, right: 40, bottom: FOOTER_RESERVE }
     });
-    y = (doc.lastAutoTable?.finalY || y) + 8;
+    y = ((doc.lastAutoTable && doc.lastAutoTable.finalY) || y) + 8;
     y = ensureSpace(y, 10);
 
     // Total
     doc.setFontSize(11);
-    const totalImporte = creditos.reduce((acc, c) => acc + toNumberSafe(c["Saldo Total"]), 0);
-    doc.text(`TOTAL: ${totalImporte.toLocaleString("es-MX", { style: "currency", currency: "MXN" })}`, 50, y);
+    doc.text(
+      `TOTAL: ${creditos.reduce((acc, c) => acc + toNumberSafe(c["Saldo Total"]), 0).toLocaleString("es-MX", { style: "currency", currency: "MXN" })}`,
+      50, y
+    );
     y += 12;
 
     if (tipo === "acta") {
       // Hechos
-      y = addParagraphSmart(doc, textos.hechos, y, { footerReserve: FOOTER_RESERVE });
-      y = (doc.lastAutoTable?.finalY || y) + 6;
+      y = addParagraph(doc, textos.hechos, y, { footerReserve: FOOTER_RESERVE });
+      y = ((doc.lastAutoTable && doc.lastAutoTable.finalY) || y) + 6;
 
       // Faltas
-      y = addParagraphSmart(doc, textos.faltas, y, { footerReserve: FOOTER_RESERVE });
-      y = (doc.lastAutoTable?.finalY || y) + 6;
+      y = addParagraph(doc, textos.faltas, y, { footerReserve: FOOTER_RESERVE });
+      y = ((doc.lastAutoTable && doc.lastAutoTable.finalY) || y) + 6;
 
       // Determinación
-      y = addParagraphSmart(doc, textos.determinacion, y, { footerReserve: FOOTER_RESERVE });
+      y = addParagraph(doc, textos.determinacion, y, { footerReserve: FOOTER_RESERVE });
 
       // Espacio ~8 saltos de línea (96pt)
-      y = (doc.lastAutoTable?.finalY || y) + 96;
+      y = ((doc.lastAutoTable && doc.lastAutoTable.finalY) || y) + 96;
 
       // Cierre
-      y = addParagraphSmart(doc, textos.cierre, y, { footerReserve: FOOTER_RESERVE });
-      y = (doc.lastAutoTable?.finalY || y) + 18;
+      y = addParagraph(doc, textos.cierre, y, { footerReserve: FOOTER_RESERVE });
+      y = ((doc.lastAutoTable && doc.lastAutoTable.finalY) || y) + 18;
 
       // ===== Firmas (4) =====
       const pageWidth = doc.internal.pageSize.getWidth();
@@ -616,9 +608,9 @@ function generarPDF(asesor, sucursal, creditos, tipo) {
 
     } else {
       // EXHORTO – cierre y firma
-      const { postTabla } = textos;
-      y = addParagraphSmart(doc, postTabla, y, { footerReserve: FOOTER_RESERVE });
-      y = (doc.lastAutoTable?.finalY || y) + 18;
+      const { postTabla } = getTextosDocumento("exhorto", diasMinimos);
+      y = addParagraph(doc, postTabla, y, { footerReserve: FOOTER_RESERVE });
+      y = ((doc.lastAutoTable && doc.lastAutoTable.finalY) || y) + 18;
 
       const pageWidth = doc.internal.pageSize.getWidth();
       y = ensureSpace(y, 120);
