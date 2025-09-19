@@ -574,7 +574,7 @@ function generarPDF(asesor, sucursal, creditos, tipo) {
       y = addParagraph(doc, textos.determinacion, y, { footerReserve: FOOTER_RESERVE });
 
       // Espacio ~8 saltos de línea (96pt)
-      y = ((doc.lastAutoTable && doc.lastAutoTable.finalY) || y) + 96;
+      y = ((doc.lastAutoTable && doc.lastAutoTable.finalY) || y) + 144;
 
       // Cierre
       y = addParagraph(doc, textos.cierre, y, { footerReserve: FOOTER_RESERVE });
