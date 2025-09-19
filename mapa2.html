@@ -450,16 +450,16 @@ function generarPDF(asesor, sucursal, creditos, tipo) {
   const footerImg = new Image();
   footerImg.crossOrigin = "Anonymous"; footerImg.src = footerUrl;
 
-  const FOOTER_RESERVE = 90; // reserva para que nada se esconda tras el pie
+  const FOOTER_RESERVE = 90; // reserva para no pisar el pie
 
   function usableBottomY() {
     const pageHeight = doc.internal.pageSize.getHeight();
-    return pageHeight - FOOTER_RESERVE; // límite inferior utilizable
+    return pageHeight - FOOTER_RESERVE;
   }
   function ensureSpace(nextY, extra=0) {
     if (nextY + extra > usableBottomY()) {
       doc.addPage();
-      return 100; // nueva página, margen superior cómodo
+      return 100;
     }
     return nextY;
   }
@@ -493,17 +493,17 @@ function generarPDF(asesor, sucursal, creditos, tipo) {
     doc.text(`Para: ${asesor}`, 50, y); y += 14;
     doc.text(`Sucursal: ${sucursal}`, 50, y); y += 10;
 
-    // Intro (alineación izquierda, sin “estirar” palabras)
+    // Intro (JUSTIFICADO)
     y = ensureSpace(y);
     doc.autoTable({
       startY: y,
       body: [[textos.intro]],
       theme: "plain",
-      styles: { fontSize: 11, halign: "left", overflow: "linebreak", cellPadding: 1.2 },
+      styles: { fontSize: 11, halign: "justify", cellPadding: 1.2 },
       margin: { left: 50, right: 50, bottom: FOOTER_RESERVE }
     });
 
-    // Pegar la tabla (solo 2pt de separación)
+    // Tabla pegada (2pt)
     y = doc.lastAutoTable.finalY + 2;
     y = ensureSpace(y, 40);
 
@@ -543,7 +543,7 @@ function generarPDF(asesor, sucursal, creditos, tipo) {
         startY: y,
         body: [[textos.hechos]],
         theme: "plain",
-        styles: { fontSize: 11, halign: "left", overflow: "linebreak", cellPadding: 1.2 },
+        styles: { fontSize: 11, halign: "justify", cellPadding: 1.2 },
         margin: { left: 50, right: 50, bottom: FOOTER_RESERVE }
       });
       y = doc.lastAutoTable.finalY + 6;
@@ -554,7 +554,7 @@ function generarPDF(asesor, sucursal, creditos, tipo) {
         startY: y,
         body: [[textos.faltas]],
         theme: "plain",
-        styles: { fontSize: 11, halign: "left", overflow: "linebreak", cellPadding: 1.2 },
+        styles: { fontSize: 11, halign: "justify", cellPadding: 1.2 },
         margin: { left: 50, right: 50, bottom: FOOTER_RESERVE }
       });
       y = doc.lastAutoTable.finalY + 6;
@@ -565,11 +565,11 @@ function generarPDF(asesor, sucursal, creditos, tipo) {
         startY: y,
         body: [[textos.determinacion]],
         theme: "plain",
-        styles: { fontSize: 11, halign: "left", overflow: "linebreak", cellPadding: 1.2 },
+        styles: { fontSize: 11, halign: "justify", cellPadding: 1.2 },
         margin: { left: 50, right: 50, bottom: FOOTER_RESERVE }
       });
 
-      // Espacio de ~8 saltos de línea (96pt)
+      // Espacio ~8 saltos de línea (96pt)
       y = doc.lastAutoTable.finalY + 96;
 
       // Cierre
@@ -578,12 +578,12 @@ function generarPDF(asesor, sucursal, creditos, tipo) {
         startY: y,
         body: [[textos.cierre]],
         theme: "plain",
-        styles: { fontSize: 11, halign: "left", overflow: "linebreak", cellPadding: 1.2 },
+        styles: { fontSize: 11, halign: "justify", cellPadding: 1.2 },
         margin: { left: 50, right: 50, bottom: FOOTER_RESERVE }
       });
       y = doc.lastAutoTable.finalY + 18;
 
-      // ===== Firmas (4) al final (no pie) =====
+      // ===== Firmas (4) =====
       const pageWidth = doc.internal.pageSize.getWidth();
       const colW = (pageWidth - 100 - 40) / 2; // márgenes 50, gap 40
       const x1 = 50, x2 = 50 + colW + 40;
@@ -617,7 +617,7 @@ function generarPDF(asesor, sucursal, creditos, tipo) {
         startY: y,
         body: [[postTabla]],
         theme: "plain",
-        styles: { fontSize: 11, halign: "left", overflow: "linebreak", cellPadding: 1.2 },
+        styles: { fontSize: 11, halign: "justify", cellPadding: 1.2 },
         margin: { left: 50, right: 50, bottom: FOOTER_RESERVE }
       });
       y = doc.lastAutoTable.finalY + 18;
@@ -629,9 +629,6 @@ function generarPDF(asesor, sucursal, creditos, tipo) {
       y += 30;
       doc.text("_______________________________", pageWidth / 2, y, { align: "center" });
       y += 14;
-
-      const inicial = document.getElementById("coordinadorSelect").value;
-      const subFirmante = document.getElementById("subFirmanteSelect").value || inicial;
 
       let nombreFirmante, puestoFirmante;
       if (subFirmante === "IVANI") {
@@ -650,7 +647,7 @@ function generarPDF(asesor, sucursal, creditos, tipo) {
       doc.text(puestoFirmante, pageWidth / 2, y, { align: "center" });
     }
 
-    // Pie gráfico institucional (se dibuja encima, pero ya reservamos espacio)
+    // Pie + numeración de páginas
     footerImg.onload = function () {
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
@@ -662,7 +659,11 @@ function generarPDF(asesor, sucursal, creditos, tipo) {
       const pageCount = doc.getNumberOfPages();
       for (let i = 1; i <= pageCount; i++) {
         doc.setPage(i);
+        // Imagen del pie
         doc.addImage(footerImg, "PNG", footerX, footerY, footerWidth, footerHeight);
+        // Numeración: “Página X de Y” justo arriba del pie
+        doc.setFontSize(9);
+        doc.text(`Página ${i} de ${pageCount}`, pageWidth - 60, footerY - 6, { align: "right" });
       }
 
       const nombreArchivo = (tipo === "acta" ? "ACTA_ADMINISTRATIVA" : "EXHORTO");
