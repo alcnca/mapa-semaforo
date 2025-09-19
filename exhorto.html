@@ -6,6 +6,12 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+  <style>
+    /* Vista previa: sólo centrar las 2 últimas columnas; las demás, a la izquierda */
+    #tablaPreview td:nth-child(1), #tablaPreview td:nth-child(2) { text-align: left; }
+    #tablaPreview td:nth-child(3) { text-align: right; }
+    #tablaPreview td:nth-child(4), #tablaPreview td:nth-child(5) { text-align: center; }
+  </style>
 </head>
 <body class="container py-4">
   <h1 class="mb-4">Generación de Documentos</h1>
@@ -36,7 +42,7 @@
   </div>
 
   <div class="mb-4">
-    <button class="btn btn-primary w-100" onclick="cargarDatos()">Aplicar</button>
+    <button class="btn btn-primary w-100" id="btnAplicar">Aplicar</button>
   </div>
 
   <div id="contenido"></div>
@@ -51,8 +57,8 @@
         </div>
         <div class="modal-body">
           <h6 id="asesorTitulo"></h6>
-          <table class="table table-sm table-bordered text-center align-middle">
-            <thead class="table-dark">
+          <table class="table table-sm table-bordered align-middle">
+            <thead class="table-dark text-center">
               <tr>
                 <th>Crédito</th>
                 <th>Nombre del Socio</th>
@@ -63,7 +69,6 @@
             </thead>
             <tbody id="tablaPreview"></tbody>
           </table>
-          <!-- TOTAL centrado en la vista previa -->
           <h6 class="mt-3 text-center" id="totalPreview"></h6>
         </div>
         <div class="modal-footer gap-2">
@@ -79,10 +84,26 @@
     /* =======================
        Config / Datos externos
        ======================= */
-    const URL_DATOS =
-      "https://raw.githubusercontent.com/alcnca/mapa-semaforo/refs/heads/main/datos.json";
-    const URL_DIRECCION =
-      "https://raw.githubusercontent.com/alcnca/mapa-semaforo/refs/heads/main/Direccion.json";
+    const URL_DATOS = "https://raw.githubusercontent.com/alcnca/mapa-semaforo/refs/heads/main/datos.json";
+    const URL_DIRECCION = "https://raw.githubusercontent.com/alcnca/mapa-semaforo/refs/heads/main/Direccion.json";
+
+    // Imágenes (GitHub Pages) + caché en memoria como DataURL
+    const HEADER_URL = "https://alcnca.github.io/mapa-semaforo/encabezado.png";
+    const FOOTER_URL = "https://alcnca.github.io/mapa-semaforo/piepagina.png";
+    let HEADER_DATA = null;
+    let FOOTER_DATA = null;
+
+    async function blobToDataURL(blob){
+      return await new Promise(res => { const r=new FileReader(); r.onload=()=>res(r.result); r.readAsDataURL(blob); });
+    }
+    async function fetchAsDataURL(url){
+      try{
+        const r = await fetch(url, { cache: "force-cache" });
+        if (!r.ok) throw 0;
+        const b = await r.blob();
+        return await blobToDataURL(b);
+      }catch{ return null; }
+    }
 
     /* =======================
        Estado
@@ -103,25 +124,13 @@
       MCRAVI: "MARLEN CECILIA RAMIREZ VILLANUEVA",
       INANME: "INES ANDRADE MENDEZ",
       MISADA: "MARIO ISRAEL SALINAS DAMIAN",
-      OFICINA_CENTRAL: "OFICINA CENTRAL",
+      OFICINA_CENTRAL: "OFICINA CENTRAL"
     };
     const oficinaCentral = [
-      {
-        nombre: "SANDRA LORENA PACHECO ROBLES",
-        puesto: "ASISTENTE DE RECUPERACIÓN EXTRAJUDICIAL",
-      },
-      {
-        nombre: "ROLANDO VALERIANO HURTADO",
-        puesto: "ASISTENTE DE RECUPERACIÓN EXTRAJUDICIAL",
-      },
-      {
-        nombre: "ANDREA ACELA MORGA DÁVILA",
-        puesto: "ASISTENTE DE RECUPERACIÓN EXTRAJUDICIAL",
-      },
-      {
-        nombre: "GUSTAVO ESTUDILLO DE LA CRUZ",
-        puesto: "ASISTENTE DE RECUPERACIÓN EXTRAJUDICIAL",
-      },
+      { nombre: "SANDRA LORENA PACHECO ROBLES", puesto: "ASISTENTE DE RECUPERACIÓN EXTRAJUDICIAL" },
+      { nombre: "ROLANDO VALERIANO HURTADO", puesto: "ASISTENTE DE RECUPERACIÓN EXTRAJUDICIAL" },
+      { nombre: "ANDREA ACELA MORGA DÁVILA", puesto: "ASISTENTE DE RECUPERACIÓN EXTRAJUDICIAL" },
+      { nombre: "GUSTAVO ESTUDILLO DE LA CRUZ", puesto: "ASISTENTE DE RECUPERACIÓN EXTRAJUDICIAL" }
     ];
 
     /* =======================
@@ -137,132 +146,57 @@
     function parseDiasSinGestion(raw) {
       if (raw == null) return null;
       const s = String(raw).toLowerCase().trim();
-      const marcadores = new Set([
-        "",
-        "sin gestion",
-        "sin gestión",
-        "s/g",
-        "sg",
-        "sen gestion",
-        "sin-gestion",
-        "sin_gestion",
-      ]);
+      const marcadores = new Set(["", "sin gestion", "sin gestión", "s/g", "sg", "sen gestion", "sin-gestion", "sin_gestion"]);
       if (marcadores.has(s)) return null;
       const soloNum = s.replace(/[^0-9-]/g, "");
       if (soloNum === "" || soloNum === "-" || soloNum === "--") return null;
       const n = parseInt(soloNum, 10);
       return isNaN(n) ? null : n;
     }
-    function estaSinGestion(raw) {
-      return parseDiasSinGestion(raw) === null;
-    }
+    function estaSinGestion(raw) { return parseDiasSinGestion(raw) === null; }
 
     function norm(s) {
       return (s ?? "")
         .toString()
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
         .replace(/\s+/g, " ")
         .trim()
         .toUpperCase();
     }
     function getDireccionPorSucursal(sucursal) {
       const sNorm = norm(sucursal);
-      let found = direcciones.find((d) => norm(d.Nombre_Sucursal) === sNorm);
+      let found = direcciones.find(d => norm(d.Nombre_Sucursal) === sNorm);
       if (found) return found;
-      found = direcciones.find(
-        (d) =>
-          norm(d.SUCURSAL) === sNorm ||
-          norm(d.Sucursal) === sNorm ||
-          norm(d.Nombre) === sNorm
+      found = direcciones.find(d =>
+        norm(d.SUCURSAL) === sNorm ||
+        norm(d.Sucursal) === sNorm ||
+        norm(d.Nombre) === sNorm
       );
       if (found) return found;
-      found = direcciones.find((d) => norm(d.Nombre_Sucursal || "").includes(sNorm));
+      found = direcciones.find(d => norm(d.Nombre_Sucursal || "").includes(sNorm));
       return found || null;
     }
 
     /* ===== Fecha/Hora en letras — Zona: CDMX ===== */
-    const meses = [
-      "enero",
-      "febrero",
-      "marzo",
-      "abril",
-      "mayo",
-      "junio",
-      "julio",
-      "agosto",
-      "septiembre",
-      "octubre",
-      "noviembre",
-      "diciembre",
-    ];
-    function numEnEsp(n) {
-      const u = [
-        "cero",
-        "uno",
-        "dos",
-        "tres",
-        "cuatro",
-        "cinco",
-        "seis",
-        "siete",
-        "ocho",
-        "nueve",
-        "diez",
-        "once",
-        "doce",
-        "trece",
-        "catorce",
-        "quince",
-        "dieciséis",
-        "diecisiete",
-        "dieciocho",
-        "diecinueve",
-        "veinte",
-        "veintiuno",
-        "veintidós",
-        "veintitrés",
-        "veinticuatro",
-        "veinticinco",
-        "veintiséis",
-        "veintisiete",
-        "veintiocho",
-        "veintinueve",
-      ];
-      if (n < 30) return u[n];
-      const d = ["", "", "", "treinta", "cuarenta", "cincuenta"];
-      const dec = Math.floor(n / 10),
-        uni = n % 10;
-      return uni === 0 ? d[dec] : `${d[dec]} y ${u[uni]}`;
+    const meses = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+    function numEnEsp(n){
+      const u=["cero","uno","dos","tres","cuatro","cinco","seis","siete","ocho","nueve","diez","once","doce","trece","catorce","quince","dieciséis","diecisiete","dieciocho","diecinueve","veinte","veintiuno","veintidós","veintitrés","veinticuatro","veinticinco","veintiséis","veintisiete","veintiocho","veintinueve"];
+      if(n<30) return u[n];
+      const d=["","","","treinta","cuarenta","cincuenta"];
+      const dec=Math.floor(n/10), uni=n%10;
+      return uni===0? d[dec] : `${d[dec]} y ${u[uni]}`;
     }
-    function anioEnLetras(y) {
-      const map = {
-        2023: "dos mil veintitrés",
-        2024: "dos mil veinticuatro",
-        2025: "dos mil veinticinco",
-        2026: "dos mil veintiséis",
-      };
-      return map[y] || y.toString();
+    function anioEnLetras(y){
+      const map={2023:"dos mil veintitrés",2024:"dos mil veinticuatro",2025:"dos mil veinticinco",2026:"dos mil veintiséis"};
+      return map[y]||y.toString();
     }
-    // === Helpers de tiempo en CDMX y conversión a texto ===
-    function ahoraCDMX() {
+    function ahoraCDMX(){
       const ahora = new Date();
-      return new Date(
-        ahora.toLocaleString("en-US", { timeZone: "America/Mexico_City" })
-      );
+      return new Date(ahora.toLocaleString("en-US",{timeZone:"America/Mexico_City"}));
     }
-    function fechaEnLetrasFrom(dateObj) {
-      const h = dateObj.getHours(),
-        m = dateObj.getMinutes(),
-        d = dateObj.getDate(),
-        mm = dateObj.getMonth(),
-        y = dateObj.getFullYear();
-      return `${numEnEsp(h)} horas con ${m === 0 ? "cero" : numEnEsp(m)} minutos del ${numEnEsp(
-        d
-      )} de ${meses[mm]} de ${anioEnLetras(y)}`;
-    }
-    function fechaEnLetrasAhora() {
-      return fechaEnLetrasFrom(ahoraCDMX());
+    function fechaEnLetrasFrom(dateObj){
+      const h=dateObj.getHours(), m=dateObj.getMinutes(), d=dateObj.getDate(), mm=dateObj.getMonth(), y=dateObj.getFullYear();
+      return `${numEnEsp(h)} horas con ${m===0?"cero":numEnEsp(m)} minutos del ${numEnEsp(d)} de ${meses[mm]} de ${anioEnLetras(y)}`;
     }
 
     /* =======================
@@ -273,19 +207,17 @@
         const dir = getDireccionPorSucursal(sucursal) || {};
         const MUNICIPIO = (dir.MUNICIPIO || "________________").toString().trim();
         const ESTADO = (dir.ESTADO || "________________").toString().trim();
-        const NOMBRE_SUCURSAL = (dir.Nombre_Sucursal || sucursal || "________________")
-          .toString()
-          .trim();
+        const NOMBRE_SUCURSAL = (dir.Nombre_Sucursal || sucursal || "________________").toString().trim();
         const DIRECCION = (dir.DIRECCION || "________________").toString().trim();
         const GERENTE = (dir.GERENTE || "__________________________").toString().trim();
 
-        // === Inicio y cierre: cierre = inicio + 30 minutos (CDMX) ===
         const inicioLocal = ahoraCDMX();
-        const cierreLocal = new Date(inicioLocal.getTime() + 30 * 60000);
+        const cierreLocal = new Date(inicioLocal.getTime() + 30*60000); // +30 minutos
         const FECHA_INICIO_LETRAS = fechaEnLetrasFrom(inicioLocal);
         const FECHA_CIERRE_LETRAS = fechaEnLetrasFrom(cierreLocal);
 
-        const intro = `En el Municipio de ${MUNICIPIO}, ${ESTADO}, en la sucursal de ${NOMBRE_SUCURSAL}, siendo las ${FECHA_INICIO_LETRAS}, estando presentes en las instalaciones de la COOPERATIVA ACREIMEX S.C. de A.P. de R.L. de C.V., con domicilio en ${DIRECCION}, los ciudadanos ${firmanteCoord}, que ostenta el puesto de Coordinador de Recuperación y ${asesor} con el puesto de Asesor de Créditos y Recuperación Individual. Estando presentes en su carácter de testigos los ciudadanos ${GERENTE} que ostenta el puesto de Gerente de Sucursal y ADAN GUTIERREZ HERNANDEZ con el puesto de Gerente de Recuperación Extrajudicial, a quienes les constan los hechos que dan origen al levantamiento de la presente acta.
+        const intro = 
+`En el Municipio de ${MUNICIPIO}, ${ESTADO}, en la sucursal de ${NOMBRE_SUCURSAL}, siendo las ${FECHA_INICIO_LETRAS}, estando presentes en las instalaciones de la COOPERATIVA ACREIMEX S.C. de A.P. de R.L. de C.V., con domicilio en ${DIRECCION}, los ciudadanos ${firmanteCoord}, que ostenta el puesto de Coordinador de Recuperación y ${asesor} con el puesto de Asesor de Créditos y Recuperación Individual. Estando presentes en su carácter de testigos los ciudadanos ${GERENTE} que ostenta el puesto de Gerente de Sucursal y ADAN GUTIERREZ HERNANDEZ con el puesto de Gerente de Recuperación Extrajudicial, a quienes les constan los hechos que dan origen al levantamiento de la presente acta.
 
 A continuación, el ciudadano ${firmanteCoord}, narra a los comparecientes los hechos y las razones por las cuales se procede a levantar la presente acta administrativa que consiste en lo siguiente:
 
@@ -297,7 +229,8 @@ En términos de lo dispuesto en el Manual de Gestión de Recuperación de Carter
 • Utilizar los mecanismos autorizados para la gestión de cobranza (llamadas telefónicas, visitas, mensajería SMS o WhatsApp, notificaciones escritas, etc.), siempre con respeto y dentro del horario permitido.
 • Registrar en el sistema informático las negociaciones, acuerdos o compromisos de pago establecidos con el socio, así como anexar físicamente al expediente los documentos correspondientes, cuando aplique.`;
 
-        const hechos = `Hechos:
+        const hechos =
+`Hechos:
 Se hace constar que el C. ${asesor}, en su calidad de Asesor de Crédito y Recuperación, omitió realizar la gestión de seguimiento a los créditos señalados en la tabla anterior, mismos que presentan un atraso considerable hasta la fecha de la presente acta.
 
 De la revisión efectuada al sistema informático, se constató lo siguiente:
@@ -306,7 +239,8 @@ De la revisión efectuada al sistema informático, se constató lo siguiente:
 • No se documentaron convenios, acuerdos o compromisos de pago con el socio deudor ni con sus avales.
 • Se incumplió con la obligación de prevenir el incremento del atraso, al no dar seguimiento oportuno desde los primeros días de mora.`;
 
-        const faltas = `Faltas y omisiones detectadas:
+        const faltas =
+`Faltas y omisiones detectadas:
 La conducta descrita constituye un incumplimiento a lo dispuesto en los numerales:
 
 1.4 Formalidades para desempeñar las gestiones de cobro, al no registrar ni evidenciar convenios, acuerdos o contactos con el socio.
@@ -314,7 +248,8 @@ La conducta descrita constituye un incumplimiento a lo dispuesto en los numerale
 2. Políticas generales, al no generar ni respaldar las evidencias mínimas de gestión de recuperación (carta invitación, requerimientos, llamadas, mensajería, etc.).
 3.14 Responsabilidades del Asesor de Crédito y Recuperación, al no dar seguimiento diario ni documentar en el sistema las gestiones correspondientes.`;
 
-        const determinacion = `Determinación:
+        const determinacion =
+`Determinación:
 Por lo anterior, se procede a formalizar la presente acta como parte del procedimiento tendiente para
 la aplicación de la medida disciplinaria correspondiente a fin de dejar constancia de las faltas y
 omisiones cometidas por el Asesor de Crédito y Recuperación, mismas que impactan negativamente
@@ -322,38 +257,35 @@ en los indicadores de recuperación de cartera de la sucursal.
 Acto posterior, se le concede al socio colaborador el derecho del uso de la palabra con relación a los
 hechos que anteceden, manifestando:`;
 
-        const cierre = `Leída que fue la presente, se ratifica en todas y cada una de sus partes por los comparecientes.
+        const cierre =
+`Leída que fue la presente, se ratifica en todas y cada una de sus partes por los comparecientes.
 Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al calce y al margen para constancia.`;
 
         return {
           titulo: "ACTA ADMINISTRATIVA",
           subtitulo: "Se levanta la presente ACTA ADMINISTRATIVA",
-          intro,
-          hechos,
-          faltas,
-          determinacion,
-          cierre,
-          gerenteSucursal: GERENTE,
+          intro, hechos, faltas, determinacion, cierre,
+          gerenteSucursal: GERENTE
         };
       }
 
       // EXHORTO
       const subtitulo = `Motivo: Tener créditos en su cartera con más de ${diasMinimos} días sin gestión`;
-      const intro =
-        "Me permito informarle que, derivado de la revisión del seguimiento a los créditos con más de 30 días de atraso de la cartera que usted administra, se han detectado créditos que carecen de gestión y seguimiento en el sistema, por el tiempo indicado en el motivo de la presente y que a continuación se enlistan:";
-      const postTabla =
-        "Derivado de esta situación se detecta su falta de responsabilidad, compromiso, esmero y dedicación en la ejecución de sus responsabilidades; por dicha omisión SE LEVANTA EL PRESENTE EXHORTO para su conocimiento y cumplimiento de dichas actividades, ya que nos ayuda a llevar un sano control de la cartera, manteniendo el menor porcentaje de mora y cuidando el patrimonio de la cooperativa. Para el caso de nueva omisión se tomarán las medidas necesarias de manera inmediata.";
+      const intro = `Me permito informarle que, derivado de la revisión del seguimiento a los créditos con más de 30 días de atraso de la cartera que usted administra, se han detectado créditos que carecen de gestión y seguimiento en el sistema, por el tiempo indicado en el motivo de la presente y que a continuación se enlistan:`;
+      const postTabla = `Derivado de esta situación se detecta su falta de responsabilidad, compromiso, esmero y dedicación en la ejecución de sus responsabilidades; por dicha omisión SE LEVANTA EL PRESENTE EXHORTO para su conocimiento y cumplimiento de dichas actividades, ya que nos ayuda a llevar un sano control de la cartera, manteniendo el menor porcentaje de mora y cuidando el patrimonio de la cooperativa. Para el caso de nueva omisión se tomarán las medidas necesarias de manera inmediata.`;
       return { titulo: "EXHORTO", subtitulo, intro, postTabla };
     }
 
     /* =======================
-       Carga inicial
+       Carga inicial (datos + imágenes una sola vez)
        ======================= */
     window.addEventListener("DOMContentLoaded", async () => {
       try {
-        const [resDatos, resDir] = await Promise.all([
+        const [resDatos, resDir, headerData, footerData] = await Promise.all([
           fetch(URL_DATOS, { cache: "no-store" }),
           fetch(URL_DIRECCION, { cache: "no-store" }),
+          fetchAsDataURL(HEADER_URL),
+          fetchAsDataURL(FOOTER_URL)
         ]);
         data = await resDatos.json();
 
@@ -362,14 +294,12 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
           direcciones = dirJson;
         } else if (dirJson && typeof dirJson === "object") {
           const vals = Object.values(dirJson);
-          if (vals.length && typeof vals[0] === "object") {
-            direcciones = vals;
-          } else {
-            direcciones = [dirJson];
-          }
+          direcciones = (vals.length && typeof vals[0] === "object") ? vals : [dirJson];
         } else {
           direcciones = [];
         }
+        HEADER_DATA = headerData;  // pueden ser null si falla => seguimos
+        FOOTER_DATA = footerData;
       } catch (e) {
         alert("Error cargando datos: " + e.message);
         return;
@@ -388,7 +318,7 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
         const valorCoord = selCoord.value;
 
         if (valorCoord === "OFICINA_CENTRAL") {
-          oficinaCentral.forEach((p) => {
+          oficinaCentral.forEach(p => {
             subSel.innerHTML += `<option value="${p.nombre}">${p.nombre} (${p.puesto})</option>`;
           });
           subDiv.style.display = "block";
@@ -403,6 +333,9 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
         actualizarSucursales();
       });
 
+      document.getElementById("btnAplicar").addEventListener("click", cargarDatos);
+      document.getElementById("soloSinGestion").addEventListener("change", actualizarSucursales);
+
       actualizarSucursales();
     });
 
@@ -413,28 +346,23 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
       const selSuc = document.getElementById("sucursalSelect");
       const sucursalActual = selSuc.value;
       selSuc.innerHTML = '<option value="">-- Selecciona --</option>';
-      lista.forEach((s) => (selSuc.innerHTML += `<option value="${s}">${s}</option>`));
+      lista.forEach(s => selSuc.innerHTML += `<option value="${s}">${s}</option>`);
       if (lista.includes(sucursalActual)) selSuc.value = sucursalActual;
     }
     function actualizarSucursales() {
       const soloSin = document.getElementById("soloSinGestion").checked;
       const coord = document.getElementById("coordinadorSelect").value;
       let base = data.slice();
-      if (coord && coord !== "OFICINA_CENTRAL") base = base.filter((d) => d.Coordinador === coord);
+      if (coord && coord !== "OFICINA_CENTRAL") base = base.filter(d => d.Coordinador === coord);
 
       let sucursales;
       if (soloSin) {
-        sucursales = [
-          ...new Set(
-            base.filter((d) => estaSinGestion(d["Dias sin Gestion"])) .map((d) => d.Sucursal)
-          ),
-        ];
+        sucursales = [...new Set(base.filter(d => estaSinGestion(d["Dias sin Gestion"])).map(d => d.Sucursal))];
       } else {
-        sucursales = [...new Set(base.map((d) => d.Sucursal))];
+        sucursales = [...new Set(base.map(d => d.Sucursal))];
       }
       llenarSucursales(sucursales);
     }
-    document.getElementById("soloSinGestion").addEventListener("change", actualizarSucursales);
 
     /* =======================
        Cargar tarjetas
@@ -445,15 +373,15 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
       sucursalSeleccionada = document.getElementById("sucursalSelect").value;
       if (!sucursalSeleccionada) return;
 
-      const registros = data.filter((d) => {
+      const registros = data.filter(d => {
         if (d.Sucursal !== sucursalSeleccionada) return false;
         const dias = parseDiasSinGestion(d["Dias sin Gestion"]);
         if (soloSinGestion) return dias === null;
-        return dias === null || (typeof dias === "number" && dias >= diasFiltro);
+        return (dias === null) || (typeof dias === "number" && dias >= diasFiltro);
       });
 
       const asesores = {};
-      registros.forEach((r) => {
+      registros.forEach(r => {
         const ejecutivo = r.Ejecutivo || "SIN ASESOR";
         if (!asesores[ejecutivo]) asesores[ejecutivo] = [];
         asesores[ejecutivo].push(r);
@@ -484,8 +412,7 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
             <button class=\"btn btn-warning btn-sm\">Vista Previa</button>
           </div>
         `;
-        card.querySelector("button").onclick = () =>
-          mostrarVistaPrevia(asesor, asesores[asesor]);
+        card.querySelector("button").onclick = () => mostrarVistaPrevia(asesor, asesores[asesor]);
         cont.appendChild(card);
       }
     }
@@ -496,311 +423,220 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
     function mostrarVistaPrevia(asesor, creditos) {
       asesorSeleccionado = asesor;
       creditosSeleccionados = creditos;
-      document.getElementById("asesorTitulo").textContent = `Asesor: ${asesor} | Sucursal: ${sucursalSeleccionada}`;
+      document.getElementById("asesorTitulo").textContent =
+        `Asesor: ${asesor} | Sucursal: ${sucursalSeleccionada}`;
 
       const tbody = document.getElementById("tablaPreview");
       tbody.innerHTML = "";
 
       let total = 0;
-      creditos.forEach((c) => {
+      creditos.forEach(c => {
         const saldo = toNumberSafe(c["Saldo Total"]);
         total += saldo;
         const dsgParsed = parseDiasSinGestion(c["Dias sin Gestion"]);
-        const dsgDisplay = dsgParsed === null ? "SIN GESTIÓN" : dsgParsed;
+        const dsgDisplay = (dsgParsed === null) ? "SIN GESTIÓN" : dsgParsed;
 
         tbody.innerHTML += `
           <tr>
             <td>${c.Linea ?? ""}</td>
             <td>${c.Nombre ?? ""}</td>
-            <td>${saldo.toLocaleString("es-MX", { style: "currency", currency: "MXN" })}</td>
-            <td>${c["Dias de Atraso"] ?? ""}</td>
-            <td>${dsgDisplay}</td>
+            <td class="text-end">${saldo.toLocaleString("es-MX", { style: "currency", currency: "MXN" })}</td>
+            <td class="text-center">${c["Dias de Atraso"] ?? ""}</td>
+            <td class="text-center">${dsgDisplay}</td>
           </tr>
         `;
       });
 
-      document.getElementById("totalPreview").textContent = `TOTAL: ${total.toLocaleString("es-MX", { style: "currency", currency: "MXN" })}`;
+      document.getElementById("totalPreview").textContent =
+        `TOTAL: ${total.toLocaleString("es-MX", { style: "currency", currency: "MXN" })}`;
 
-      document.getElementById("btnGenerarExhorto").onclick = () =>
-        generarPDF(asesorSeleccionado, sucursalSeleccionada, creditosSeleccionados, "exhorto");
+      const btnExhorto = document.getElementById("btnGenerarExhorto");
+      const btnActa = document.getElementById("btnGenerarActa");
 
-      document.getElementById("btnGenerarActa").onclick = () =>
-        generarPDF(asesorSeleccionado, sucursalSeleccionada, creditosSeleccionados, "acta");
+      btnExhorto.onclick = async () => { btnExhorto.disabled = true; try { await generarPDF(asesorSeleccionado, sucursalSeleccionada, creditosSeleccionados, "exhorto"); } finally { btnExhorto.disabled = false; } };
+      btnActa.onclick = async () => { btnActa.disabled = true; try { await generarPDF(asesorSeleccionado, sucursalSeleccionada, creditosSeleccionados, "acta"); } finally { btnActa.disabled = false; } };
 
       new bootstrap.Modal(document.getElementById("vistaPreviaModal")).show();
     }
 
     /* =======================
-       PDF helpers: márgenes fijos + encabezado en TODAS las páginas
+       Helpers PDF: encabezado en todas las páginas y párrafos justificados
        ======================= */
-    function addParagraph(doc, text, startY, withPH, left = 50, right = 50) {
+    function pageEnv(doc){
+      const HEADER = { x: 50, y: 20, w: 500, h: 80 };
+      const CONTENT_TOP = HEADER.y + HEADER.h + 20; // 120 pt
+      const FOOTER_RESERVE = 90;
+      return {
+        CONTENT_TOP,
+        FOOTER_RESERVE,
+        marginFor: (left=50, right=50) => ({ top: CONTENT_TOP, left, right, bottom: FOOTER_RESERVE }),
+        didDrawPage: () => {
+          if (HEADER_DATA) {
+            try { doc.addImage(HEADER_DATA, "PNG", HEADER.x, HEADER.y, HEADER.w, HEADER.h); } catch {}
+          }
+        },
+        ensureSpace: (y, extra=0) => {
+          const usableBottom = doc.internal.pageSize.getHeight() - FOOTER_RESERVE;
+          if (y + extra > usableBottom) { doc.addPage(); return CONTENT_TOP; }
+          return y;
+        }
+      };
+    }
+
+    function addParagraph(doc, text, startY, env, left=50, right=50) {
       doc.autoTable({
         startY,
         body: [[text]],
         theme: "plain",
         styles: { fontSize: 11, halign: "justify", cellPadding: 1.2 },
-        ...withPH(left, right),
+        margin: env.marginFor(left, right),
+        didDrawPage: env.didDrawPage
       });
-      return doc.lastAutoTable?.finalY || startY;
+      return (doc.lastAutoTable && doc.lastAutoTable.finalY) || startY;
     }
 
     /* =======================
        PDF
        ======================= */
-    function generarPDF(asesor, sucursal, creditos, tipo) {
+    async function generarPDF(asesor, sucursal, creditos, tipo) {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF("p", "pt", "a4");
       doc.setLineHeightFactor(1.0);
 
-      const fecha = new Date().toLocaleDateString("es-MX", {
-        day: "2-digit",
-        month: "long",
-        year: "numeric",
-      });
+      const env = pageEnv(doc);
 
+      const fecha = new Date().toLocaleDateString("es-MX", { day:"2-digit", month:"long", year:"numeric" });
       const diasMinimos = parseInt(document.getElementById("diasMinimos").value) || 30;
 
-      const headerUrl =
-        "https://raw.githubusercontent.com/alcnca/mapa-semaforo/main/encabezado.png";
-      const footerUrl = "https://alcnca.github.io/mapa-semaforo/piepagina.png";
-
-      const headerImg = new Image();
-      headerImg.crossOrigin = "Anonymous";
-      headerImg.src = headerUrl;
-
-      const footerImg = new Image();
-      footerImg.crossOrigin = "Anonymous";
-      footerImg.src = footerUrl;
-
-      // ==== Dimensiones fijas de página ====
-      const HEADER = { x: 50, y: 20, w: 500, h: 80 };
-      const CONTENT_TOP = HEADER.y + HEADER.h + 20; // 120 pt
-      const FOOTER_RESERVE = 90; // espacio reservado para pie de página
-
-      function usableBottomY() {
-        return doc.internal.pageSize.getHeight() - FOOTER_RESERVE;
-      }
-      function ensureSpace(nextY, extra = 0) {
-        if (nextY + extra > usableBottomY()) {
-          doc.addPage();
-          return CONTENT_TOP;
-        }
-        return nextY;
-      }
-      function withPageHeader(left = 50, right = 50) {
-        return {
-          margin: { top: CONTENT_TOP, left, right, bottom: FOOTER_RESERVE },
-          didDrawPage: () => {
-            // Encabezado en TODAS las páginas
-            doc.addImage(headerImg, "PNG", HEADER.x, HEADER.y, HEADER.w, HEADER.h);
-          },
-        };
+      // Determinar firmante coordinador
+      const inicial = document.getElementById("coordinadorSelect").value;
+      const subFirmanteVal = document.getElementById("subFirmanteSelect").value || inicial;
+      let firmanteCoord;
+      if (inicial === "OFICINA_CENTRAL") {
+        firmanteCoord = subFirmanteVal || "__________________________";
+      } else if (subFirmanteVal && nombresCoordinadores[subFirmanteVal]) {
+        firmanteCoord = nombresCoordinadores[subFirmanteVal];
+      } else {
+        firmanteCoord = nombresCoordinadores[inicial] || "__________________________";
       }
 
-      headerImg.onload = function () {
-        const pageWidth = doc.internal.pageSize.getWidth();
-        let y = CONTENT_TOP; // siempre iniciar contenido aquí
+      const textos = getTextosDocumento(tipo, diasMinimos, asesor, sucursal, firmanteCoord);
 
-        // Determinar firmante coordinador para textos
-        const inicial = document.getElementById("coordinadorSelect").value;
-        const subFirmanteVal = document.getElementById("subFirmanteSelect").value || inicial;
-        let firmanteCoord;
-        if (inicial === "OFICINA_CENTRAL") {
-          firmanteCoord = subFirmanteVal || "__________________________";
-        } else if (subFirmanteVal && nombresCoordinadores[subFirmanteVal]) {
-          firmanteCoord = nombresCoordinadores[subFirmanteVal];
-        } else {
-          firmanteCoord = nombresCoordinadores[inicial] || "__________________________";
-        }
+      // ===== Cabecera textual =====
+      let y = env.CONTENT_TOP;
+      const pageWidth = doc.internal.pageSize.getWidth();
 
-        const textos = getTextosDocumento(
-          tipo,
-          diasMinimos,
-          asesor,
-          sucursal,
-          firmanteCoord
-        );
+      doc.setFontSize(10); doc.text(`Fecha: ${fecha}`, 50, y); y += 18;
+      doc.setFontSize(14); doc.text(textos.titulo, pageWidth/2, y, { align: "center" }); y += 18;
+      doc.setFontSize(12); doc.text(textos.subtitulo || "", pageWidth/2, y, { align: "center" }); y += 24;
+      doc.setFontSize(11); doc.text(`Para: ${asesor}`, 50, y); y += 14; doc.text(`Sucursal: ${sucursal}`, 50, y); y += 10;
 
-        // Cabecera textual
-        doc.setFontSize(10);
-        doc.text(`Fecha: ${fecha}`, 50, y);
-        y += 18;
+      // Intro (justificado)
+      y = addParagraph(doc, textos.intro, y, env, 50, 50);
 
-        doc.setFontSize(14);
-        doc.text(textos.titulo, pageWidth / 2, y, { align: "center" });
-        y += 18;
+      // ===== Tabla de créditos — 1 salto =====
+      y = (doc.lastAutoTable?.finalY || y) + 12; y = env.ensureSpace(y, 10);
 
-        doc.setFontSize(12);
-        doc.text(textos.subtitulo || "", pageWidth / 2, y, { align: "center" });
-        y += 24;
+      const rows = creditos.map(c => {
+        const dsgParsed = parseDiasSinGestion(c["Dias sin Gestion"]);
+        const dsgDisplay = (dsgParsed === null) ? "SIN GESTIÓN" : dsgParsed;
+        return [
+          c.Linea ?? "",
+          c.Nombre ?? "",
+          toNumberSafe(c["Saldo Total"]).toLocaleString("es-MX", { style: "currency", currency: "MXN" }),
+          c["Dias de Atraso"] ?? "",
+          dsgDisplay
+        ];
+      });
 
-        doc.setFontSize(11);
-        doc.text(`Para: ${asesor}`, 50, y);
-        y += 14;
-        doc.text(`Sucursal: ${sucursal}`, 50, y);
-        y += 10;
+      doc.autoTable({
+        startY: y,
+        head: [["Crédito","Nombre del Socio","Saldo","Días atraso","Días sin gestión"]],
+        body: rows,
+        styles: { fontSize: 9, cellPadding: 1.5, lineWidth: 0.1, valign: "middle" },
+        headStyles: { fillColor: [0,0,0], textColor: [255,255,255], halign: "center" },
+        columnStyles: { 3: { halign: "center" }, 4: { halign: "center" } },
+        margin: env.marginFor(40, 40),
+        didDrawPage: env.didDrawPage
+      });
+      y = (doc.lastAutoTable?.finalY || y) + 8; y = env.ensureSpace(y, 10);
 
-        // Intro (justificado)
-        y = addParagraph(doc, textos.intro, y, withPageHeader, 50, 50);
+      // Total (CENTRADO)
+      doc.setFontSize(11);
+      const totalImporte = creditos.reduce((acc, c) => acc + toNumberSafe(c["Saldo Total"]), 0);
+      doc.text(`TOTAL: ${totalImporte.toLocaleString("es-MX", { style: "currency", currency: "MXN" })}`, pageWidth/2, y, { align: "center" });
+      y += 12;
 
-        // ===== Tabla de créditos — 1 salto (12pt) de separación =====
-        y = (doc.lastAutoTable?.finalY || y) + 12;
-        y = ensureSpace(y, 10);
+      if (tipo === "acta") {
+        // Hechos, Faltas, Determinación
+        y = addParagraph(doc, textos.hechos, y, env, 50, 50); y = (doc.lastAutoTable?.finalY || y) + 6;
+        y = addParagraph(doc, textos.faltas, y, env, 50, 50); y = (doc.lastAutoTable?.finalY || y) + 6;
+        y = addParagraph(doc, textos.determinacion, y, env, 50, 50);
 
-        const rows = creditos.map((c) => {
-          const dsgParsed = parseDiasSinGestion(c["Dias sin Gestion"]);
-          const dsgDisplay = dsgParsed === null ? "SIN GESTIÓN" : dsgParsed;
-          return [
-            c.Linea ?? "",
-            c.Nombre ?? "",
-            toNumberSafe(c["Saldo Total"]).toLocaleString("es-MX", {
-              style: "currency",
-              currency: "MXN",
-            }),
-            c["Dias de Atraso"] ?? "",
-            dsgDisplay,
-          ];
-        });
+        // Espacio ~8 saltos de línea (96pt)
+        y = (doc.lastAutoTable?.finalY || y) + 96;
 
-        doc.autoTable({
-          startY: y,
-          head: [["Crédito", "Nombre del Socio", "Saldo", "Días atraso", "Días sin gestión"]],
-          body: rows,
-          styles: { fontSize: 9, cellPadding: 1.5, lineWidth: 0.1, valign: "middle" },
-          headStyles: { fillColor: [0, 0, 0], textColor: [255, 255, 255], halign: "center" },
-          // Centrar SOLO columnas "Días atraso" (3) y "Días sin gestión" (4)
-          columnStyles: { 3: { halign: "center" }, 4: { halign: "center" } },
-          ...withPageHeader(40, 40),
-        });
-        y = (doc.lastAutoTable?.finalY || y) + 8;
-        y = ensureSpace(y, 10);
+        // Cierre (+30 min del inicio)
+        y = addParagraph(doc, textos.cierre, y, env, 50, 50); y = (doc.lastAutoTable?.finalY || y) + 18;
 
-        // Total (CENTRADO)
-        doc.setFontSize(11);
-        const totalImporte = creditos.reduce(
-          (acc, c) => acc + toNumberSafe(c["Saldo Total"]),
-          0
-        );
-        doc.text(
-          `TOTAL: ${totalImporte.toLocaleString("es-MX", { style: "currency", currency: "MXN" })}`,
-          pageWidth / 2,
-          y,
-          { align: "center" }
-        );
-        y += 12;
-
-        if (tipo === "acta") {
-          // Hechos
-          y = addParagraph(doc, textos.hechos, y, withPageHeader, 50, 50);
-          y = (doc.lastAutoTable?.finalY || y) + 6;
-
-          // Faltas
-          y = addParagraph(doc, textos.faltas, y, withPageHeader, 50, 50);
-          y = (doc.lastAutoTable?.finalY || y) + 6;
-
-          // Determinación
-          y = addParagraph(doc, textos.determinacion, y, withPageHeader, 50, 50);
-
-          // Espacio ~8 saltos de línea (96pt)
-          y = (doc.lastAutoTable?.finalY || y) + 96;
-
-          // Cierre (hora = inicio + 30 minutos)
-          y = addParagraph(doc, textos.cierre, y, withPageHeader, 50, 50);
-          y = (doc.lastAutoTable?.finalY || y) + 18;
-
-          // ===== Firmas (4) =====
-          const colW = (pageWidth - 100 - 40) / 2; // márgenes 50, gap 40
-          const x1 = 50,
-            x2 = 50 + colW + 40;
-
-          function firmaBlock(x, y0, nombre, puesto) {
-            y0 = ensureSpace(y0, 90);
-            doc.setFontSize(11);
-            doc.line(x + 10, y0 + 40, x + colW - 10, y0 + 40);
-            doc.text(nombre || "__________________________", x + colW / 2, y0 + 56, {
-              align: "center",
-            });
-            doc.setFontSize(10);
-            doc.text(puesto || "", x + colW / 2, y0 + 72, { align: "center" });
-            return y0 + 90;
-          }
-
-          // Fila 1: Coordinador / Asesor
-          y = firmaBlock(x1, y, firmanteCoord, "Coordinador de Recuperación");
-          y = firmaBlock(
-            x2,
-            y - 90,
-            asesor,
-            "Asesor de Créditos y Recuperación Individual"
-          );
-
-          // Fila 2: Gerente de Sucursal / Gerente de Recuperación Extrajudicial
-          const dir = getDireccionPorSucursal(sucursal) || {};
-          const gerenteNombre = dir.GERENTE || "";
-          let y2 = y + 6;
-          y2 = firmaBlock(x1, y2, gerenteNombre, "Gerente de Sucursal");
-          firmaBlock(x2, y2 - 90, "ADAN GUTIERREZ HERNANDEZ", "Gerente de Recuperación Extrajudicial");
-        } else {
-          // EXHORTO – cierre y firma
-          const { postTabla } = getTextosDocumento("exhorto", diasMinimos);
-          y = addParagraph(doc, postTabla, y, withPageHeader, 50, 50);
-          y = (doc.lastAutoTable?.finalY || y) + 18;
-
-          y = ensureSpace(y, 120);
+        // ===== Firmas (4) =====
+        const colW = (pageWidth - 100 - 40) / 2; // márgenes 50, gap 40
+        const x1 = 50, x2 = 50 + colW + 40;
+        function firmaBlock(x, y0, nombre, puesto) {
+          y0 = env.ensureSpace(y0, 90);
           doc.setFontSize(11);
-          doc.text("Atentamente,", pageWidth / 2, y, { align: "center" });
-          y += 30;
-          doc.text("_______________________________", pageWidth / 2, y, {
-            align: "center",
-          });
-          y += 14;
-
-          let nombreFirmante, puestoFirmante;
-          const inicial = document.getElementById("coordinadorSelect").value;
-          const subFirmante = document.getElementById("subFirmanteSelect").value || inicial;
-          if (subFirmante === "IVANI") {
-            nombreFirmante = "IVANI ARCOS LAINES";
-            puestoFirmante = "Gestor Regional Zona Maya";
-          } else if (inicial === "OFICINA_CENTRAL") {
-            nombreFirmante = subFirmante;
-            const asist = oficinaCentral.find((a) => a.nombre === subFirmante);
-            puestoFirmante = asist ? asist.puesto : "ASISTENTE";
-          } else {
-            nombreFirmante =
-              nombresCoordinadores[subFirmante] ||
-              nombresCoordinadores[inicial] ||
-              "NOMBRE NO DEFINIDO";
-            puestoFirmante = "Coordinador de Recuperación Extrajudicial";
-          }
-          doc.text(nombreFirmante, pageWidth / 2, y, { align: "center" });
-          y += 14;
-          doc.text(puestoFirmante, pageWidth / 2, y, { align: "center" });
+          doc.line(x + 10, y0 + 40, x + colW - 10, y0 + 40);
+          doc.text(nombre || "__________________________", x + colW/2, y0 + 56, { align: "center" });
+          doc.setFontSize(10);
+          doc.text(puesto || "", x + colW/2, y0 + 72, { align: "center" });
+          return y0 + 90;
         }
+        y = firmaBlock(x1, y, firmanteCoord, "Coordinador de Recuperación");
+        y = firmaBlock(x2, y - 90, asesor, "Asesor de Créditos y Recuperación Individual");
+        const dir = getDireccionPorSucursal(sucursal) || {}; const gerenteNombre = (dir.GERENTE || "");
+        let y2 = y + 6; y2 = firmaBlock(x1, y2, gerenteNombre, "Gerente de Sucursal");
+        firmaBlock(x2, y2 - 90, "ADAN GUTIERREZ HERNANDEZ", "Gerente de Recuperación Extrajudicial");
+      } else {
+        // EXHORTO – cierre y firma
+        const { postTabla } = getTextosDocumento("exhorto", diasMinimos);
+        y = addParagraph(doc, postTabla, y, env, 50, 50); y = (doc.lastAutoTable?.finalY || y) + 18;
 
-        // Pie + numeración de páginas
-        footerImg.onload = function () {
-          const pageHeight = doc.internal.pageSize.getHeight();
-          const footerWidth = 500;
-          const footerHeight = 50;
-          const footerX = (pageWidth - footerWidth) / 2;
-          const footerY = pageHeight - footerHeight - 20;
+        y = env.ensureSpace(y, 120);
+        doc.setFontSize(11);
+        doc.text("Atentamente,", pageWidth / 2, y, { align: "center" }); y += 30;
+        doc.text("_______________________________", pageWidth / 2, y, { align: "center" }); y += 14;
 
-          const pageCount = doc.getNumberOfPages();
-          for (let i = 1; i <= pageCount; i++) {
-            doc.setPage(i);
-            // Imagen del pie
-            doc.addImage(footerImg, "PNG", footerX, footerY, footerWidth, footerHeight);
-            // Numeración
-            doc.setFontSize(9);
-            doc.text(`Página ${i} de ${pageCount}`, pageWidth - 60, footerY - 6, {
-              align: "right",
-            });
-          }
+        let nombreFirmante, puestoFirmante;
+        const inicial2 = document.getElementById("coordinadorSelect").value;
+        const subFirmante = document.getElementById("subFirmanteSelect").value || inicial2;
+        if (subFirmante === "IVANI") {
+          nombreFirmante = "IVANI ARCOS LAINES";
+          puestoFirmante = "Gestor Regional Zona Maya";
+        } else if (inicial2 === "OFICINA_CENTRAL") {
+          nombreFirmante = subFirmante;
+          const asist = oficinaCentral.find(a => a.nombre === subFirmante);
+          puestoFirmante = asist ? asist.puesto : "ASISTENTE";
+        } else {
+          nombreFirmante = nombresCoordinadores[subFirmante] || nombresCoordinadores[inicial2] || "NOMBRE NO DEFINIDO";
+          puestoFirmante = "Coordinador de Recuperación Extrajudicial";
+        }
+        doc.text(nombreFirmante, pageWidth / 2, y, { align: "center" }); y += 14;
+        doc.text(puestoFirmante, pageWidth / 2, y, { align: "center" });
+      }
 
-          const nombreArchivo = tipo === "acta" ? "ACTA_ADMINISTRATIVA" : "EXHORTO";
-          doc.save(`${nombreArchivo}_${asesor.replace(/ /g, "_")}.pdf`);
-        };
-      };
+      // ===== Pie + numeración =====
+      const pageCount = doc.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        const pageW = doc.internal.pageSize.getWidth();
+        const pageH = doc.internal.pageSize.getHeight();
+        const footerWidth = 500, footerHeight = 50; const footerX = (pageW - footerWidth) / 2; const footerY = pageH - footerHeight - 20;
+        if (FOOTER_DATA) { try { doc.addImage(FOOTER_DATA, "PNG", footerX, footerY, footerWidth, footerHeight); } catch {} }
+        doc.setFontSize(9); doc.text(`Página ${i} de ${pageCount}`, pageW - 60, footerY - 6, { align: "right" });
+      }
+
+      const nombreArchivo = (tipo === "acta" ? "ACTA_ADMINISTRATIVA" : "EXHORTO");
+      doc.save(`${nombreArchivo}_${asesor.replace(/ /g, "_")}.pdf`);
     }
   </script>
 
