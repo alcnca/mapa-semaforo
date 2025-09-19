@@ -167,11 +167,17 @@ function anioEnLetras(y){
   const map={2023:"dos mil veintitrés",2024:"dos mil veinticuatro",2025:"dos mil veinticinco",2026:"dos mil veintiséis"};
   return map[y]||y.toString();
 }
-function fechaEnLetrasAhora(){
+// === Helpers de tiempo en CDMX y conversión a texto ===
+function ahoraCDMX(){
   const ahora = new Date();
-  const local = new Date(ahora.toLocaleString("en-US",{timeZone:"America/Mexico_City"}));
-  const h=local.getHours(), m=local.getMinutes(), d=local.getDate(), mm=local.getMonth(), y=local.getFullYear();
+  return new Date(ahora.toLocaleString("en-US",{timeZone:"America/Mexico_City"}));
+}
+function fechaEnLetrasFrom(dateObj){
+  const h=dateObj.getHours(), m=dateObj.getMinutes(), d=dateObj.getDate(), mm=dateObj.getMonth(), y=dateObj.getFullYear();
   return `${numEnEsp(h)} horas con ${m===0?"cero":numEnEsp(m)} minutos del ${numEnEsp(d)} de ${meses[mm]} de ${anioEnLetras(y)}`;
+}
+function fechaEnLetrasAhora(){
+  return fechaEnLetrasFrom(ahoraCDMX());
 }
 
 /* =======================
@@ -186,11 +192,14 @@ function getTextosDocumento(tipo, diasMinimos, asesor, sucursal, firmanteCoord) 
     const DIRECCION = (dir.DIRECCION || "________________").toString().trim();
     const GERENTE = (dir.GERENTE || "__________________________").toString().trim();
 
-    const FECHA_INICIO_LETRAS = fechaEnLetrasAhora();
-    const FECHA_CIERRE_LETRAS = fechaEnLetrasAhora();
+    // === Inicio y cierre: cierre = inicio + 30 minutos (CDMX) ===
+    const inicioLocal = ahoraCDMX();
+    const cierreLocal = new Date(inicioLocal.getTime() + 30*60000);
+    const FECHA_INICIO_LETRAS = fechaEnLetrasFrom(inicioLocal);
+    const FECHA_CIERRE_LETRAS = fechaEnLetrasFrom(cierreLocal);
 
     const intro = 
-`En el Municipio de ${MUNICIPIO}, ${ESTADO}, en la sucursal de ${NOMBRE_SUCURSAL}, siendo las ${FECHA_INICIO_LETRAS}, estando presentes en las instalaciones de la COOPERATIVA ACREIMEX S.C. de A.P. de R.L. de C.V., con domicilio en ${DIRECCION}, los ciudadanos ${firmanteCoord}, que ostenta el puesto de Coordinador de Recuperación y ${asesor} con el puesto de Asesor de Créditos y Recuperación Individual. Estando presentes en su carácter de testigos los ciudadanos ${GERENTE} que ostenta el puesto de Gerente de Sucursal y Adan Gutierrez Hernandez con el puesto de Gerente de Recuperación Extrajudicial, a quienes les constan los hechos que dan origen al levantamiento de la presente acta.
+`En el Municipio de ${MUNICIPIO}, ${ESTADO}, en la sucursal de ${NOMBRE_SUCURSAL}, siendo las ${FECHA_INICIO_LETRAS}, estando presentes en las instalaciones de la COOPERATIVA ACREIMEX S.C. de A.P. de R.L. de C.V., con domicilio en ${DIRECCION}, los ciudadanos ${firmanteCoord}, que ostenta el puesto de Coordinador de Recuperación y ${asesor} con el puesto de Asesor de Créditos y Recuperación Individual. Estando presentes en su carácter de testigos los ciudadanos ${GERENTE} que ostenta el puesto de Gerente de Sucursal y ADAN GUTIERREZ HERNANDEZ con el puesto de Gerente de Recuperación Extrajudicial, a quienes les constan los hechos que dan origen al levantamiento de la presente acta.
 
 A continuación, el ciudadano ${firmanteCoord}, narra a los comparecientes los hechos y las razones por las cuales se procede a levantar la presente acta administrativa que consiste en lo siguiente:
 
@@ -327,7 +336,7 @@ function actualizarSucursales() {
 
   let sucursales;
   if (soloSin) {
-    sucursales = [...new Set(base.filter(d => estaSinGestion(d["Dias sin Gestion"])).map(d => d.Sucursal))];
+    sucursales = [...new Set(base.filter(d => estaSinGestion(d["Dias sin Gestion"])) .map(d => d.Sucursal))];
   } else {
     sucursales = [...new Set(base.map(d => d.Sucursal))];
   }
@@ -526,8 +535,8 @@ function generarPDF(asesor, sucursal, creditos, tipo) {
     // Intro (SIEMPRE JUSTIFICADO)
     y = addParagraph(doc, textos.intro, y, { footerReserve: FOOTER_RESERVE });
 
-    // ===== Tabla de créditos (ACTA/EXHORTO) — SOLO 1 salto (12pt) de separación =====
-    y = ((doc.lastAutoTable && doc.lastAutoTable.finalY) || y) + 12; // ~1 renglón
+    // ===== Tabla de créditos — SOLO 1 salto (12pt) de separación =====
+    y = ((doc.lastAutoTable && doc.lastAutoTable.finalY) || y) + 12;
     y = ensureSpace(y, 10);
 
     const rows = creditos.map(c => {
@@ -544,10 +553,10 @@ function generarPDF(asesor, sucursal, creditos, tipo) {
 
     doc.autoTable({
       startY: y,
-      head: [['Crédito','Nombre del Socio','Saldo','Días atraso','Días sin gestión']],
+      head: [["Crédito","Nombre del Socio","Saldo","Días atraso","Días sin gestión"]],
       body: rows,
       styles: { fontSize: 9, cellPadding: 1.5, lineWidth: 0.1, valign: "middle" },
-      headStyles: { fillColor: [0, 0, 0], textColor: [255, 255, 255], halign: "center" },
+      headStyles: { fillColor: [0,0,0], textColor: [255,255,255], halign: "center" },
       margin: { top: 0, left: 40, right: 40, bottom: FOOTER_RESERVE }
     });
     y = ((doc.lastAutoTable && doc.lastAutoTable.finalY) || y) + 8;
@@ -555,10 +564,8 @@ function generarPDF(asesor, sucursal, creditos, tipo) {
 
     // Total
     doc.setFontSize(11);
-    doc.text(
-      `TOTAL: ${creditos.reduce((acc, c) => acc + toNumberSafe(c["Saldo Total"]), 0).toLocaleString("es-MX", { style: "currency", currency: "MXN" })}`,
-      50, y
-    );
+    const totalImporte = creditos.reduce((acc, c) => acc + toNumberSafe(c["Saldo Total"]), 0);
+    doc.text(`TOTAL: ${totalImporte.toLocaleString("es-MX", { style: "currency", currency: "MXN" })}`, 50, y);
     y += 12;
 
     if (tipo === "acta") {
@@ -574,9 +581,9 @@ function generarPDF(asesor, sucursal, creditos, tipo) {
       y = addParagraph(doc, textos.determinacion, y, { footerReserve: FOOTER_RESERVE });
 
       // Espacio ~8 saltos de línea (96pt)
-      y = ((doc.lastAutoTable && doc.lastAutoTable.finalY) || y) + 144;
+      y = ((doc.lastAutoTable && doc.lastAutoTable.finalY) || y) + 96;
 
-      // Cierre
+      // Cierre (hora = inicio + 30 minutos)
       y = addParagraph(doc, textos.cierre, y, { footerReserve: FOOTER_RESERVE });
       y = ((doc.lastAutoTable && doc.lastAutoTable.finalY) || y) + 18;
 
