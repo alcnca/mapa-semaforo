@@ -199,14 +199,16 @@ function getTextosDocumento(tipo, diasMinimos, asesor, sucursal, firmanteCoord) 
     const FECHA_CIERRE_LETRAS = fechaEnLetrasFrom(cierreLocal);
 
     const intro = 
-`En el Municipio de ${MUNICIPIO}, ${ESTADO}, en la sucursal de ${NOMBRE_SUCURSAL}, siendo las ${FECHA_INICIO_LETRAS}, estando presentes en las instalaciones de la COOPERATIVA ACREIMEX S.C. de A.P. de R.L. de C.V., con domicilio en ${DIRECCION}, los ciudadanos ${firmanteCoord}, que ostenta el puesto de Coordinador de Recuperación y ${asesor} con el puesto de Asesor de Créditos y Recuperación Individual. Estando presentes en su carácter de testigos los ciudadanos ${GERENTE} que ostenta el puesto de Gerente de Sucursal y ADAN GUTIERREZ HERNANDEZ con el puesto de Gerente de Recuperación Extrajudicial, a quienes les constan los hechos que dan origen al levantamiento de la presente acta.
+`En el Municipio de ${MUNICIPIO}, ${ESTADO}, en la sucursal de ${NOMBRE_SUCURSAL}, siendo las ${FECHA_INICIO_LETRAS}, estando presentes en las instalaciones de la COOPERATIVA ACREIMEX S.C. de A.P. de R.L. de C.V., con domicilio en ${DIRECCION}, los ciudadanos ${firmanteCoord}, que ostenta el puesto de Coordinador de Recuperación y ${asesor} con el puesto de Asesor de Créditos y Recuperación Individual. Estando presentes en su carácter de testigos los ciudadanos ${GERENTE} que ostenta el puesto de Gerente de Sucursal y ADAN GUTIERREZ HERNANDEZ con el puesto de Gerente de Recuperación Extrajudicial, a quienes les constan los hechos que dan origen al 
+levantamiento de la presente acta.
 
 A continuación, el ciudadano ${firmanteCoord}, narra a los comparecientes los hechos y las razones por las cuales se procede a levantar la presente acta administrativa que consiste en lo siguiente:
 
 En términos de lo dispuesto en el Manual de Gestión de Recuperación de Cartera de la Cooperativa, particularmente en lo relativo a las formalidades para desempeñar las gestiones de cobro (numerales 1.4, 1.5, 2 y 3.14), se establece la obligación del Asesor de Crédito y Recuperación de:
 
 • Dar seguimiento diario y permanente a la cartera asignada a partir de cero días de mora.
-• Evidenciar y documentar todas las gestiones de recuperación realizadas en sus diferentes etapas, digitalizándolas en el sistema informático.
+• Evidenciar y documentar todas las gestiones de recuperación realizadas en sus diferentes etapas,
+digitalizándolas en el sistema informático.
 • Mantener actualizada la información del socio acreditado, avales o garantes, a fin de facilitar su localización.
 • Utilizar los mecanismos autorizados para la gestión de cobranza (llamadas telefónicas, visitas, mensajería SMS o WhatsApp, notificaciones escritas, etc.), siempre con respeto y dentro del horario permitido.
 • Registrar en el sistema informático las negociaciones, acuerdos o compromisos de pago establecidos con el socio, así como anexar físicamente al expediente los documentos correspondientes, cuando aplique.`;
@@ -214,9 +216,7 @@ En términos de lo dispuesto en el Manual de Gestión de Recuperación de Carter
     const hechos =
 `Hechos:
 Se hace constar que el C. ${asesor}, en su calidad de Asesor de Crédito y Recuperación, omitió realizar la gestión de seguimiento a los créditos señalados en la tabla anterior, mismos que presentan un atraso considerable hasta la fecha de la presente acta.
-
 De la revisión efectuada al sistema informático, se constató lo siguiente:
-
 • No existen registros de llamadas, visitas domiciliarias, mensajes, ni cartas de cobranza en los plazos correspondientes, y si bien lo existieran no se encuetran actualizadad
 • No se documentaron convenios, acuerdos o compromisos de pago con el socio deudor ni con sus avales.
 • Se incumplió con la obligación de prevenir el incremento del atraso, al no dar seguimiento oportuno desde los primeros días de mora.`;
@@ -224,7 +224,6 @@ De la revisión efectuada al sistema informático, se constató lo siguiente:
     const faltas =
 `Faltas y omisiones detectadas:
 La conducta descrita constituye un incumplimiento a lo dispuesto en los numerales:
-
 1.4 Formalidades para desempeñar las gestiones de cobro, al no registrar ni evidenciar convenios, acuerdos o contactos con el socio.
 1.5 La recuperación es parte integral del ciclo crediticio, al no aplicar las políticas de prevención y recuperación administrativa.
 2. Políticas generales, al no generar ni respaldar las evidencias mínimas de gestión de recuperación (carta invitación, requerimientos, llamadas, mensajería, etc.).
@@ -234,8 +233,7 @@ La conducta descrita constituye un incumplimiento a lo dispuesto en los numerale
 `Determinación:
 Por lo anterior, se procede a formalizar la presente acta como parte del procedimiento tendiente para
 la aplicación de la medida disciplinaria correspondiente a fin de dejar constancia de las faltas y
-omisiones cometidas por el Asesor de Crédito y Recuperación, mismas que impactan negativamente
-en los indicadores de recuperación de cartera de la sucursal.
+omisiones cometidas por el Asesor de Crédito y Recuperación, mismas que impactan negativamente en los indicadores de recuperación de cartera de la sucursal.
 Acto posterior, se le concede al socio colaborador el derecho del uso de la palabra con relación a los
 hechos que anteceden, manifestando:`;
 
