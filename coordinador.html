@@ -47,10 +47,14 @@
       top: 10px;
       left: 10px;
       background: rgba(255,255,255,0.9);
-      padding: 5px;
+      padding: 5px 8px;
       border-radius: 5px;
       z-index: 1000;
       font-size: 13px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 10px;
+      align-items: center;
     }
 
     /* Botón Home */
@@ -69,25 +73,40 @@
       cursor: pointer;
       z-index: 1000;
     }
-    .home-btn:hover {
-      background: #f0f0f0;
-    }
-    .home-btn svg {
-      width: 20px;
-      height: 20px;
-      fill: black;
-    }
+    .home-btn:hover { background: #f0f0f0; }
+    .home-btn svg { width: 20px; height: 20px; fill: black; }
 
     select { margin-right: 5px; }
+    .badge {
+      display:inline-block; padding:2px 6px; border-radius:4px; background:#f2f2f2; font-size:12px;
+    }
   </style>
 </head>
 <body>
 
 <div class="filtros">
-  <label>Sucursal: <select id="filtroSucursal"><option value="TODAS">Todas</option></select></label>
-  <label>Ejecutivo: <select id="filtroEjecutivo"><option value="TODOS">Todos</option></select></label>
-  <label>Banda: <select id="filtroBanda"><option value="TODAS">Todas</option></select></label>
-  <div id="ultima-actualizacion" style="margin-top:5px; font-size:12px; color:#333;"></div>
+  <!-- NUEVO: selector de tipo de semáforo -->
+  <label>Tipo:
+    <select id="filtroTipo">
+      <option value="ADMIN">Semáforo Administrativo (7–44 DV)</option>
+      <option value="EXTRA">Semáforo Extrajudicial (≥45 DV)</option>
+    </select>
+  </label>
+
+  <label>Sucursal:
+    <select id="filtroSucursal"><option value="TODAS">Todas</option></select>
+  </label>
+
+  <label>Ejecutivo:
+    <select id="filtroEjecutivo"><option value="TODOS">Todos</option></select>
+  </label>
+
+  <label>Banda:
+    <select id="filtroBanda"><option value="TODAS">Todas</option></select>
+  </label>
+
+  <span id="contador" class="badge">0 créditos</span>
+  <div id="ultima-actualizacion" style="width:100%; margin-top:4px; font-size:12px; color:#333;"></div>
 </div>
 
 <!-- Botón Home -->
@@ -130,7 +149,6 @@
       const lastModified = res.headers.get("Last-Modified");
       if (lastModified) {
         const fecha = new Date(lastModified);
-        // Mostrar solo la fecha en formato español (ej. 29 de agosto de 2025)
         const fechaFormateada = fecha.toLocaleDateString("es-MX", {
           day: "numeric",
           month: "long",
@@ -142,7 +160,7 @@
       return res.json();
     })
     .then(allData => {
-      const data = allData.filter(r => r.Coordinador.toLowerCase() === coordinadorClave.toLowerCase());
+      const data = allData.filter(r => (r.Coordinador || '').toLowerCase() === coordinadorClave.toLowerCase());
       initMap(data);
     });
 
@@ -163,7 +181,7 @@
           popupAnchor: [0, -30]
         });
       }
-      const url = (a.trim().toUpperCase() === 'SI')
+      const url = (String(a).trim().toUpperCase() === 'SI')
         ? 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png'
         : 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png';
       return L.icon({
@@ -176,40 +194,63 @@
       });
     }
 
-    const selSuc = document.getElementById('filtroSucursal'),
-          selEje = document.getElementById('filtroEjecutivo'),
-          selBan = document.getElementById('filtroBanda');
+    const selTipo = document.getElementById('filtroTipo'),
+          selSuc  = document.getElementById('filtroSucursal'),
+          selEje  = document.getElementById('filtroEjecutivo'),
+          selBan  = document.getElementById('filtroBanda'),
+          badge   = document.getElementById('contador');
 
     // Sucursales
-    const sucursales = [...new Set(data.map(r => r.Sucursal))];
+    const sucursales = [...new Set(data.map(r => r.Sucursal))].filter(Boolean);
     sucursales.forEach(s => selSuc.append(new Option(s, s)));
 
     // Bandas
-    const bandas = [...new Set(data.map(r => r.Banda))];
+    const bandas = [...new Set(data.map(r => r.Banda))].filter(Boolean);
     bandas.forEach(b => selBan.append(new Option(b, b)));
 
     let markers = [];
+    let lastBounds = null;
 
     function updateExecOptions(selSucValue) {
       selEje.innerHTML = '<option value="TODOS">Todos</option>';
-      const execs = selSucValue === 'TODAS'
-        ? [...new Set(data.map(r => r.Ejecutivo))]
-        : [...new Set(data.filter(r => r.Sucursal === selSucValue).map(r => r.Ejecutivo))];
+      const source = selSucValue === 'TODAS'
+        ? data
+        : data.filter(r => r.Sucursal === selSucValue);
+      const execs = [...new Set(source.map(r => r.Ejecutivo))].filter(Boolean);
       execs.forEach(e => selEje.append(new Option(e, e)));
     }
 
+    function pasaFiltroSemaforo(dias, tipo) {
+      const dv = parseInt(dias) || 0;
+      if (tipo === 'ADMIN') return (dv >= 7 && dv < 45);  // 7–44
+      if (tipo === 'EXTRA') return (dv >= 45);            // 45+
+      return true;
+    }
+
     function refreshMap() {
+      // limpiar marcadores
       markers.forEach(m => map.removeLayer(m));
       markers = [];
-      const fs = selSuc.value, fe = selEje.value, fb = selBan.value;
+
+      const fs = selSuc.value,
+            fe = selEje.value,
+            fb = selBan.value,
+            ft = selTipo.value;
+
+      let count = 0;
 
       data.forEach(r => {
+        // filtros de sucursal/ejecutivo/banda
         if ((fs !== 'TODAS' && r.Sucursal !== fs) ||
             (fe !== 'TODOS' && r.Ejecutivo !== fe) ||
             (fb !== 'TODAS' && r.Banda !== fb)) return;
 
+        // filtro por tipo de semáforo (días vencidos)
+        if (!pasaFiltroSemaforo(r['Dias de Atraso'], ft)) return;
+
         const lat = parseFloat(r.Latitud), lng = parseFloat(r.Longitud);
         if (!lat || !lng) return;
+
         const mk = L.marker([lat, lng], { icon: getIcon(r.Aceptacion, r['Dias de Atraso']) }).addTo(map);
         mk.bindPopup(
           `<strong>${r.Sucursal}</strong><br>
@@ -231,21 +272,29 @@
           className: 'sucursal-label'
         });
         markers.push(mk);
+        count++;
       });
 
+      // contador visual
+      badge.textContent = `${count} crédito${count===1?'':'s'}`;
+
+      // ajustar vista
       if (markers.length > 0) {
         const group = L.featureGroup(markers);
-        map.fitBounds(group.getBounds().pad(0.2));
+        lastBounds = group.getBounds().pad(0.2);
+        map.fitBounds(lastBounds);
+      } else if (lastBounds) {
+        map.fitBounds(lastBounds);
       }
     }
 
-    selSuc.addEventListener('change', () => {
-      updateExecOptions(selSuc.value);
-      refreshMap();
-    });
+    // Eventos
+    selTipo.addEventListener('change', refreshMap);
+    selSuc.addEventListener('change', () => { updateExecOptions(selSuc.value); refreshMap(); });
     selEje.addEventListener('change', refreshMap);
     selBan.addEventListener('change', refreshMap);
 
+    // Inicial
     updateExecOptions('TODAS');
     refreshMap();
   }
