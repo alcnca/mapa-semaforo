@@ -16,29 +16,46 @@
 <body class="container py-4">
   <h1 class="mb-4">Generación de Documentos</h1>
 
+  <!-- NUEVO: Selección de Cartera + Qué mostrar -->
   <div class="mb-4 row g-3">
     <div class="col-md-3">
-      <label class="form-label">Días mínimos sin gestión:</label>
-      <input type="number" id="diasMinimos" value="30" class="form-control" />
-      <div class="form-text">Se usa cuando NO está activado "Solo créditos sin gestión".</div>
+      <label class="form-label">Cartera a revisar:</label>
+      <select id="carteraSelect" class="form-select">
+        <option value="">-- Selecciona --</option>
+        <option value="ADMIN">Cartera Administrativa (DV ≤ 44)</option>
+        <option value="EXTRA">Cartera Extrajudicial (DV ≥ 45)</option>
+      </select>
+    </div>
+    <div class="col-md-3" id="mostrarDiv" style="display:none;">
+      <label class="form-label">¿Qué mostrar?</label>
+      <select id="mostrarSelect" class="form-select">
+        <option value="SIN">Solo créditos sin gestión</option>
+        <option value="TODOS">Todos</option>
+      </select>
+    </div>
+
+    <!-- IMPORTANTE: Coordinador ANTES que Sucursal -->
+    <div class="col-md-3">
+      <label class="form-label">Coordinador que firma:</label>
+      <select id="coordinadorSelect" class="form-select"></select>
     </div>
     <div class="col-md-3">
       <label class="form-label">Sucursal:</label>
       <select id="sucursalSelect" class="form-select"></select>
     </div>
-    <div class="col-md-3">
-      <label class="form-label">Coordinador que firma:</label>
-      <select id="coordinadorSelect" class="form-select"></select>
-    </div>
+
+    <!-- Firmante se queda en el mismo lugar -->
     <div class="col-md-3" id="subFirmanteDiv" style="display: none">
       <label class="form-label">Firmante:</label>
       <select id="subFirmanteSelect" class="form-select"></select>
     </div>
-  </div>
 
-  <div class="mb-3 form-check">
-    <input type="checkbox" id="soloSinGestion" class="form-check-input" />
-    <label class="form-check-label" for="soloSinGestion">Solo créditos sin gestión</label>
+    <!-- Días mínimos se usa sólo cuando "Todos" -->
+    <div class="col-md-3" id="diasMinimosDiv" style="display:none;">
+      <label class="form-label">Días mínimos sin gestión:</label>
+      <input type="number" id="diasMinimos" value="30" class="form-control" />
+      <div class="form-text">Aplica sólo si elegiste “Todos”.</div>
+    </div>
   </div>
 
   <div class="mb-4">
@@ -113,6 +130,10 @@
     let creditosSeleccionados = [];
     let asesorSeleccionado = "";
     let sucursalSeleccionada = "";
+
+    // NUEVO estado
+    let carteraSeleccionada = ""; // ADMIN | EXTRA
+    let mostrarModo = "SIN";      // SIN | TODOS
 
     /* =======================
        Catálogos
@@ -277,7 +298,7 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
     }
 
     /* =======================
-       Carga inicial (datos + imágenes una sola vez)
+       Carga inicial (datos + imágenes)
        ======================= */
     window.addEventListener("DOMContentLoaded", async () => {
       try {
@@ -305,11 +326,27 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
         return;
       }
 
+      // Coordinador primero
       const selCoord = document.getElementById("coordinadorSelect");
       selCoord.innerHTML = '<option value="">-- Selecciona --</option>';
       for (let clave in nombresCoordinadores) {
         selCoord.innerHTML += `<option value="${clave}">${nombresCoordinadores[clave]}</option>`;
       }
+
+      // Eventos de UI NUEVOS
+      document.getElementById("carteraSelect").addEventListener("change", () => {
+        carteraSeleccionada = document.getElementById("carteraSelect").value;
+        // mostrar selector de "Qué mostrar" sólo si hay cartera
+        document.getElementById("mostrarDiv").style.display = carteraSeleccionada ? "block" : "none";
+        // si cambiamos cartera, refrescar sucursales según nueva base
+        actualizarSucursales();
+      });
+
+      document.getElementById("mostrarSelect").addEventListener("change", () => {
+        mostrarModo = document.getElementById("mostrarSelect").value; // SIN | TODOS
+        document.getElementById("diasMinimosDiv").style.display = (mostrarModo === "TODOS") ? "block" : "none";
+        actualizarSucursales();
+      });
 
       selCoord.addEventListener("change", () => {
         const subDiv = document.getElementById("subFirmanteDiv");
@@ -334,7 +371,10 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
       });
 
       document.getElementById("btnAplicar").addEventListener("click", cargarDatos);
-      document.getElementById("soloSinGestion").addEventListener("change", actualizarSucursales);
+
+      // Estado inicial: ocultamos controles dependientes
+      document.getElementById("mostrarDiv").style.display = "none";
+      document.getElementById("diasMinimosDiv").style.display = "none";
 
       actualizarSucursales();
     });
@@ -349,18 +389,43 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
       lista.forEach(s => selSuc.innerHTML += `<option value="${s}">${s}</option>`);
       if (lista.includes(sucursalActual)) selSuc.value = sucursalActual;
     }
-    function actualizarSucursales() {
-      const soloSin = document.getElementById("soloSinGestion").checked;
-      const coord = document.getElementById("coordinadorSelect").value;
-      let base = data.slice();
-      if (coord && coord !== "OFICINA_CENTRAL") base = base.filter(d => d.Coordinador === coord);
 
-      let sucursales;
-      if (soloSin) {
-        sucursales = [...new Set(base.filter(d => estaSinGestion(d["Dias sin Gestion"])).map(d => d.Sucursal))];
+    function creditosBaseFiltradosPorCartera() {
+      // Aplica cartera ADMIN (DV ≤ 44) o EXTRA (DV ≥ 45)
+      return data.filter(d => {
+        const dv = parseInt(d["Dias de Atraso"]) || 0;
+        if (carteraSeleccionada === "ADMIN") return dv <= 44;  // interpretación: corte <45
+        if (carteraSeleccionada === "EXTRA") return dv >= 45;
+        return false; // si no eligieron cartera aún
+      });
+    }
+
+    function actualizarSucursales() {
+      const coord = document.getElementById("coordinadorSelect").value;
+
+      let base = data.slice();
+      // primero filtrar por cartera (si ya eligieron)
+      if (carteraSeleccionada) {
+        base = creditosBaseFiltradosPorCartera();
       } else {
-        sucursales = [...new Set(base.map(d => d.Sucursal))];
+        // si no hay cartera, no listamos sucursales (hasta que elijan)
+        llenarSucursales([]);
+        return;
       }
+
+      // luego por coordinador (si aplica y no es Oficina Central)
+      if (coord && coord !== "OFICINA_CENTRAL") {
+        base = base.filter(d => d.Coordinador === coord);
+      }
+
+      // luego por "Qué mostrar"
+      if (mostrarModo === "SIN") {
+        base = base.filter(d => estaSinGestion(d["Dias sin Gestion"]));
+      } else if (mostrarModo === "TODOS") {
+        // no filtramos aquí; el filtro por días mínimos se aplica en cargarDatos()
+      }
+
+      const sucursales = [...new Set(base.map(d => d.Sucursal))].filter(Boolean);
       llenarSucursales(sucursales);
     }
 
@@ -368,18 +433,45 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
        Cargar tarjetas
        ======================= */
     async function cargarDatos() {
+      // Validaciones previas
+      if (!carteraSeleccionada) {
+        alert("Selecciona primero la Cartera a revisar.");
+        return;
+      }
+      const selSuc = document.getElementById("sucursalSelect");
+      sucursalSeleccionada = selSuc.value;
+      if (!sucursalSeleccionada) {
+        alert("Selecciona una Sucursal.");
+        return;
+      }
+
       const diasFiltro = parseInt(document.getElementById("diasMinimos").value) || 30;
-      const soloSinGestion = document.getElementById("soloSinGestion").checked;
-      sucursalSeleccionada = document.getElementById("sucursalSelect").value;
-      if (!sucursalSeleccionada) return;
 
-      const registros = data.filter(d => {
-        if (d.Sucursal !== sucursalSeleccionada) return false;
-        const dias = parseDiasSinGestion(d["Dias sin Gestion"]);
-        if (soloSinGestion) return dias === null;
-        return (dias === null) || (typeof dias === "number" && dias >= diasFiltro);
-      });
+      // Base: cartera
+      let base = creditosBaseFiltradosPorCartera();
 
+      // coordinador (si corresponde)
+      const coord = document.getElementById("coordinadorSelect").value;
+      if (coord && coord !== "OFICINA_CENTRAL") {
+        base = base.filter(d => d.Coordinador === coord);
+      }
+
+      // sucursal elegida
+      base = base.filter(d => d.Sucursal === sucursalSeleccionada);
+
+      // Qué mostrar
+      let registros;
+      if (mostrarModo === "SIN") {
+        registros = base.filter(d => estaSinGestion(d["Dias sin Gestion"]));
+      } else {
+        // TODOS: incluye sin gestión y con gestión >= umbral
+        registros = base.filter(d => {
+          const dias = parseDiasSinGestion(d["Dias sin Gestion"]);
+          return (dias === null) || (typeof dias === "number" && dias >= diasFiltro);
+        });
+      }
+
+      // Agrupar por asesor
       const asesores = {};
       registros.forEach(r => {
         const ejecutivo = r.Ejecutivo || "SIN ASESOR";
@@ -403,13 +495,13 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
         const card = document.createElement("div");
         card.className = "card mb-3";
         card.innerHTML = `
-          <div class=\"card-header bg-primary text-white\">${asesor}</div>
-          <div class=\"card-body d-flex justify-content-between align-items-center\">
+          <div class="card-header bg-primary text-white">${asesor}</div>
+          <div class="card-body d-flex justify-content-between align-items-center">
             <div>
               Créditos: ${asesores[asesor].length}<br />
               Total: $${total.toLocaleString("es-MX", { minimumFractionDigits: 2 })}
             </div>
-            <button class=\"btn btn-warning btn-sm\">Vista Previa</button>
+            <button class="btn btn-warning btn-sm">Vista Previa</button>
           </div>
         `;
         card.querySelector("button").onclick = () => mostrarVistaPrevia(asesor, asesores[asesor]);
@@ -460,7 +552,7 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
     }
 
     /* =======================
-       Helpers PDF: encabezado en todas las páginas y párrafos justificados
+       Helpers PDF: encabezado y párrafos justificados
        ======================= */
     function pageEnv(doc){
       const HEADER = { x: 50, y: 20, w: 500, h: 80 };
@@ -591,11 +683,10 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
           doc.text(puesto || "", x + colW/2, y0 + 72, { align: "center" });
           return y0 + 90;
         }
-        y = firmaBlock(x1, y, firmanteCoord, "Coordinador de Recuperación");
-        y = firmaBlock(x2, y - 90, asesor, "Asesor de Créditos y Recuperación Individual");
-        const dir = getDireccionPorSucursal(sucursal) || {}; const gerenteNombre = (dir.GERENTE || "");
-        let y2 = y + 6; y2 = firmaBlock(x1, y2, gerenteNombre, "Gerente de Sucursal");
-        firmaBlock(x2, y2 - 90, "ADAN GUTIERREZ HERNANDEZ", "Gerente de Recuperación Extrajudicial");
+        y = firmaBlock(x1, y, textos.gerenteSucursal, "Gerente de Sucursal");
+        y = firmaBlock(x2, y - 90, "ADAN GUTIERREZ HERNANDEZ", "Gerente de Recuperación Extrajudicial");
+        let y2 = y + 6; y2 = firmaBlock(x1, y2, firmanteCoord, "Coordinador de Recuperación");
+        firmaBlock(x2, y2 - 90, asesor, "Asesor de Créditos y Recuperación Individual");
       } else {
         // EXHORTO – cierre y firma
         const { postTabla } = getTextosDocumento("exhorto", diasMinimos);
