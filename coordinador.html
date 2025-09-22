@@ -1,10 +1,11 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
   <meta charset="utf-8">
   <title>Mapa Semáforo</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
+    html, body { height: 100%; margin: 0; }
     #map { height: 100vh; margin: 0; }
 
     .leaflet-tooltip {
@@ -14,7 +15,6 @@
       padding: 0 !important;
       margin: 0 !important;
     }
-
     .sucursal-label {
       background: transparent !important;
       border: none !important;
@@ -35,57 +35,122 @@
       animation: pulse 1.5s infinite;
       border: 1px solid white;
     }
-
     @keyframes pulse {
-      0% { box-shadow: 0 0 1px red, 0 0 3px red; }
-      50% { box-shadow: 0 0 5px red, 0 0 10px red; }
+      0%   { box-shadow: 0 0 1px red, 0 0 3px red; }
+      50%  { box-shadow: 0 0 5px red, 0 0 10px red; }
       100% { box-shadow: 0 0 1px red, 0 0 3px red; }
     }
 
     .filtros {
       position: absolute;
-      top: 10px;
-      left: 10px;
+      top: 10px; left: 10px;
       background: rgba(255,255,255,0.9);
       padding: 5px 8px;
       border-radius: 5px;
       z-index: 1000;
       font-size: 13px;
-      display: flex;
+      display: none; /* Oculto hasta que el usuario confirme en el popup */
       flex-wrap: wrap;
       gap: 6px 10px;
       align-items: center;
     }
+    select { margin-right: 5px; }
+    .badge { display:inline-block; padding:2px 6px; border-radius:4px; background:#f2f2f2; font-size:12px; }
+    #ultima-actualizacion { width:100%; margin-top:4px; font-size:12px; color:#333; }
 
     /* Botón Home */
     .home-btn {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      background: white;
-      border-radius: 50%;
-      width: 40px;
-      height: 40px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      position: absolute; top: 10px; right: 10px;
+      background: white; border-radius: 50%;
+      width: 40px; height: 40px;
+      display: flex; align-items: center; justify-content: center;
       box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-      cursor: pointer;
-      z-index: 1000;
+      cursor: pointer; z-index: 1000;
     }
     .home-btn:hover { background: #f0f0f0; }
     .home-btn svg { width: 20px; height: 20px; fill: black; }
 
-    select { margin-right: 5px; }
-    .badge {
-      display:inline-block; padding:2px 6px; border-radius:4px; background:#f2f2f2; font-size:12px;
+    /* ------- POPUP INICIAL ------- */
+    .overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 2000;
     }
+    .modal {
+      width: 95%; max-width: 520px;
+      background: #fff; border-radius: 10px;
+      padding: 16px 16px 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    }
+    .modal h3 { margin: 0 0 10px; font-size: 18px; }
+    .modal .row { margin-bottom: 10px; }
+    .modal label { font-size: 14px; display: block; margin-bottom: 6px; }
+    .modal .grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+    }
+    .modal .muted { font-size: 12px; color: #555; }
+    .modal .actions { margin-top: 12px; display: flex; gap: 8px; justify-content: flex-end; }
+    .btn {
+      border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 14px;
+    }
+    .btn.primary { background: #2563eb; color: #fff; }
+    .btn.ghost { background: #f3f4f6; color: #111827; }
+
+    .inline { display: inline-flex; align-items: center; gap: 8px; }
+    .hide { display: none; }
   </style>
 </head>
 <body>
 
-<div class="filtros">
-  <!-- NUEVO: selector de tipo de semáforo -->
+<!-- POPUP inicial -->
+<div id="overlay" class="overlay">
+  <div class="modal">
+    <h3>Antes de comenzar</h3>
+
+    <div class="row">
+      <label for="selCartera">Selecciona la cartera a visualizar</label>
+      <select id="selCartera">
+        <option value="ADMIN">Cartera Administrativa (7–44 días vencidos)</option>
+        <option value="EXTRA">Cartera Extrajudicial (≥45 días vencidos)</option>
+      </select>
+      <div class="muted">Esta elección define qué registros se cargarán al mapa.</div>
+    </div>
+
+    <div class="row">
+      <label>Alcance de gestión</label>
+      <div class="grid">
+        <label class="inline">
+          <input type="radio" name="alcance" value="TODOS" checked>
+          Todos los créditos
+        </label>
+        <label class="inline">
+          <input type="radio" name="alcance" value="SINGESTION">
+          Solo sin gestión
+        </label>
+      </div>
+      <div id="blockUmbral" class="row hide">
+        <label for="diasMin">Días sin gestión mínimo</label>
+        <input id="diasMin" type="number" min="1" step="1" value="1" />
+        <div class="muted">Se filtrarán créditos con “Días sin gestión” ≥ este valor, o sin dato.</div>
+      </div>
+    </div>
+
+    <div class="row">
+      <label for="coordInput">Coordinador (opcional)</label>
+      <input id="coordInput" type="text" placeholder="alcnca" />
+      <div class="muted">Si lo dejas vacío, se usará el parámetro de la URL “?coord=...”, o “alcnca”.</div>
+    </div>
+
+    <div class="actions">
+      <button id="btnCancelar" class="btn ghost">Cancelar</button>
+      <button id="btnContinuar" class="btn primary">Continuar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Filtros (se muestran después del popup) -->
+<div id="panelFiltros" class="filtros">
   <label>Tipo:
     <select id="filtroTipo">
       <option value="ADMIN">Semáforo Administrativo (7–44 DV)</option>
@@ -106,7 +171,7 @@
   </label>
 
   <span id="contador" class="badge">0 créditos</span>
-  <div id="ultima-actualizacion" style="width:100%; margin-top:4px; font-size:12px; color:#333;"></div>
+  <div id="ultima-actualizacion"></div>
 </div>
 
 <!-- Botón Home -->
@@ -117,8 +182,8 @@
     16-16V368c0-8.8 7.2-16 
     16-16h64c8.8 0 16 7.2 
     16 16v95.7c0 8.8 7.2 16 
-    16 16l112 .3c8.8 0 16-7.2 
-    16-16V300L295.6 148.3c-5.6-4.7-13.7-4.7-19.2 0zM571.6 
+    16 16l112 .3c8.8 0 48-21.5 
+    48-48V300L295.6 148.3c-5.6-4.7-13.7-4.7-19.2 0zM571.6 
     251.5L488 182.6V44c0-6.6-5.4-12-12-12h-52c-6.6 
     0-12 5.4-12 12v72.6L318.5 43c-27.2-22.6-68.2-22.6-95.4 
     0L4.4 251.5c-5.1 4.2-5.8 11.8-1.6 
@@ -135,169 +200,251 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
+  // ---------- UTILIDADES ----------
   function getParam(name) {
     const url = new URL(window.location.href);
     return url.searchParams.get(name);
   }
+  function parseIntSafe(v, d=0){
+    const n = parseInt(v, 10);
+    return isNaN(n) ? d : n;
+  }
 
-  const coordinadorClave = getParam('coord') || 'alcnca';
-  const dataUrl = 'datos.json';
+  // ---------- ESTADO GLOBAL ----------
+  let mapa, capaMarkers = [];
+  let dataFiltradaBase = []; // datos ya filtrados por cartera/alcance inicial
+  let lastBounds = null;
 
-  fetch(dataUrl)
-    .then(res => {
-      // 🔹 Obtener fecha de última modificación
-      const lastModified = res.headers.get("Last-Modified");
-      if (lastModified) {
-        const fecha = new Date(lastModified);
-        const fechaFormateada = fecha.toLocaleDateString("es-MX", {
-          day: "numeric",
-          month: "long",
-          year: "numeric"
-        });
-        document.getElementById("ultima-actualizacion").innerText =
-          "Última actualización: " + fechaFormateada;
-      }
-      return res.json();
-    })
-    .then(allData => {
-      const data = allData.filter(r => (r.Coordinador || '').toLowerCase() === coordinadorClave.toLowerCase());
-      initMap(data);
+  // Referencias UI
+  const overlay = document.getElementById('overlay');
+  const selCartera = document.getElementById('selCartera');
+  const coordInput = document.getElementById('coordInput');
+  const panelFiltros = document.getElementById('panelFiltros');
+  const blockUmbral = document.getElementById('blockUmbral');
+  const diasMinInput = document.getElementById('diasMin');
+  const btnContinuar = document.getElementById('btnContinuar');
+  const btnCancelar = document.getElementById('btnCancelar');
+
+  const selTipo = document.getElementById('filtroTipo');
+  const selSuc  = document.getElementById('filtroSucursal');
+  const selEje  = document.getElementById('filtroEjecutivo');
+  const selBan  = document.getElementById('filtroBanda');
+  const badge   = document.getElementById('contador');
+  const lblUlt  = document.getElementById('ultima-actualizacion');
+
+  // Mostrar/ocultar bloque de umbral según radio
+  document.querySelectorAll('input[name="alcance"]').forEach(r => {
+    r.addEventListener('change', () => {
+      const val = document.querySelector('input[name="alcance"]:checked').value;
+      blockUmbral.classList.toggle('hide', val !== 'SINGESTION');
     });
+  });
 
-  function initMap(data) {
-    const map = L.map('map').setView([17.05, -96.72], 7);
+  btnCancelar.addEventListener('click', () => {
+    // Puedes redirigir a inicio o solo cerrar
+    window.location.href = 'index.html';
+  });
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OSM'
-    }).addTo(map);
+  btnContinuar.addEventListener('click', () => {
+    iniciar();
+  });
 
-    function getIcon(a, d) {
-      const n = parseInt(d);
-      if (n === 88 || n === 89) {
-        return L.divIcon({
-          className: 'neon-marker',
-          iconSize: [30, 30],
-          iconAnchor: [15, 30],
-          popupAnchor: [0, -30]
-        });
-      }
-      const url = (String(a).trim().toUpperCase() === 'SI')
-        ? 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png'
-        : 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png';
-      return L.icon({
-        iconUrl: url,
-        shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-        iconSize: [25, 41],
-        iconAnchor: [12, 41],
-        popupAnchor: [1, -34],
-        shadowSize: [41, 41]
+  // ---------- MAPA ----------
+  function crearMapa(){
+    if (mapa) return mapa;
+    mapa = L.map('map').setView([17.05, -96.72], 7);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OSM' }).addTo(mapa);
+    return mapa;
+  }
+
+  function getIcon(aceptacion, diasAtraso) {
+    const n = parseIntSafe(diasAtraso);
+    if (n === 88 || n === 89) {
+      return L.divIcon({
+        className: 'neon-marker',
+        iconSize: [30, 30],
+        iconAnchor: [15, 30],
+        popupAnchor: [0, -30]
       });
     }
+    const url = (String(aceptacion).trim().toUpperCase() === 'SI')
+      ? 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png'
+      : 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png';
+    return L.icon({
+      iconUrl: url,
+      shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+      iconSize: [25, 41],
+      iconAnchor: [12, 41],
+      popupAnchor: [1, -34],
+      shadowSize: [41, 41]
+    });
+  }
 
-    const selTipo = document.getElementById('filtroTipo'),
-          selSuc  = document.getElementById('filtroSucursal'),
-          selEje  = document.getElementById('filtroEjecutivo'),
-          selBan  = document.getElementById('filtroBanda'),
-          badge   = document.getElementById('contador');
+  function limpiarMarkers(){
+    capaMarkers.forEach(mk => mapa.removeLayer(mk));
+    capaMarkers = [];
+  }
 
+  function pasaFiltroCartera(dv, tipo) {
+    const atras = parseIntSafe(dv);
+    if (tipo === 'ADMIN') return (atras >= 7 && atras < 45); // 7–44
+    if (tipo === 'EXTRA') return (atras >= 45);              // 45+
+    return true;
+  }
+
+  function pasaFiltroSinGestion(r, minDias) {
+    // Considera "sin gestión" si:
+    // - el campo está vacío/nulo, o
+    // - es un número >= umbral seleccionado
+    const v = r['Dias sin Gestion'];
+    if (v === null || v === undefined || String(v).trim() === '') return true;
+    return parseIntSafe(v) >= minDias;
+  }
+
+  function llenarSelectoresBase(arr) {
     // Sucursales
-    const sucursales = [...new Set(data.map(r => r.Sucursal))].filter(Boolean);
+    selSuc.innerHTML = '<option value="TODAS">Todas</option>';
+    const sucursales = [...new Set(arr.map(r => r.Sucursal))].filter(Boolean).sort();
     sucursales.forEach(s => selSuc.append(new Option(s, s)));
 
     // Bandas
-    const bandas = [...new Set(data.map(r => r.Banda))].filter(Boolean);
+    selBan.innerHTML = '<option value="TODAS">Todas</option>';
+    const bandas = [...new Set(arr.map(r => r.Banda))].filter(Boolean).sort();
     bandas.forEach(b => selBan.append(new Option(b, b)));
 
-    let markers = [];
-    let lastBounds = null;
-
-    function updateExecOptions(selSucValue) {
-      selEje.innerHTML = '<option value="TODOS">Todos</option>';
-      const source = selSucValue === 'TODAS'
-        ? data
-        : data.filter(r => r.Sucursal === selSucValue);
-      const execs = [...new Set(source.map(r => r.Ejecutivo))].filter(Boolean);
-      execs.forEach(e => selEje.append(new Option(e, e)));
-    }
-
-    function pasaFiltroSemaforo(dias, tipo) {
-      const dv = parseInt(dias) || 0;
-      if (tipo === 'ADMIN') return (dv >= 7 && dv < 45);  // 7–44
-      if (tipo === 'EXTRA') return (dv >= 45);            // 45+
-      return true;
-    }
-
-    function refreshMap() {
-      // limpiar marcadores
-      markers.forEach(m => map.removeLayer(m));
-      markers = [];
-
-      const fs = selSuc.value,
-            fe = selEje.value,
-            fb = selBan.value,
-            ft = selTipo.value;
-
-      let count = 0;
-
-      data.forEach(r => {
-        // filtros de sucursal/ejecutivo/banda
-        if ((fs !== 'TODAS' && r.Sucursal !== fs) ||
-            (fe !== 'TODOS' && r.Ejecutivo !== fe) ||
-            (fb !== 'TODAS' && r.Banda !== fb)) return;
-
-        // filtro por tipo de semáforo (días vencidos)
-        if (!pasaFiltroSemaforo(r['Dias de Atraso'], ft)) return;
-
-        const lat = parseFloat(r.Latitud), lng = parseFloat(r.Longitud);
-        if (!lat || !lng) return;
-
-        const mk = L.marker([lat, lng], { icon: getIcon(r.Aceptacion, r['Dias de Atraso']) }).addTo(map);
-        mk.bindPopup(
-          `<strong>${r.Sucursal}</strong><br>
-          Aceptación: ${r.Aceptacion}<br>
-          Días sin gestión: ${r['Dias sin Gestion']}<br>
-          Línea: ${r.Linea}<br>
-          Nombre: ${r.Nombre}<br>
-          Saldo: $${r['Saldo Total']}<br>
-          % Pagado: ${r['Porcentaje Pagado']}%<br>
-          Producto: ${r.Producto}<br>
-          Días de atraso: ${r['Dias de Atraso']}<br>
-          Ejecutivo: ${r.Ejecutivo}<br>
-          Banda: ${r.Banda}`
-        );
-        mk.bindTooltip(r.Sucursal, {
-          permanent: true,
-          direction: 'top',
-          offset: [0, -10],
-          className: 'sucursal-label'
-        });
-        markers.push(mk);
-        count++;
-      });
-
-      // contador visual
-      badge.textContent = `${count} crédito${count===1?'':'s'}`;
-
-      // ajustar vista
-      if (markers.length > 0) {
-        const group = L.featureGroup(markers);
-        lastBounds = group.getBounds().pad(0.2);
-        map.fitBounds(lastBounds);
-      } else if (lastBounds) {
-        map.fitBounds(lastBounds);
-      }
-    }
-
-    // Eventos
-    selTipo.addEventListener('change', refreshMap);
-    selSuc.addEventListener('change', () => { updateExecOptions(selSuc.value); refreshMap(); });
-    selEje.addEventListener('change', refreshMap);
-    selBan.addEventListener('change', refreshMap);
-
-    // Inicial
-    updateExecOptions('TODAS');
-    refreshMap();
+    // Ejecutivos (inicialmente “todas” sucursales)
+    actualizarEjecutivos(arr, 'TODAS');
   }
+
+  function actualizarEjecutivos(arr, sucursalSeleccionada){
+    selEje.innerHTML = '<option value="TODOS">Todos</option>';
+    const fuente = sucursalSeleccionada === 'TODAS'
+      ? arr
+      : arr.filter(r => r.Sucursal === sucursalSeleccionada);
+    const execs = [...new Set(fuente.map(r => r.Ejecutivo))].filter(Boolean).sort();
+    execs.forEach(e => selEje.append(new Option(e, e)));
+  }
+
+  function pintarMapaConFiltros() {
+    limpiarMarkers();
+
+    const fs = selSuc.value;
+    const fe = selEje.value;
+    const fb = selBan.value;
+    const ft = selTipo.value;
+
+    let count = 0;
+    dataFiltradaBase.forEach(r => {
+      if ((fs !== 'TODAS' && r.Sucursal !== fs) ||
+          (fe !== 'TODOS' && r.Ejecutivo !== fe) ||
+          (fb !== 'TODAS' && r.Banda !== fb)) return;
+
+      if (!pasaFiltroCartera(r['Dias de Atraso'], ft)) return;
+
+      const lat = parseFloat(r.Latitud), lng = parseFloat(r.Longitud);
+      if (!lat || !lng) return;
+
+      const mk = L.marker([lat, lng], { icon: getIcon(r.Aceptacion, r['Dias de Atraso']) }).addTo(mapa);
+      mk.bindPopup(
+        `<strong>${r.Sucursal}</strong><br>
+        Aceptación: ${r.Aceptacion}<br>
+        Días sin gestión: ${r['Dias sin Gestion']}<br>
+        Línea: ${r.Linea}<br>
+        Nombre: ${r.Nombre}<br>
+        Saldo: $${r['Saldo Total']}<br>
+        % Pagado: ${r['Porcentaje Pagado']}%<br>
+        Producto: ${r.Producto}<br>
+        Días de atraso: ${r['Dias de Atraso']}<br>
+        Ejecutivo: ${r.Ejecutivo}<br>
+        Banda: ${r.Banda}`
+      );
+      mk.bindTooltip(r.Sucursal, {
+        permanent: true,
+        direction: 'top',
+        offset: [0, -10],
+        className: 'sucursal-label'
+      });
+      capaMarkers.push(mk);
+      count++;
+    });
+
+    badge.textContent = `${count} crédito${count===1?'':'s'}`;
+
+    if (capaMarkers.length > 0) {
+      const group = L.featureGroup(capaMarkers);
+      lastBounds = group.getBounds().pad(0.2);
+      mapa.fitBounds(lastBounds);
+    } else if (lastBounds) {
+      mapa.fitBounds(lastBounds);
+    }
+  }
+
+  // Eventos de filtros superiores
+  selTipo.addEventListener('change', pintarMapaConFiltros);
+  selSuc.addEventListener('change', () => {
+    actualizarEjecutivos(dataFiltradaBase, selSuc.value);
+    pintarMapaConFiltros();
+  });
+  selEje.addEventListener('change', pintarMapaConFiltros);
+  selBan.addEventListener('change', pintarMapaConFiltros);
+
+  // ---------- FLUJO INICIAL ----------
+  async function iniciar(){
+    // Lee selección del popup
+    const carteraElegida = selCartera.value; // ADMIN | EXTRA
+    const alcance = document.querySelector('input[name="alcance"]:checked').value; // TODOS | SINGESTION
+    const umbral = parseIntSafe(diasMinInput.value, 1);
+
+    // Coord: input > URL > default
+    const coordURL = getParam('coord');
+    const coordinadorClave = (coordInput.value || coordURL || 'alcnca').toLowerCase();
+
+    // Oculta popup y muestra panel de filtros
+    overlay.style.display = 'none';
+    panelFiltros.style.display = 'flex';
+
+    // Sincroniza “Tipo” del panel con lo elegido
+    selTipo.value = carteraElegida;
+
+    // Crea mapa (aún sin markers)
+    crearMapa();
+
+    const dataUrl = 'datos.json';
+    const res = await fetch(dataUrl);
+    const lastModified = res.headers.get("Last-Modified");
+    if (lastModified) {
+      const fecha = new Date(lastModified);
+      const fechaFormateada = fecha.toLocaleDateString("es-MX", {
+        day: "numeric", month: "long", year: "numeric"
+      });
+      lblUlt.innerText = "Última actualización: " + fechaFormateada;
+    }
+    const allData = await res.json();
+
+    // 1) Filtra por coordinador
+    let base = allData.filter(r => (r.Coordinador || '').toLowerCase() === coordinadorClave);
+
+    // 2) Filtra por cartera elegida
+    base = base.filter(r => pasaFiltroCartera(r['Dias de Atraso'], carteraElegida));
+
+    // 3) Si pidió “solo sin gestión”, aplica umbral
+    if (alcance === 'SINGESTION') {
+      base = base.filter(r => pasaFiltroSinGestion(r, umbral));
+    }
+
+    // Guarda subconjunto base
+    dataFiltradaBase = base;
+
+    // 4) Llena selects con base en este subconjunto
+    llenarSelectoresBase(dataFiltradaBase);
+
+    // 5) Pinta
+    pintarMapaConFiltros();
+  }
+
+  // Precarga valor del input coordinador con ?coord si existe
+  const coordURLInit = getParam('coord');
+  if (coordURLInit) coordInput.value = coordURLInit;
 </script>
 </body>
 </html>
