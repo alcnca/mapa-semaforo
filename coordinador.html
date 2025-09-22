@@ -1,13 +1,23 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="utf-8">
+  <meta charset="utf-8" />
   <title>Mapa Semáforo</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
-    html, body { height: 100%; margin: 0; }
-    #map { height: 100vh; margin: 0; }
+    :root{
+      --brand:#0B4F6C;      /* azul institucional */
+      --brand-2:#14597a;
+      --brand-weak:#e8f1f6; /* fondos suaves */
+      --ink:#0f172a;        /* texto principal */
+      --muted:#475569;      /* texto secundario */
+      --radius:14px;
+    }
 
+    html, body { height: 100%; margin: 0; background: #e1eef4; color: var(--ink); font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, "Noto Sans", "Helvetica Neue"; }
+    #map { height: 100vh; }
+
+    /* ---------- tooltips de sucursal ---------- */
     .leaflet-tooltip {
       background: transparent !important;
       border: none !important;
@@ -20,144 +30,216 @@
       border: none !important;
       box-shadow: none !important;
       padding: 0 !important;
-      text-shadow: none !important;
-      color: black !important;
+      text-shadow: 0 1px 0 rgba(255,255,255,.6);
+      color: #0f172a !important;
       font-size: 10px;
-      font-weight: bold;
+      font-weight: 700;
     }
 
+    /* ---------- marcador parpadeante ---------- */
     .neon-marker {
-      width: 10px;
-      height: 10px;
-      background: red;
-      border-radius: 50%;
+      width: 10px; height: 10px;
+      background: red; border-radius: 50%;
       box-shadow: 0 0 3px red, 0 0 6px red;
       animation: pulse 1.5s infinite;
       border: 1px solid white;
     }
     @keyframes pulse {
-      0%   { box-shadow: 0 0 1px red, 0 0 3px red; }
-      50%  { box-shadow: 0 0 5px red, 0 0 10px red; }
+      0% { box-shadow: 0 0 1px red, 0 0 3px red; }
+      50% { box-shadow: 0 0 5px red, 0 0 10px red; }
       100% { box-shadow: 0 0 1px red, 0 0 3px red; }
     }
 
+    /* ---------- panel de filtros (se muestra después del popup) ---------- */
     .filtros {
+      position: absolute; top: 12px; left: 12px;
+      background: rgba(255,255,255,0.92);
+      backdrop-filter: blur(3px);
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px solid #e5e7eb;
+      z-index: 1000; font-size: 13px;
+      display: none;
+      box-shadow: 0 8px 30px rgba(2,8,23,.08);
+      gap: 6px 10px; align-items: center; display: flex; flex-wrap: wrap;
+    }
+    .filtros label { font-weight: 600; color: var(--muted); }
+    .filtros select { margin-left: 6px; }
+    .badge { display:inline-block; padding:2px 6px; border-radius:6px; background:#f3f4f6; font-size:12px; border:1px solid #e5e7eb; }
+    #ultima-actualizacion { width:100%; margin-top:4px; font-size:12px; color:#334155; }
+
+    /* ---------- botón Home (inferior derecho, junto al zoom) ---------- */
+    .floating-right {
       position: absolute;
-      top: 10px; left: 10px;
-      background: rgba(255,255,255,0.9);
-      padding: 5px 8px;
-      border-radius: 5px;
-      z-index: 1000;
-      font-size: 13px;
-      display: none; /* Oculto hasta que el usuario confirme en el popup */
-      flex-wrap: wrap;
-      gap: 6px 10px;
-      align-items: center;
+      right: 12px;
+      bottom: 12px; /* alineado con el control de zoom en bottomright */
+      z-index: 1100;
+      display: flex; flex-direction: column; align-items: flex-end; gap: 10px;
+      pointer-events: none; /* deja que el mapa reciba eventos excepto en los hijos */
     }
-    select { margin-right: 5px; }
-    .badge { display:inline-block; padding:2px 6px; border-radius:4px; background:#f2f2f2; font-size:12px; }
-    #ultima-actualizacion { width:100%; margin-top:4px; font-size:12px; color:#333; }
-
-    /* Botón Home */
     .home-btn {
-      position: absolute; top: 10px; right: 10px;
-      background: white; border-radius: 50%;
-      width: 40px; height: 40px;
-      display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-      cursor: pointer; z-index: 1000;
+      pointer-events: auto;
+      background: white;
+      border-radius: 999px;
+      width: 44px; height: 44px;
+      display: inline-flex; align-items: center; justify-content: center;
+      box-shadow: 0 6px 18px rgba(2,8,23,.15);
+      cursor: pointer;
+      border: 1px solid #e5e7eb;
+      transition: transform .08s ease, background .2s ease;
     }
-    .home-btn:hover { background: #f0f0f0; }
-    .home-btn svg { width: 20px; height: 20px; fill: black; }
+    .home-btn:hover { background: #f8fafc; transform: translateY(-1px); }
+    .home-btn svg { width: 20px; height: 20px; fill: var(--ink); }
 
-    /* ------- POPUP INICIAL ------- */
+    /* ---------- POPUP INICIAL (institucional) ---------- */
     .overlay {
-      position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+      position: fixed; inset: 0; background: rgba(2, 8, 23, 0.45);
       display: flex; align-items: center; justify-content: center;
       z-index: 2000;
     }
     .modal {
-      width: 95%; max-width: 520px;
-      background: #fff; border-radius: 10px;
-      padding: 16px 16px 12px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      width: min(640px, 92vw);
+      background: #fff;
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: 0 30px 70px rgba(2,8,23,.35);
+      border: 1px solid #e5e7eb;
     }
-    .modal h3 { margin: 0 0 10px; font-size: 18px; }
-    .modal .row { margin-bottom: 10px; }
-    .modal label { font-size: 14px; display: block; margin-bottom: 6px; }
-    .modal .grid {
-      display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+    .modal__header {
+      display: flex; align-items: center; gap: 14px;
+      padding: 16px 18px;
+      background: linear-gradient(90deg, var(--brand), var(--brand-2));
+      color: #fff;
     }
-    .modal .muted { font-size: 12px; color: #555; }
-    .modal .actions { margin-top: 12px; display: flex; gap: 8px; justify-content: flex-end; }
+    .modal__logo {
+      width: 38px; height: 38px; border-radius: 8px;
+      background: rgba(255,255,255,.15);
+      display: inline-flex; align-items: center; justify-content: center;
+      border: 1px solid rgba(255,255,255,.25);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.15);
+    }
+    .modal__title {
+      margin: 0; line-height: 1.2;
+      font-weight: 700; font-size: 18px;
+    }
+    .modal__subtitle {
+      margin: 2px 0 0; font-size: 12px; opacity: .9; font-weight: 500;
+    }
+    .modal__body {
+      padding: 18px;
+      background: linear-gradient(#fff, #fff), radial-gradient(1200px 400px at 100% -50px, var(--brand-weak), transparent);
+      background-clip: padding-box, border-box;
+    }
+    .section {
+      border: 1px solid #e5e7eb; border-radius: 12px; padding: 14px;
+      background: #fff;
+    }
+    .section + .section { margin-top: 12px; }
+    .section h4 { margin: 0 0 8px; font-size: 14px; color: var(--ink); }
+    .muted { font-size: 12px; color: var(--muted); }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .field label { display:block; font-size: 12px; color: var(--muted); margin-bottom: 6px; font-weight: 600; }
+    .field input[type="text"],
+    .field input[type="number"],
+    .field select {
+      width: 100%; height: 38px; border-radius: 10px; border: 1px solid #e5e7eb; padding: 0 10px;
+      font-size: 14px; outline: none;
+    }
+    .inline { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; }
+    .hr { height: 1px; background: #e5e7eb; margin: 14px 0; }
+    .actions {
+      display: flex; justify-content: flex-end; gap: 10px; padding-top: 8px;
+    }
     .btn {
-      border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 14px;
+      border: 1px solid #e5e7eb;
+      background: #f8fafc;
+      color: var(--ink);
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-weight: 600; cursor: pointer;
+      transition: transform .06s ease, background .2s ease, border-color .2s ease;
     }
-    .btn.primary { background: #2563eb; color: #fff; }
-    .btn.ghost { background: #f3f4f6; color: #111827; }
+    .btn:hover { background: #eef2f7; transform: translateY(-1px); }
+    .btn.primary {
+      border-color: transparent;
+      background: linear-gradient(90deg, var(--brand), var(--brand-2));
+      color: #fff;
+    }
+    .btn.primary:hover { filter: brightness(1.05); }
 
-    .inline { display: inline-flex; align-items: center; gap: 8px; }
+    /* Ocultos */
     .hide { display: none; }
+
+    /* Selects del panel: tipografía consistente */
+    select { font-family: inherit; font-size: 13px; }
   </style>
 </head>
 <body>
 
-<!-- POPUP inicial -->
+<!-- POPUP institucional -->
 <div id="overlay" class="overlay">
-  <div class="modal">
-    <h3>Antes de comenzar</h3>
-
-    <div class="row">
-      <label for="selCartera">Selecciona la cartera a visualizar</label>
-      <select id="selCartera">
-        <option value="ADMIN">Cartera Administrativa (7–44 días vencidos)</option>
-        <option value="EXTRA">Cartera Extrajudicial (≥45 días vencidos)</option>
-      </select>
-      <div class="muted">Esta elección define qué registros se cargarán al mapa.</div>
-    </div>
-
-    <div class="row">
-      <label>Alcance de gestión</label>
-      <div class="grid">
-        <label class="inline">
-          <input type="radio" name="alcance" value="TODOS" checked>
-          Todos los créditos
-        </label>
-        <label class="inline">
-          <input type="radio" name="alcance" value="SINGESTION">
-          Solo sin gestión
-        </label>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="titulo-modal">
+    <div class="modal__header">
+      <div class="modal__logo" aria-hidden="true">
+        <!-- Ícono simple institucional -->
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="#fff" opacity="0.95" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2l9 4v6c0 5-3.8 9.7-9 10-5.2-.3-9-5-9-10V6l9-4z" fill="white" opacity=".25"/>
+          <path d="M6 10h12v2H6zM6 14h12v2H6z" fill="white"/>
+        </svg>
       </div>
-      <div id="blockUmbral" class="row hide">
-        <label for="diasMin">Días sin gestión mínimo</label>
-        <input id="diasMin" type="number" min="1" step="1" value="1" />
-        <div class="muted">Se filtrarán créditos con “Días sin gestión” ≥ este valor, o sin dato.</div>
+      <div>
+        <h3 id="titulo-modal" class="modal__title">Configuración inicial</h3>
+        <p class="modal__subtitle">Selecciona la cartera y el alcance antes de cargar información</p>
       </div>
     </div>
 
-    <div class="row">
-      <label for="coordInput">Coordinador (opcional)</label>
-      <input id="coordInput" type="text" placeholder="alcnca" />
-      <div class="muted">Si lo dejas vacío, se usará el parámetro de la URL “?coord=...”, o “alcnca”.</div>
-    </div>
+    <div class="modal__body">
+      <div class="section">
+        <h4>Cartera a visualizar</h4>
+        <div class="grid-2">
+          <div class="field">
+            <label for="selCartera">Tipo de cartera</label>
+            <select id="selCartera">
+              <option value="ADMIN">Cartera Administrativa (7–44 días vencidos)</option>
+              <option value="EXTRA">Cartera Extrajudicial (≥45 días vencidos)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="coordInput">Coordinador (opcional)</label>
+            <input id="coordInput" type="text" placeholder="alcnca" />
+          </div>
+        </div>
+        <p class="muted" style="margin-top:6px">Si dejas el campo de coordinador vacío, se usará el parámetro de la URL <strong>?coord=</strong> o el valor por defecto <strong>alcnca</strong>.</p>
+      </div>
 
-    <div class="actions">
-      <button id="btnCancelar" class="btn ghost">Cancelar</button>
-      <button id="btnContinuar" class="btn primary">Continuar</button>
+      <div class="section">
+        <h4>Alcance de gestión</h4>
+        <div class="grid-2">
+          <label class="inline"><input type="radio" name="alcance" value="TODOS" checked> Todos los créditos</label>
+          <label class="inline"><input type="radio" name="alcance" value="SINGESTION"> Solo sin gestión</label>
+        </div>
+        <div id="blockUmbral" class="grid-2 hide" style="margin-top: 10px;">
+          <div class="field">
+            <label for="diasMin">Días sin gestión mínimo</label>
+            <input id="diasMin" type="number" min="1" step="1" value="1" />
+          </div>
+          <div class="field" style="display:flex;align-items:flex-end;">
+            <span class="muted">Se incluirán registros sin dato o con <em>Días sin gestión</em> ≥ al valor indicado.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="hr"></div>
+      <div class="actions">
+        <button id="btnCancelar" class="btn" type="button">Cancelar</button>
+        <button id="btnContinuar" class="btn primary" type="button">Continuar</button>
+      </div>
     </div>
   </div>
 </div>
 
-<!-- Filtros (se muestran después del popup) -->
-<div id="panelFiltros" class="filtros">
-  <label>Tipo:
-    <select id="filtroTipo">
-      <option value="ADMIN">Semáforo Administrativo (7–44 DV)</option>
-      <option value="EXTRA">Semáforo Extrajudicial (≥45 DV)</option>
-    </select>
-  </label>
-
+<!-- Panel de filtros (sin “Tipo” visible) -->
+<div id="panelFiltros" class="filtros" aria-live="polite">
   <label>Sucursal:
     <select id="filtroSucursal"><option value="TODAS">Todas</option></select>
   </label>
@@ -174,33 +256,20 @@
   <div id="ultima-actualizacion"></div>
 </div>
 
-<!-- Botón Home -->
-<div class="home-btn" onclick="window.location.href='index.html'">
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512">
-    <path d="M280.4 148.3L96 300.1V464c0 8.8 
-    7.2 16 16 16l112-.3c8.8 0 16-7.2 
-    16-16V368c0-8.8 7.2-16 
-    16-16h64c8.8 0 16 7.2 
-    16 16v95.7c0 8.8 7.2 16 
-    16 16l112 .3c8.8 0 48-21.5 
-    48-48V300L295.6 148.3c-5.6-4.7-13.7-4.7-19.2 0zM571.6 
-    251.5L488 182.6V44c0-6.6-5.4-12-12-12h-52c-6.6 
-    0-12 5.4-12 12v72.6L318.5 43c-27.2-22.6-68.2-22.6-95.4 
-    0L4.4 251.5c-5.1 4.2-5.8 11.8-1.6 
-    16.9l21.4 25.6c4.2 5.1 11.8 5.8 
-    16.9 1.6L64 261.2V464c0 26.5 
-    21.5 48 48 48h352c26.5 0 48-21.5 
-    48-48V261.2l23.8 20.3c5.1 4.2 
-    12.7 3.5 16.9-1.6l21.4-25.6c4.2-5.1 
-    3.5-12.7-1.5-16.8z"/>
-  </svg>
+<!-- Botones flotantes en esquina inferior derecha (junto al zoom) -->
+<div class="floating-right">
+  <div class="home-btn" title="Inicio" onclick="window.location.href='index.html'">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512" aria-hidden="true">
+      <path d="M280.4 148.3L96 300.1V464c0 8.8 7.2 16 16 16l112-.3c8.8 0 16-7.2 16-16V368c0-8.8 7.2-16 16-16h64c8.8 0 16 7.2 16 16v95.7c0 8.8 7.2 16 16 16l112 .3c8.8 0 16-7.2 16-16V300L295.6 148.3c-5.6-4.7-13.7-4.7-19.2 0zM571.6 251.5L488 182.6V44c0-6.6-5.4-12-12-12h-52c-6.6 0-12 5.4-12 12v72.6L318.5 43c-27.2-22.6-68.2-22.6-95.4 0L4.4 251.5c-5.1 4.2-5.8 11.8-1.6 16.9l21.4 25.6c4.2 5.1 11.8 5.8 16.9 1.6L64 261.2V464c0 26.5 21.5 48 48 48h352c26.5 0 48-21.5 48-48V261.2l23.8 20.3c5.1 4.2 12.7 3.5 16.9-1.6l21.4-25.6c4.2-5.1 3.5-12.7-1.5-16.8z"/>
+    </svg>
+  </div>
 </div>
 
-<div id="map"></div>
+<div id="map" role="application" aria-label="Mapa de créditos"></div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-  // ---------- UTILIDADES ----------
+  /* ---------------- UTILIDADES ---------------- */
   function getParam(name) {
     const url = new URL(window.location.href);
     return url.searchParams.get(name);
@@ -210,12 +279,13 @@
     return isNaN(n) ? d : n;
   }
 
-  // ---------- ESTADO GLOBAL ----------
+  /* ---------------- ESTADO ---------------- */
   let mapa, capaMarkers = [];
-  let dataFiltradaBase = []; // datos ya filtrados por cartera/alcance inicial
+  let dataFiltradaBase = [];
   let lastBounds = null;
+  let tipoCarteraGlobal = 'ADMIN';
 
-  // Referencias UI
+  /* ---------------- UI Refs ---------------- */
   const overlay = document.getElementById('overlay');
   const selCartera = document.getElementById('selCartera');
   const coordInput = document.getElementById('coordInput');
@@ -225,35 +295,29 @@
   const btnContinuar = document.getElementById('btnContinuar');
   const btnCancelar = document.getElementById('btnCancelar');
 
-  const selTipo = document.getElementById('filtroTipo');
   const selSuc  = document.getElementById('filtroSucursal');
   const selEje  = document.getElementById('filtroEjecutivo');
   const selBan  = document.getElementById('filtroBanda');
   const badge   = document.getElementById('contador');
   const lblUlt  = document.getElementById('ultima-actualizacion');
 
-  // Mostrar/ocultar bloque de umbral según radio
+  /* ---------------- Listeners popup ---------------- */
   document.querySelectorAll('input[name="alcance"]').forEach(r => {
     r.addEventListener('change', () => {
       const val = document.querySelector('input[name="alcance"]:checked').value;
       blockUmbral.classList.toggle('hide', val !== 'SINGESTION');
     });
   });
+  btnCancelar.addEventListener('click', () => { window.location.href = 'index.html'; });
+  btnContinuar.addEventListener('click', () => { iniciar(); });
 
-  btnCancelar.addEventListener('click', () => {
-    // Puedes redirigir a inicio o solo cerrar
-    window.location.href = 'index.html';
-  });
-
-  btnContinuar.addEventListener('click', () => {
-    iniciar();
-  });
-
-  // ---------- MAPA ----------
+  /* ---------------- Mapa ---------------- */
   function crearMapa(){
     if (mapa) return mapa;
-    mapa = L.map('map').setView([17.05, -96.72], 7);
+    // Control de zoom abajo a la derecha
+    mapa = L.map('map', { zoomControl: false }).setView([17.05, -96.72], 7);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OSM' }).addTo(mapa);
+    L.control.zoom({ position: 'bottomright' }).addTo(mapa);
     return mapa;
   }
 
@@ -287,40 +351,32 @@
 
   function pasaFiltroCartera(dv, tipo) {
     const atras = parseIntSafe(dv);
-    if (tipo === 'ADMIN') return (atras >= 7 && atras < 45); // 7–44
-    if (tipo === 'EXTRA') return (atras >= 45);              // 45+
+    if (tipo === 'ADMIN') return (atras >= 7 && atras < 45);
+    if (tipo === 'EXTRA') return (atras >= 45);
     return true;
   }
 
   function pasaFiltroSinGestion(r, minDias) {
-    // Considera "sin gestión" si:
-    // - el campo está vacío/nulo, o
-    // - es un número >= umbral seleccionado
     const v = r['Dias sin Gestion'];
     if (v === null || v === undefined || String(v).trim() === '') return true;
     return parseIntSafe(v) >= minDias;
   }
 
   function llenarSelectoresBase(arr) {
-    // Sucursales
     selSuc.innerHTML = '<option value="TODAS">Todas</option>';
     const sucursales = [...new Set(arr.map(r => r.Sucursal))].filter(Boolean).sort();
     sucursales.forEach(s => selSuc.append(new Option(s, s)));
 
-    // Bandas
     selBan.innerHTML = '<option value="TODAS">Todas</option>';
     const bandas = [...new Set(arr.map(r => r.Banda))].filter(Boolean).sort();
     bandas.forEach(b => selBan.append(new Option(b, b)));
 
-    // Ejecutivos (inicialmente “todas” sucursales)
     actualizarEjecutivos(arr, 'TODAS');
   }
 
-  function actualizarEjecutivos(arr, sucursalSeleccionada){
+  function actualizarEjecutivos(arr, sucSel){
     selEje.innerHTML = '<option value="TODOS">Todos</option>';
-    const fuente = sucursalSeleccionada === 'TODAS'
-      ? arr
-      : arr.filter(r => r.Sucursal === sucursalSeleccionada);
+    const fuente = sucSel === 'TODAS' ? arr : arr.filter(r => r.Sucursal === sucSel);
     const execs = [...new Set(fuente.map(r => r.Ejecutivo))].filter(Boolean).sort();
     execs.forEach(e => selEje.append(new Option(e, e)));
   }
@@ -331,7 +387,6 @@
     const fs = selSuc.value;
     const fe = selEje.value;
     const fb = selBan.value;
-    const ft = selTipo.value;
 
     let count = 0;
     dataFiltradaBase.forEach(r => {
@@ -339,7 +394,7 @@
           (fe !== 'TODOS' && r.Ejecutivo !== fe) ||
           (fb !== 'TODAS' && r.Banda !== fb)) return;
 
-      if (!pasaFiltroCartera(r['Dias de Atraso'], ft)) return;
+      if (!pasaFiltroCartera(r['Dias de Atraso'], tipoCarteraGlobal)) return;
 
       const lat = parseFloat(r.Latitud), lng = parseFloat(r.Longitud);
       if (!lat || !lng) return;
@@ -379,8 +434,7 @@
     }
   }
 
-  // Eventos de filtros superiores
-  selTipo.addEventListener('change', pintarMapaConFiltros);
+  /* ---------------- Eventos de filtros ---------------- */
   selSuc.addEventListener('change', () => {
     actualizarEjecutivos(dataFiltradaBase, selSuc.value);
     pintarMapaConFiltros();
@@ -388,25 +442,18 @@
   selEje.addEventListener('change', pintarMapaConFiltros);
   selBan.addEventListener('change', pintarMapaConFiltros);
 
-  // ---------- FLUJO INICIAL ----------
+  /* ---------------- Flujo inicial ---------------- */
   async function iniciar(){
-    // Lee selección del popup
-    const carteraElegida = selCartera.value; // ADMIN | EXTRA
-    const alcance = document.querySelector('input[name="alcance"]:checked').value; // TODOS | SINGESTION
+    tipoCarteraGlobal = document.getElementById('selCartera').value;
+    const alcance = document.querySelector('input[name="alcance"]:checked').value;
     const umbral = parseIntSafe(diasMinInput.value, 1);
 
-    // Coord: input > URL > default
     const coordURL = getParam('coord');
     const coordinadorClave = (coordInput.value || coordURL || 'alcnca').toLowerCase();
 
-    // Oculta popup y muestra panel de filtros
     overlay.style.display = 'none';
     panelFiltros.style.display = 'flex';
 
-    // Sincroniza “Tipo” del panel con lo elegido
-    selTipo.value = carteraElegida;
-
-    // Crea mapa (aún sin markers)
     crearMapa();
 
     const dataUrl = 'datos.json';
@@ -414,37 +461,24 @@
     const lastModified = res.headers.get("Last-Modified");
     if (lastModified) {
       const fecha = new Date(lastModified);
-      const fechaFormateada = fecha.toLocaleDateString("es-MX", {
-        day: "numeric", month: "long", year: "numeric"
-      });
+      const fechaFormateada = fecha.toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" });
       lblUlt.innerText = "Última actualización: " + fechaFormateada;
     }
     const allData = await res.json();
 
-    // 1) Filtra por coordinador
     let base = allData.filter(r => (r.Coordinador || '').toLowerCase() === coordinadorClave);
+    base = base.filter(r => pasaFiltroCartera(r['Dias de Atraso'], tipoCarteraGlobal));
+    if (alcance === 'SINGESTION') base = base.filter(r => pasaFiltroSinGestion(r, umbral));
 
-    // 2) Filtra por cartera elegida
-    base = base.filter(r => pasaFiltroCartera(r['Dias de Atraso'], carteraElegida));
-
-    // 3) Si pidió “solo sin gestión”, aplica umbral
-    if (alcance === 'SINGESTION') {
-      base = base.filter(r => pasaFiltroSinGestion(r, umbral));
-    }
-
-    // Guarda subconjunto base
     dataFiltradaBase = base;
-
-    // 4) Llena selects con base en este subconjunto
     llenarSelectoresBase(dataFiltradaBase);
-
-    // 5) Pinta
     pintarMapaConFiltros();
   }
 
-  // Precarga valor del input coordinador con ?coord si existe
+  // Autocompletar coordinador desde URL si existe
   const coordURLInit = getParam('coord');
   if (coordURLInit) coordInput.value = coordURLInit;
 </script>
 </body>
 </html>
+
