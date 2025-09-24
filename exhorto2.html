@@ -11,6 +11,7 @@
     #tablaPreview td:nth-child(1), #tablaPreview td:nth-child(2) { text-align: left; }
     #tablaPreview td:nth-child(3) { text-align: right; }
     #tablaPreview td:nth-child(4), #tablaPreview td:nth-child(5) { text-align: center; }
+    .badge-nomina { font-size: .72rem; }
   </style>
 </head>
 <body class="container py-4">
@@ -32,7 +33,8 @@
       <select id="mostrarSelect" class="form-select">
         <option value="SIN">Solo créditos sin gestión</option>
         <option value="TODOS">Todos</option>
-        <option value="PAGOS_UNICOS">Pagos únicos</option>
+        <option value="PAGOS_UNICOS">Pagos únicos (Cuotas = 1)</option>
+        <option value="GRUPALES">Grupales (Cuotas vencidas ≥ 4)</option>
       </select>
     </div>
 
@@ -136,7 +138,7 @@
 
     // NUEVO estado
     let carteraSeleccionada = ""; // ADMIN | EXTRA | TODAS
-    let mostrarModo = "SIN";      // SIN | TODOS | PAGOS_UNICOS
+    let mostrarModo = "SIN";      // SIN | TODOS | PAGOS_UNICOS | GRUPALES
 
     /* =======================
        Catálogos
@@ -193,14 +195,32 @@
         .toUpperCase();
     }
 
-    // NUEVA: detectar Pagos únicos en la columna 'modalidad'
-    function esPagoUnico(modalidad) {
-      if (!modalidad) return false;
-      const m = norm(modalidad);
-      // Coincide frases como "PAGO UNICO", "PAGOS UNICOS", "PAGO ÚNICO - CONTADO"
-      if (/\bPAGO(S)?\s*UNICO(S)?\b/.test(m)) return true;
-      // cobertura extra: que contenga ambas palabras
-      return (m.includes("PAGO") && m.includes("UNICO"));
+    // Pagos únicos por columna CUOTAS (==1)
+    function esPagoUnicoPorCuotas(reg) {
+      const v = toNumberSafe(reg["Cuotas"] ?? reg["cuotas"] ?? reg.cuotas);
+      return v === 1;
+    }
+
+    // Grupales por columna "Cuotas Vencidas" (>=4)
+    function esGrupalPorCuotasVencidas(reg) {
+      const v = toNumberSafe(reg["Cuotas Vencidas"] ?? reg["cuotas vencidas"] ?? reg.cuotas_vencidas ?? reg.cuotasVencidas);
+      return v >= 4;
+    }
+
+    // Detectar NOMINA (coordinación / producto / segmento)
+    function esNomina(reg){
+      const posibles = [reg.Coordinacion, reg.COORDINACION, reg.coordinacion, reg.Producto, reg.producto, reg.Segmento, reg.segmento, reg.Tipo, reg.tipo];
+      return posibles.some(v => norm(v || "").includes("NOMINA"));
+    }
+
+    // Detectar Fase / Etapa (EXTRAJUDICIAL)
+    function faseTexto(reg){
+      const f = norm(reg.Fase || reg.fase || reg.Etapa || reg.etapa || reg.FASE);
+      if (!f) return "";
+      return f;
+    }
+    function estaEnFaseExtrajudicial(reg){
+      return /EXTRA/.test(faseTexto(reg));
     }
 
     function getDireccionPorSucursal(sucursal) {
@@ -360,7 +380,7 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
       });
 
       document.getElementById("mostrarSelect").addEventListener("change", () => {
-        mostrarModo = document.getElementById("mostrarSelect").value; // SIN | TODOS | PAGOS_UNICOS
+        mostrarModo = document.getElementById("mostrarSelect").value; // SIN | TODOS | PAGOS_UNICOS | GRUPALES
         document.getElementById("diasMinimosDiv").style.display = (mostrarModo === "TODOS") ? "block" : "none";
         actualizarSucursales();
       });
@@ -410,13 +430,24 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
 
     function creditosBaseFiltradosPorCartera() {
       // Aplica cartera ADMIN (DV ≤ 44) o EXTRA (DV ≥ 45) o TODAS
-      return data.filter(d => {
+      let base = data.filter(d => {
         const dv = parseInt(d["Dias de Atraso"]) || 0;
         if (carteraSeleccionada === "ADMIN") return dv <= 44;
         if (carteraSeleccionada === "EXTRA") return dv >= 45;
         if (carteraSeleccionada === "TODAS") return true;
         return false; // si no eligieron cartera aún
       });
+
+      // Regla especial NOMINA cuando Cartera = Extrajudicial: mostrar SOLO fase Extra
+      if (carteraSeleccionada === "EXTRA") {
+        base = base.filter(reg => {
+          if (esNomina(reg)) {
+            return estaEnFaseExtrajudicial(reg); // si es nómina, exigir fase extrajudicial
+          }
+          return true; // otros productos libres
+        });
+      }
+      return base;
     }
 
     function actualizarSucursales() {
@@ -439,8 +470,11 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
       if (mostrarModo === "SIN") {
         base = base.filter(d => estaSinGestion(d["Dias sin Gestion"]));
       } else if (mostrarModo === "PAGOS_UNICOS") {
-        // filtrar por la columna 'modalidad' (soporta varias claves)
-        base = base.filter(d => esPagoUnico(d["modalidad"] || d["Modalidad"] || d.modalidad || d.Modalidad));
+        // filtrar por la columna 'Cuotas' == 1
+        base = base.filter(d => esPagoUnicoPorCuotas(d));
+      } else if (mostrarModo === "GRUPALES") {
+        // filtrar por la columna 'Cuotas Vencidas' >= 4
+        base = base.filter(d => esGrupalPorCuotasVencidas(d));
       } // en "TODOS" se aplica el umbral luego
 
       const sucursales = [...new Set(base.map(d => d.Sucursal))].filter(Boolean).sort((a,b)=>a.localeCompare(b,'es'));
@@ -511,7 +545,7 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
       const sucSel = selSuc.value || "TODAS";
       const diasFiltro = parseInt(document.getElementById("diasMinimos").value) || 30;
 
-      // Base: cartera
+      // Base: cartera + regla NOMINA/EXTRA
       let base = creditosBaseFiltradosPorCartera();
 
       // coordinador (si corresponde)
@@ -524,8 +558,11 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
       if (mostrarModo === "SIN") {
         base = base.filter(d => estaSinGestion(d["Dias sin Gestion"]));
       } else if (mostrarModo === "PAGOS_UNICOS") {
-        // Mostrar solamente los créditos cuya modalidad indique "Pago(s) único(s)"
-        base = base.filter(d => esPagoUnico(d["modalidad"] || d["Modalidad"] || d.modalidad || d.Modalidad));
+        // Mostrar solamente los créditos cuya columna CUOTAS sea 1
+        base = base.filter(d => esPagoUnicoPorCuotas(d));
+      } else if (mostrarModo === "GRUPALES") {
+        // Mostrar grupales: CUOTAS VENCIDAS >= 4
+        base = base.filter(d => esGrupalPorCuotasVencidas(d));
       } else { // TODOS -> aplicar umbral de días sin gestión
         base = base.filter(d => {
           const dias = parseDiasSinGestion(d["Dias sin Gestion"]);
@@ -572,9 +609,16 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
         const dsgParsed = parseDiasSinGestion(c["Dias sin Gestion"]);
         const dsgDisplay = (dsgParsed === null) ? "SIN GESTIÓN" : dsgParsed;
 
+        // Identificador NOMINA (sólo cuando Cartera = TODAS)
+        let creditoTexto = c.Linea ?? "";
+        if (carteraSeleccionada === 'TODAS' && esNomina(c)) {
+          const fase = faseTexto(c).replace(/_/g,' ');
+          creditoTexto += ` \n` + `<span class="badge bg-info text-dark badge-nomina">NÓMINA - ${fase || 'FASE DESCONOCIDA'}</span>`;
+        }
+
         tbody.innerHTML += `
           <tr>
-            <td>${c.Linea ?? ""}</td>
+            <td>${creditoTexto}</td>
             <td>${c.Nombre ?? ""}</td>
             <td class="text-end">${saldo.toLocaleString("es-MX", { style: "currency", currency: "MXN" })}</td>
             <td class="text-center">${c["Dias de Atraso"] ?? ""}</td>
@@ -676,8 +720,14 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
       const rows = creditos.map(c => {
         const dsgParsed = parseDiasSinGestion(c["Dias sin Gestion"]);
         const dsgDisplay = (dsgParsed === null) ? "SIN GESTIÓN" : dsgParsed;
+        // Etiqueta NOMINA solo si Cartera = TODAS
+        let linea = c.Linea ?? "";
+        if (carteraSeleccionada === 'TODAS' && esNomina(c)) {
+          const fase = faseTexto(c).replace(/_/g,' ');
+          linea += ` (NÓMINA - ${fase || 'FASE DESCONOCIDA'})`;
+        }
         return [
-          c.Linea ?? "",
+          linea,
           c.Nombre ?? "",
           toNumberSafe(c["Saldo Total"]).toLocaleString("es-MX", { style: "currency", currency: "MXN" }),
           c["Dias de Atraso"] ?? "",
