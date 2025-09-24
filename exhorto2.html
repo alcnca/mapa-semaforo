@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!DOCTYPE html> 
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
@@ -11,7 +11,7 @@
     #tablaPreview td:nth-child(1), #tablaPreview td:nth-child(2) { text-align: left; }
     #tablaPreview td:nth-child(3) { text-align: right; }
     #tablaPreview td:nth-child(4), #tablaPreview td:nth-child(5) { text-align: center; }
-    .badge-nomina { font-size: .72rem; }
+    .badge-fase { font-size: .72rem; }
   </style>
 </head>
 <body class="container py-4">
@@ -207,55 +207,30 @@
       return v >= 4;
     }
 
-    // Detectar ACREINOMINA por columna "Coordinacion" (match exacto)
-    function esAcreiNomina(reg){
-      const c = norm(reg.Coordinacion || reg.COORDINACION || reg.coordinacion);
-      return c === "ACREINOMINA";
-    }
-
-    // Detectar AGRONEGOCIOS por columna "Coordinacion" (match exacto)
-    function esAgronegocios(reg){
-      const c = norm(reg.Coordinacion || reg.COORDINACION || reg.coordinacion);
-      return c === "AGRONEGOCIOS";
-    }
-
-    // Detectar GRUPALES por columna "Coordinacion" (match exacto)
-    function esGrupalesCoord(reg){
-      const c = norm(reg.Coordinacion || reg.COORDINACION || reg.coordinacion || reg["Coordinación"]);
-      return c === "GRUPALES";
-    }
-
-    // Normalizar/obtener Coordinación
+    // Coordinaciones exactas
     function valorCoordinacion(reg){
       return norm(reg.Coordinacion || reg.COORDINACION || reg.coordinacion || reg["Coordinación"]);
     }
+    function esAgronegocios(reg){ return valorCoordinacion(reg) === "AGRONEGOCIOS"; }
+    function esGrupalesCoord(reg){ return valorCoordinacion(reg) === "GRUPALES"; }
+    function esAcreiNomina(reg){ return valorCoordinacion(reg) === "ACREINOMINA"; }
 
-    // Coincidencia de Coordinador: acepta clave (DASADI) o nombre completo
-    function coincideCoordinador(reg, selected){
-      const val = norm(reg.Coordinador || reg.coordinador || reg.COORDINADOR);
-      const clave = norm(selected);
-      const nombre = norm(nombresCoordinadores[selected] || "");
-      return val === clave || (nombre && val === nombre);
+    // Fase / Etapa
+    function faseRaw(reg){
+      return (reg.Fase || reg.fase || reg.Etapa || reg.etapa || reg.FASE || "").toString().trim();
     }
-
-    // Detectar Fase / Etapa (EXTRAJUDICIAL)
-    function faseTexto(reg){
-      const f = norm(reg.Fase || reg.fase || reg.Etapa || reg.etapa || reg.FASE);
-      if (!f) return "";
-      return f;
+    function faseCategoria(reg){
+      const f = norm(faseRaw(reg));
+      if (!f || f === "0") return "SIN FASE ASIGNADA";
+      if (f.includes("EXTRA")) return "EXTRAJUDICIAL";
+      if (f.includes("ADMIN")) return "ADMINISTRATIVA";
+      if (f.includes("PREVEN")) return "PREVENTIVA";
+      return f || "SIN FASE ASIGNADA";
     }
-    function estaEnFaseExtrajudicial(reg){
-      return /EXTRA/.test(faseTexto(reg));
-    }
-
-    // Detectar Fase / Etapa (EXTRAJUDICIAL)
-    function faseTexto(reg){
-      const f = norm(reg.Fase || reg.fase || reg.Etapa || reg.etapa || reg.FASE);
-      if (!f) return "";
-      return f;
-    }
-    function estaEnFaseExtrajudicial(reg){
-      return /EXTRA/.test(faseTexto(reg));
+    function estaEnFaseExtrajudicial(reg){ return faseCategoria(reg) === "EXTRAJUDICIAL"; }
+    function esFaseAdminGroup(reg){
+      const cat = faseCategoria(reg);
+      return cat === "ADMINISTRATIVA" || cat === "PREVENTIVA" || cat === "SIN FASE ASIGNADA";
     }
 
     function getDireccionPorSucursal(sucursal) {
@@ -464,7 +439,7 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
     }
 
     function creditosBaseFiltradosPorCartera() {
-      // Aplica cartera ADMIN (DV ≤ 44) o EXTRA (DV ≥ 45) o TODAS
+      // Base por DV: ADMIN (≤44), EXTRA (≥45), TODAS (sin filtro por DV)
       let base = data.filter(d => {
         const dv = parseInt(d["Dias de Atraso"]) || 0;
         if (carteraSeleccionada === "ADMIN") return dv <= 44;
@@ -473,14 +448,13 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
         return false; // si no eligieron cartera aún
       });
 
-      // Regla especial ACREINOMINA cuando Cartera = Extrajudicial: mostrar SOLO fase Extra
+      // Reglas por FASE/COORD según cartera
       if (carteraSeleccionada === "EXTRA") {
-        base = base.filter(reg => {
-          if (esAcreiNomina(reg)) {
-            return estaEnFaseExtrajudicial(reg); // si es ACREINOMINA, exigir fase extrajudicial
-          }
-          return true; // otros productos libres
-        });
+        // Si Coordinacion es ACREINOMINA, exigir Fase = EXTRAJUDICIAL
+        base = base.filter(reg => esAcreiNomina(reg) ? estaEnFaseExtrajudicial(reg) : true);
+      } else if (carteraSeleccionada === "ADMIN") {
+        // Solo PREVENTIVA, ADMINISTRATIVA o SIN FASE ASIGNADA (vacía o 0)
+        base = base.filter(reg => esFaseAdminGroup(reg));
       }
       return base;
     }
@@ -498,17 +472,17 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
 
       // luego por coordinador (si aplica y no es Oficina Central)
       if (coord && coord !== "OFICINA_CENTRAL") {
-        base = base.filter(d => coincideCoordinador(d, coord));
+        base = base.filter(d => d.Coordinador === coord);
       }
 
       // luego por "Qué mostrar"
       if (mostrarModo === "SIN") {
         base = base.filter(d => estaSinGestion(d["Dias sin Gestion"]));
       } else if (mostrarModo === "PAGOS_UNICOS") {
-        // filtrar por la columna 'Cuotas' == 1 Y coordinación AGRONEGOCIOS
-        base = base.filter(d => esPagoUnicoPorCuotas(d) && esAgronegocios(d));
+        // AGRONEGOCIOS + CUOTAS == 1
+        base = base.filter(d => esAgronegocios(d) && esPagoUnicoPorCuotas(d));
       } else if (mostrarModo === "GRUPALES") {
-        // filtrar por Coordinacion = GRUPALES y 'Cuotas Vencidas' >= 4
+        // COORD = GRUPALES + 'Cuotas Vencidas' >= 4
         base = base.filter(d => esGrupalesCoord(d) && esGrupalPorCuotasVencidas(d));
       } // en "TODOS" se aplica el umbral luego
 
@@ -580,23 +554,23 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
       const sucSel = selSuc.value || "TODAS";
       const diasFiltro = parseInt(document.getElementById("diasMinimos").value) || 30;
 
-      // Base: cartera + regla NOMINA/EXTRA
+      // Base: cartera + reglas por fase/coordinación
       let base = creditosBaseFiltradosPorCartera();
 
       // coordinador (si corresponde)
       const coord = document.getElementById("coordinadorSelect").value;
       if (coord && coord !== "OFICINA_CENTRAL") {
-        base = base.filter(d => coincideCoordinador(d, coord));
+        base = base.filter(d => d.Coordinador === coord);
       }
 
       // Qué mostrar
       if (mostrarModo === "SIN") {
         base = base.filter(d => estaSinGestion(d["Dias sin Gestion"]));
       } else if (mostrarModo === "PAGOS_UNICOS") {
-        // filtrar por la columna 'Cuotas' == 1 Y coordinación AGRONEGOCIOS
-        base = base.filter(d => esPagoUnicoPorCuotas(d) && esAgronegocios(d));
+        // AGRONEGOCIOS + CUOTAS == 1
+        base = base.filter(d => esAgronegocios(d) && esPagoUnicoPorCuotas(d));
       } else if (mostrarModo === "GRUPALES") {
-        // filtrar por Coordinacion = GRUPALES y 'Cuotas Vencidas' >= 4
+        // GRUPALES + Cuotas Vencidas >= 4
         base = base.filter(d => esGrupalesCoord(d) && esGrupalPorCuotasVencidas(d));
       } else { // TODOS -> aplicar umbral de días sin gestión
         base = base.filter(d => {
@@ -644,13 +618,11 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
         const dsgParsed = parseDiasSinGestion(c["Dias sin Gestion"]);
         const dsgDisplay = (dsgParsed === null) ? "SIN GESTIÓN" : dsgParsed;
 
-        // Identificador NOMINA (sólo cuando Cartera = TODAS)
+        // Etiqueta de FASE solo cuando Cartera = TODAS
         let creditoTexto = c.Linea ?? "";
-        if (carteraSeleccionada === 'TODAS' && esAcreiNomina(c)) {
-          const fase = faseTexto(c).replace(/_/g,' ');
-          creditoTexto += ` 
-` + `<span class="badge bg-info text-dark badge-nomina">ACREINOMINA - ${fase || 'FASE DESCONOCIDA'}</span>`;
-        }</span>`;
+        if (carteraSeleccionada === 'TODAS') {
+          const cat = faseCategoria(c);
+          creditoTexto += ` \n` + `<span class="badge bg-info text-dark badge-fase">${cat}</span>`;
         }
 
         tbody.innerHTML += `
@@ -757,12 +729,11 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
       const rows = creditos.map(c => {
         const dsgParsed = parseDiasSinGestion(c["Dias sin Gestion"]);
         const dsgDisplay = (dsgParsed === null) ? "SIN GESTIÓN" : dsgParsed;
-        // Etiqueta NOMINA solo si Cartera = TODAS
+        // Etiqueta de fase solo si Cartera = TODAS
         let linea = c.Linea ?? "";
-        if (carteraSeleccionada === 'TODAS' && esAcreiNomina(c)) {
-          const fase = faseTexto(c).replace(/_/g,' ');
-          linea += ` (ACREINOMINA - ${fase || 'FASE DESCONOCIDA'})`;
-        })`;
+        if (carteraSeleccionada === 'TODAS') {
+          const cat = faseCategoria(c);
+          linea += ` (${cat})`;
         }
         return [
           linea,
@@ -866,4 +837,3 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
-
