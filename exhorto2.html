@@ -207,10 +207,32 @@
       return v >= 4;
     }
 
-    // Detectar NOMINA (coordinación / producto / segmento)
-    function esNomina(reg){
-      const posibles = [reg.Coordinacion, reg.COORDINACION, reg.coordinacion, reg.Producto, reg.producto, reg.Segmento, reg.segmento, reg.Tipo, reg.tipo];
-      return posibles.some(v => norm(v || "").includes("NOMINA"));
+    // Detectar ACREINOMINA por columna "Coordinacion" (match exacto)
+    function esAcreiNomina(reg){
+      const c = norm(reg.Coordinacion || reg.COORDINACION || reg.coordinacion);
+      return c === "ACREINOMINA";
+    }
+
+    // Detectar AGRONEGOCIOS por columna "Coordinacion" (match exacto)
+    function esAgronegocios(reg){
+      const c = norm(reg.Coordinacion || reg.COORDINACION || reg.coordinacion);
+      return c === "AGRONEGOCIOS";
+    }
+
+    // Detectar GRUPALES por columna "Coordinacion" (match exacto)
+    function esGrupalesCoord(reg){
+      const c = norm(reg.Coordinacion || reg.COORDINACION || reg.coordinacion);
+      return c === "GRUPALES";
+    }
+
+    // Detectar Fase / Etapa (EXTRAJUDICIAL)
+    function faseTexto(reg){
+      const f = norm(reg.Fase || reg.fase || reg.Etapa || reg.etapa || reg.FASE);
+      if (!f) return "";
+      return f;
+    }
+    function estaEnFaseExtrajudicial(reg){
+      return /EXTRA/.test(faseTexto(reg));
     }
 
     // Detectar Fase / Etapa (EXTRAJUDICIAL)
@@ -438,11 +460,11 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
         return false; // si no eligieron cartera aún
       });
 
-      // Regla especial NOMINA cuando Cartera = Extrajudicial: mostrar SOLO fase Extra
+      // Regla especial ACREINOMINA cuando Cartera = Extrajudicial: mostrar SOLO fase Extra
       if (carteraSeleccionada === "EXTRA") {
         base = base.filter(reg => {
-          if (esNomina(reg)) {
-            return estaEnFaseExtrajudicial(reg); // si es nómina, exigir fase extrajudicial
+          if (esAcreiNomina(reg)) {
+            return estaEnFaseExtrajudicial(reg); // si es ACREINOMINA, exigir fase extrajudicial
           }
           return true; // otros productos libres
         });
@@ -470,11 +492,11 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
       if (mostrarModo === "SIN") {
         base = base.filter(d => estaSinGestion(d["Dias sin Gestion"]));
       } else if (mostrarModo === "PAGOS_UNICOS") {
-        // filtrar por la columna 'Cuotas' == 1
-        base = base.filter(d => esPagoUnicoPorCuotas(d));
+        // filtrar por la columna 'Cuotas' == 1 Y coordinación AGRONEGOCIOS
+        base = base.filter(d => esPagoUnicoPorCuotas(d) && esAgronegocios(d));
       } else if (mostrarModo === "GRUPALES") {
-        // filtrar por la columna 'Cuotas Vencidas' >= 4
-        base = base.filter(d => esGrupalPorCuotasVencidas(d));
+        // filtrar por Coordinacion = GRUPALES y 'Cuotas Vencidas' >= 4
+        base = base.filter(d => esGrupalesCoord(d) && esGrupalPorCuotasVencidas(d));
       } // en "TODOS" se aplica el umbral luego
 
       const sucursales = [...new Set(base.map(d => d.Sucursal))].filter(Boolean).sort((a,b)=>a.localeCompare(b,'es'));
@@ -558,11 +580,11 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
       if (mostrarModo === "SIN") {
         base = base.filter(d => estaSinGestion(d["Dias sin Gestion"]));
       } else if (mostrarModo === "PAGOS_UNICOS") {
-        // Mostrar solamente los créditos cuya columna CUOTAS sea 1
-        base = base.filter(d => esPagoUnicoPorCuotas(d));
+        // filtrar por la columna 'Cuotas' == 1 Y coordinación AGRONEGOCIOS
+        base = base.filter(d => esPagoUnicoPorCuotas(d) && esAgronegocios(d));
       } else if (mostrarModo === "GRUPALES") {
-        // Mostrar grupales: CUOTAS VENCIDAS >= 4
-        base = base.filter(d => esGrupalPorCuotasVencidas(d));
+        // filtrar por Coordinacion = GRUPALES y 'Cuotas Vencidas' >= 4
+        base = base.filter(d => esGrupalesCoord(d) && esGrupalPorCuotasVencidas(d));
       } else { // TODOS -> aplicar umbral de días sin gestión
         base = base.filter(d => {
           const dias = parseDiasSinGestion(d["Dias sin Gestion"]);
@@ -611,9 +633,11 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
 
         // Identificador NOMINA (sólo cuando Cartera = TODAS)
         let creditoTexto = c.Linea ?? "";
-        if (carteraSeleccionada === 'TODAS' && esNomina(c)) {
+        if (carteraSeleccionada === 'TODAS' && esAcreiNomina(c)) {
           const fase = faseTexto(c).replace(/_/g,' ');
-          creditoTexto += ` \n` + `<span class="badge bg-info text-dark badge-nomina">NÓMINA - ${fase || 'FASE DESCONOCIDA'}</span>`;
+          creditoTexto += ` 
+` + `<span class="badge bg-info text-dark badge-nomina">ACREINOMINA - ${fase || 'FASE DESCONOCIDA'}</span>`;
+        }</span>`;
         }
 
         tbody.innerHTML += `
@@ -722,9 +746,10 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
         const dsgDisplay = (dsgParsed === null) ? "SIN GESTIÓN" : dsgParsed;
         // Etiqueta NOMINA solo si Cartera = TODAS
         let linea = c.Linea ?? "";
-        if (carteraSeleccionada === 'TODAS' && esNomina(c)) {
+        if (carteraSeleccionada === 'TODAS' && esAcreiNomina(c)) {
           const fase = faseTexto(c).replace(/_/g,' ');
-          linea += ` (NÓMINA - ${fase || 'FASE DESCONOCIDA'})`;
+          linea += ` (ACREINOMINA - ${fase || 'FASE DESCONOCIDA'})`;
+        })`;
         }
         return [
           linea,
