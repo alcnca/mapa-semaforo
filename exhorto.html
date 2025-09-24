@@ -32,6 +32,7 @@
       <select id="mostrarSelect" class="form-select">
         <option value="SIN">Solo créditos sin gestión</option>
         <option value="TODOS">Todos</option>
+        <option value="PAGOS_UNICOS">Pagos únicos</option>
       </select>
     </div>
 
@@ -135,7 +136,7 @@
 
     // NUEVO estado
     let carteraSeleccionada = ""; // ADMIN | EXTRA | TODAS
-    let mostrarModo = "SIN";      // SIN | TODOS
+    let mostrarModo = "SIN";      // SIN | TODOS | PAGOS_UNICOS
 
     /* =======================
        Catálogos
@@ -191,6 +192,17 @@
         .trim()
         .toUpperCase();
     }
+
+    // NUEVA: detectar Pagos únicos en la columna 'modalidad'
+    function esPagoUnico(modalidad) {
+      if (!modalidad) return false;
+      const m = norm(modalidad);
+      // Coincide frases como "PAGO UNICO", "PAGOS UNICOS", "PAGO ÚNICO - CONTADO"
+      if (/\bPAGO(S)?\s*UNICO(S)?\b/.test(m)) return true;
+      // cobertura extra: que contenga ambas palabras
+      return (m.includes("PAGO") && m.includes("UNICO"));
+    }
+
     function getDireccionPorSucursal(sucursal) {
       const sNorm = norm(sucursal);
       let found = direcciones.find(d => norm(d.Nombre_Sucursal) === sNorm);
@@ -299,7 +311,7 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
 
       // EXHORTO
       const subtitulo = `Motivo: Tener créditos en su cartera con más de ${diasMinimos} días sin gestión`;
-      const intro = `Me permito informarle que, derivado de la revisión del seguimiento a los créditos con más de 30 días de atraso de la cartera que usted administra, se han detectado créditos que carecen de gestión y seguimiento en el sistema, por el tiempo indicado en el motivo de la presente y que a continuación se enlistan:`;
+      const intro = `Me permito informarle que, derivado de la revisión del seguimiento a los créditos con más de 30 días de atraso de la cartera que usted administra, se han detectado créditos que carecen de gestión y seguimiento en el sistema, por el tiempo indicando en el motivo de la presente y que a continuación se enlistan:`;
       const postTabla = `Derivado de esta situación se detecta su falta de responsabilidad, compromiso, esmero y dedicación en la ejecución de sus responsabilidades; por dicha omisión SE LEVANTA EL PRESENTE EXHORTO para su conocimiento y cumplimiento de dichas actividades, ya que nos ayuda a llevar un sano control de la cartera, manteniendo el menor porcentaje de mora y cuidando el patrimonio de la cooperativa. Para el caso de nueva omisión se tomarán las medidas necesarias de manera inmediata.`;
       return { titulo: "EXHORTO", subtitulo, intro, postTabla };
     }
@@ -348,7 +360,7 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
       });
 
       document.getElementById("mostrarSelect").addEventListener("change", () => {
-        mostrarModo = document.getElementById("mostrarSelect").value; // SIN | TODOS
+        mostrarModo = document.getElementById("mostrarSelect").value; // SIN | TODOS | PAGOS_UNICOS
         document.getElementById("diasMinimosDiv").style.display = (mostrarModo === "TODOS") ? "block" : "none";
         actualizarSucursales();
       });
@@ -426,6 +438,9 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
       // luego por "Qué mostrar"
       if (mostrarModo === "SIN") {
         base = base.filter(d => estaSinGestion(d["Dias sin Gestion"]));
+      } else if (mostrarModo === "PAGOS_UNICOS") {
+        // filtrar por la columna 'modalidad' (soporta varias claves)
+        base = base.filter(d => esPagoUnico(d["modalidad"] || d["Modalidad"] || d.modalidad || d.Modalidad));
       } // en "TODOS" se aplica el umbral luego
 
       const sucursales = [...new Set(base.map(d => d.Sucursal))].filter(Boolean).sort((a,b)=>a.localeCompare(b,'es'));
@@ -505,10 +520,13 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
         base = base.filter(d => d.Coordinador === coord);
       }
 
-      // Qué mostrar (aplicar umbral si TODOS)
+      // Qué mostrar
       if (mostrarModo === "SIN") {
         base = base.filter(d => estaSinGestion(d["Dias sin Gestion"]));
-      } else {
+      } else if (mostrarModo === "PAGOS_UNICOS") {
+        // Mostrar solamente los créditos cuya modalidad indique "Pago(s) único(s)"
+        base = base.filter(d => esPagoUnico(d["modalidad"] || d["Modalidad"] || d.modalidad || d.Modalidad));
+      } else { // TODOS -> aplicar umbral de días sin gestión
         base = base.filter(d => {
           const dias = parseDiasSinGestion(d["Dias sin Gestion"]);
           return (dias === null) || (typeof dias === "number" && dias >= diasFiltro);
