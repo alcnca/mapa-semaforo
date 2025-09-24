@@ -1,489 +1,780 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Exhortos / Actas Administrativas</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+  <style>
+    /* Vista previa: sólo centrar las 2 últimas columnas; las demás, a la izquierda */
+    #tablaPreview td:nth-child(1), #tablaPreview td:nth-child(2) { text-align: left; }
+    #tablaPreview td:nth-child(3) { text-align: right; }
+    #tablaPreview td:nth-child(4), #tablaPreview td:nth-child(5) { text-align: center; }
+  </style>
 </head>
 <body class="container py-4">
+  <h1 class="mb-4">Seguimiento SemiAutomatico</h1>
 
-<h1 class="mb-4">Generación de Documentos</h1>
+  <!-- Selección de Cartera + Qué mostrar -->
+  <div class="mb-4 row g-3">
+    <div class="col-md-3">
+      <label class="form-label">Cartera a revisar:</label>
+      <select id="carteraSelect" class="form-select">
+        <option value="">-- Selecciona --</option>
+        <option value="TODAS">Todas</option>
+        <option value="ADMIN">Cartera Administrativa (DV ≤ 44)</option>
+        <option value="EXTRA">Cartera Extrajudicial (DV ≥ 45)</option>
+      </select>
+    </div>
+    <div class="col-md-3" id="mostrarDiv" style="display:none;">
+      <label class="form-label">¿Qué mostrar?</label>
+      <select id="mostrarSelect" class="form-select">
+        <option value="SIN">Solo créditos sin gestión</option>
+        <option value="TODOS">Todos</option>
+        <option value="PAGOS_UNICOS">Pagos únicos</option>
+      </select>
+    </div>
 
-<div class="mb-4 row g-3">
-  <div class="col-md-3">
-    <label class="form-label">Días mínimos sin gestión:</label>
-    <input type="number" id="diasMinimos" value="30" class="form-control">
-    <div class="form-text">Se usa cuando NO está activado "Solo créditos sin gestión".</div>
+    <!-- Coordinador ANTES que Sucursal -->
+    <div class="col-md-3">
+      <label class="form-label">Coordinador que firma:</label>
+      <select id="coordinadorSelect" class="form-select"></select>
+    </div>
+
+    <div class="col-md-3">
+      <label class="form-label">Sucursal:</label>
+      <select id="sucursalSelect" class="form-select"></select>
+    </div>
+
+    <!-- Firmante se queda en el mismo lugar -->
+    <div class="col-md-3" id="subFirmanteDiv" style="display: none">
+      <label class="form-label">Firmante:</label>
+      <select id="subFirmanteSelect" class="form-select"></select>
+    </div>
+
+    <!-- Días mínimos se usa sólo cuando "Todos" -->
+    <div class="col-md-3" id="diasMinimosDiv" style="display:none;">
+      <label class="form-label">Días mínimos sin gestión:</label>
+      <input type="number" id="diasMinimos" value="30" class="form-control" />
+      <div class="form-text">Aplica sólo si elegiste “Todos”.</div>
+    </div>
   </div>
-  <div class="col-md-3">
-    <label class="form-label">Sucursal:</label>
-    <select id="sucursalSelect" class="form-select"></select>
+
+  <div class="mb-4">
+    <button class="btn btn-primary w-100" id="btnAplicar">Aplicar</button>
   </div>
-  <div class="col-md-3">
-    <label class="form-label">Coordinador que firma:</label>
-    <select id="coordinadorSelect" class="form-select"></select>
-  </div>
-  <div class="col-md-3" id="subFirmanteDiv" style="display:none;">
-    <label class="form-label">Firmante:</label>
-    <select id="subFirmanteSelect" class="form-select"></select>
-  </div>
-</div>
 
-<div class="mb-3 form-check">
-  <input type="checkbox" id="soloSinGestion" class="form-check-input">
-  <label class="form-check-label" for="soloSinGestion">Solo créditos sin gestión</label>
-</div>
+  <div id="contenido"></div>
 
-<div class="mb-4">
-  <button class="btn btn-primary w-100" onclick="cargarDatos()">Aplicar</button>
-</div>
-
-<div id="contenido"></div>
-
-<!-- Modal Vista Previa -->
-<div class="modal fade" id="vistaPreviaModal" tabindex="-1">
-  <div class="modal-dialog modal-lg">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Vista Previa del Documento</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <h6 id="asesorTitulo"></h6>
-        <table class="table table-sm table-bordered text-center align-middle">
-          <thead class="table-light">
-            <tr>
-              <th>Crédito</th>
-              <th>Nombre del Socio</th>
-              <th>Saldo</th>
-              <th>Días atraso</th>
-              <th>Días sin gestión</th>
-            </tr>
-          </thead>
-          <tbody id="tablaPreview"></tbody>
-        </table>
-        <h6 class="mt-3 text-end" id="totalPreview"></h6>
-      </div>
-      <div class="modal-footer gap-2">
-        <button class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-        <!-- Botones para elegir tipo justo antes de imprimir -->
-        <button class="btn btn-success" id="btnGenerarExhorto">Generar Exhorto</button>
-        <button class="btn btn-outline-success" id="btnGenerarActa">Generar Acta Administrativa</button>
+  <!-- Modal Vista Previa -->
+  <div class="modal fade" id="vistaPreviaModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Vista Previa del Documento</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <h6 id="asesorTitulo"></h6>
+          <table class="table table-sm table-bordered align-middle">
+            <thead class="table-dark text-center">
+              <tr>
+                <th>Crédito</th>
+                <th>Nombre del Socio</th>
+                <th>Saldo</th>
+                <th>Días atraso</th>
+                <th>Días sin gestión</th>
+              </tr>
+            </thead>
+            <tbody id="tablaPreview"></tbody>
+          </table>
+          <h6 class="mt-3 text-center" id="totalPreview"></h6>
+        </div>
+        <div class="modal-footer gap-2">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+          <button class="btn btn-success" id="btnGenerarExhorto">Generar Exhorto</button>
+          <button class="btn btn-outline-success" id="btnGenerarActa">Generar Acta Administrativa</button>
+        </div>
       </div>
     </div>
   </div>
-</div>
 
-<script>
-const JSON_URL = "https://raw.githubusercontent.com/alcnca/mapa-semaforo/refs/heads/main/datos.json";
-let data = [];
-let creditosSeleccionados = [];
-let asesorSeleccionado = "";
-let sucursalSeleccionada = "";
+  <script>
+    /* =======================
+       Config / Datos externos
+       ======================= */
+    const URL_DATOS = "https://raw.githubusercontent.com/alcnca/mapa-semaforo/refs/heads/main/datos.json";
+    const URL_DIRECCION = "https://raw.githubusercontent.com/alcnca/mapa-semaforo/refs/heads/main/Direccion.json";
 
-// Nombres completos de coordinadores
-const nombresCoordinadores = {
-  DASADI: "DANIEL SANCHEZ DIAZ",
-  FAPERO: "FRANCISCO ANTONIO PEREZ RODRIGUEZ",
-  ALCNCA: "ALONSO CANCHE CASTILLO",
-  MCRAVI: "MARLEN CECILIA RAMIREZ VILLANUEVA",
-  INANME: "INES ANDRADE MENDEZ",
-  MISADA: "MARIO ISRAEL SALINAS DAMIAN",
-  OFICINA_CENTRAL: "OFICINA CENTRAL"
-};
+    // Imágenes (GitHub Pages) + caché en memoria como DataURL
+    const HEADER_URL = "https://alcnca.github.io/mapa-semaforo/encabezado.png";
+    const FOOTER_URL = "https://alcnca.github.io/mapa-semaforo/piepagina.png";
+    let HEADER_DATA = null;
+    let FOOTER_DATA = null;
 
-// Lista de asistentes Oficina Central
-const oficinaCentral = [
-  { nombre: "SANDRA LORENA PACHECO ROBLES", puesto: "ASISTENTE DE RECUPERACIÓN EXTRAJUDICIAL" },
-  { nombre: "ROLANDO VALERIANO HURTADO", puesto: "ASISTENTE DE RECUPERACIÓN EXTRAJUDICIAL" },
-  { nombre: "ANDREA ACELA MORGA DÁVILA", puesto: "ASISTENTE DE RECUPERACIÓN EXTRAJUDICIAL" },
-  { nombre: "GUSTAVO ESTUDILLO DE LA CRUZ", puesto: "ASISTENTE DE RECUPERACIÓN EXTRAJUDICIAL" }
-];
+    async function blobToDataURL(blob){
+      return await new Promise(res => { const r=new FileReader(); r.onload=()=>res(r.result); r.readAsDataURL(blob); });
+    }
+    async function fetchAsDataURL(url){
+      try{
+        const r = await fetch(url, { cache: "force-cache" });
+        if (!r.ok) throw 0;
+        const b = await r.blob();
+        return await blobToDataURL(b);
+      }catch{ return null; }
+    }
 
-/* =======================
-   Utils de normalización
-   ======================= */
-function toNumberSafe(val) {
-  if (val == null) return 0;
-  if (typeof val === "number") return isFinite(val) ? val : 0;
-  const clean = String(val).replace(/[^0-9.-]/g, "");
-  const n = parseFloat(clean);
-  return isNaN(n) ? 0 : n;
-}
+    /* =======================
+       Estado
+       ======================= */
+    let data = [];
+    let direcciones = [];
+    let creditosSeleccionados = [];
+    let asesorSeleccionado = "";
+    let sucursalSeleccionada = "";
 
-function parseDiasSinGestion(raw) {
-  if (raw == null) return null;
-  const s = String(raw).toLowerCase().trim();
+    // NUEVO estado
+    let carteraSeleccionada = ""; // ADMIN | EXTRA | TODAS
+    let mostrarModo = "SIN";      // SIN | TODOS | PAGOS_UNICOS
 
-  const marcadoresSinGestion = new Set([
-    "", "sin gestion", "sin gestión", "s/g", "sg", "sen gestion", "sin-gestion", "sin_gestion"
-  ]);
-  if (marcadoresSinGestion.has(s)) return null;
+    /* =======================
+       Catálogos
+       ======================= */
+    const nombresCoordinadores = {
+      DASADI: "DANIEL SANCHEZ DIAZ",
+      FAPERO: "FRANCISCO ANTONIO PEREZ RODRIGUEZ",
+      ALCNCA: "ALONSO CANCHE CASTILLO",
+      MCRAVI: "MARLEN CECILIA RAMIREZ VILLANUEVA",
+      INANME: "INES ANDRADE MENDEZ",
+      MISADA: "MARIO ISRAEL SALINAS DAMIAN",
+      OFICINA_CENTRAL: "OFICINA CENTRAL"
+    };
 
-  const soloNum = s.replace(/[^0-9-]/g, "");
-  if (soloNum === "" || soloNum === "-" || soloNum === "--") return null;
+    const oficinaCentral = [
+      { nombre: "SANDRA LORENA PACHECO ROBLES", puesto: "ASISTENTE DE RECUPERACIÓN EXTRAJUDICIAL" },
+      { nombre: "ROLANDO VALERIANO HURTADO", puesto: "ASISTENTE DE RECUPERACIÓN EXTRAJUDICIAL" },
+      { nombre: "ANDREA ACELA MORGA DÁVILA", puesto: "ASISTENTE DE RECUPERACIÓN EXTRAJUDICIAL" },
+      { nombre: "GUSTAVO ESTUDILLO DE LA CRUZ", puesto: "ASISTENTE DE RECUPERACIÓN EXTRAJUDICIAL" },
+      /* NUEVOS PREVENTIVA/ADMINISTRATIVA */
+      { nombre: "ALFONSO JERÓNIMO HERNÁNDEZ", puesto: "COORDINADOR DE RECUPERACIÓN PREVENTIVA Y ADMINISTRATIVA" },
+      { nombre: "ZOIBETH YANELI SORIANO IBAÑEZ", puesto: "ASISTENTE DE RECUPERACIÓN PREVENTIVA Y ADMINISTRATIVA" },
+      { nombre: "ABEL EDUARDO JIMENEZ GASPAR", puesto: "ASISTENTE DE RECUPERACIÓN PREVENTIVA Y ADMINISTRATIVA" }
+    ];
 
-  const n = parseInt(soloNum, 10);
-  return isNaN(n) ? null : n;
-}
+    /* =======================
+       Utils
+       ======================= */
+    function toNumberSafe(val) {
+      if (val == null) return 0;
+      if (typeof val === "number") return isFinite(val) ? val : 0;
+      const clean = String(val).replace(/[^0-9.-]/g, "");
+      const n = parseFloat(clean);
+      return isNaN(n) ? 0 : n;
+    }
+    function parseDiasSinGestion(raw) {
+      if (raw == null) return null;
+      const s = String(raw).toLowerCase().trim();
+      const marcadores = new Set(["", "sin gestion", "sin gestión", "s/g", "sg", "sen gestion", "sin-gestion", "sin_gestion"]);
+      if (marcadores.has(s)) return null;
+      const soloNum = s.replace(/[^0-9-]/g, "");
+      if (soloNum === "" || soloNum === "-" || soloNum === "--") return null;
+      const n = parseInt(soloNum, 10);
+      return isNaN(n) ? null : n;
+    }
+    function estaSinGestion(raw) { return parseDiasSinGestion(raw) === null; }
 
-function estaSinGestion(raw) {
-  return parseDiasSinGestion(raw) === null;
-}
+    function norm(s) {
+      return (s ?? "")
+        .toString()
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+        .replace(/\s+/g, " ")
+        .trim()
+        .toUpperCase();
+    }
 
-/* =======================
-   Textos por tipo de documento
-   (Edita libremente los del ACTA después)
-   ======================= */
-function getTextosDocumento(tipo, diasMinimos) {
-  if (tipo === "acta") {
-    const subtitulo = "Se levanta la presente ACTA ADMINISTRATIVA";
-    const intro = `Con fundamento en las políticas internas y derivado de la revisión del seguimiento a la cartera, se hace constar que existen créditos con ausencia de gestión conforme a los parámetros institucionales. A continuación, se detallan los créditos detectados para su conocimiento y efectos correspondientes.`;
-    const postTabla = `La presente acta administrativa tiene por objeto dejar constancia de los hechos observados y requerir la regularización inmediata de las gestiones de seguimiento, bajo apercibimiento de las medidas conducentes conforme a la normativa interna.`;
-    return { titulo: "ACTA ADMINISTRATIVA", subtitulo, intro, postTabla };
-  }
-  const subtitulo = `Motivo: Tener créditos en su cartera con más de ${diasMinimos} días sin gestión`;
-  const intro = `Me permito informarle que, derivado de la revisión del seguimiento a los créditos con más de 30 días de atraso de la cartera que usted administra, se han detectado créditos que carecen de gestión y seguimiento en el sistema, por el tiempo indicado en el motivo de la presente y que a continuación se enlistan:`;
-  const postTabla = `Derivado de esta situación se detecta su falta de responsabilidad, compromiso, esmero y dedicación en la ejecución de sus responsabilidades; por dicha omisión SE LEVANTA EL PRESENTE EXHORTO para su conocimiento y cumplimiento de dichas actividades, ya que nos ayuda a llevar un sano control de la cartera, manteniendo el menor porcentaje de mora y cuidando el patrimonio de la cooperativa. Para el caso de nueva omisión se tomarán las medidas necesarias de manera inmediata.`;
-  return { titulo: "EXHORTO", subtitulo, intro, postTabla };
-}
+    // NUEVA: detectar Pagos únicos en la columna 'modalidad'
+    function esPagoUnico(modalidad) {
+      if (!modalidad) return false;
+      const m = norm(modalidad);
+      // Coincide frases como "PAGO UNICO", "PAGOS UNICOS", "PAGO ÚNICO - CONTADO"
+      if (/\bPAGO(S)?\s*UNICO(S)?\b/.test(m)) return true;
+      // cobertura extra: que contenga ambas palabras
+      return (m.includes("PAGO") && m.includes("UNICO"));
+    }
 
-/* =======================
-   Carga inicial
-   ======================= */
-window.addEventListener("DOMContentLoaded", async () => {
-  const res = await fetch(JSON_URL);
-  data = await res.json();
+    function getDireccionPorSucursal(sucursal) {
+      const sNorm = norm(sucursal);
+      let found = direcciones.find(d => norm(d.Nombre_Sucursal) === sNorm);
+      if (found) return found;
+      found = direcciones.find(d =>
+        norm(d.SUCURSAL) === sNorm ||
+        norm(d.Sucursal) === sNorm ||
+        norm(d.Nombre) === sNorm
+      );
+      if (found) return found;
+      found = direcciones.find(d => norm(d.Nombre_Sucursal || "").includes(sNorm));
+      return found || null;
+    }
 
-  const selCoord = document.getElementById("coordinadorSelect");
-  selCoord.innerHTML = '<option value="">-- Selecciona --</option>';
-  for (let clave in nombresCoordinadores) {
-    selCoord.innerHTML += `<option value="${clave}">${nombresCoordinadores[clave]}</option>`;
-  }
+    /* ===== Fecha/Hora en letras — Zona: CDMX ===== */
+    const meses = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+    function numEnEsp(n){
+      const u=["cero","uno","dos","tres","cuatro","cinco","seis","siete","ocho","nueve","diez","once","doce","trece","catorce","quince","dieciséis","diecisiete","dieciocho","diecinueve","veinte","veintiuno","veintidós","veintitrés","veinticuatro","veinticinco","veintiséis","veintisiete","veintiocho","veintinueve"];
+      if(n<30) return u[n];
+      const d=["","","","treinta","cuarenta","cincuenta"];
+      const dec=Math.floor(n/10), uni=n%10;
+      return uni===0? d[dec] : `${d[dec]} y ${u[uni]}`;
+    }
+    function anioEnLetras(y){
+      const map={2023:"dos mil veintitrés",2024:"dos mil veinticuatro",2025:"dos mil veinticinco",2026:"dos mil veintiséis"};
+      return map[y]||y.toString();
+    }
+    function ahoraCDMX(){
+      const ahora = new Date();
+      return new Date(ahora.toLocaleString("en-US",{timeZone:"America/Mexico_City"}));
+    }
+    function fechaEnLetrasFrom(dateObj){
+      const h=dateObj.getHours(), m=dateObj.getMinutes(), d=dateObj.getDate(), mm=dateObj.getMonth(), y=dateObj.getFullYear();
+      return `${numEnEsp(h)} horas con ${m===0?"cero":numEnEsp(m)} minutos del ${numEnEsp(d)} de ${meses[mm]} de ${anioEnLetras(y)}`;
+    }
 
-  selCoord.addEventListener("change", () => {
-    const subDiv = document.getElementById("subFirmanteDiv");
-    const subSel = document.getElementById("subFirmanteSelect");
-    const sucSel = document.getElementById("sucursalSelect");
-    subSel.innerHTML = "";
-    sucSel.innerHTML = '<option value="">-- Selecciona --</option>';
+    /* =======================
+       Textos por tipo
+       ======================= */
+    function getTextosDocumento(tipo, diasMinimos, asesor, sucursal, firmanteCoord) {
+      if (tipo === "acta") {
+        const dir = getDireccionPorSucursal(sucursal) || {};
+        const MUNICIPIO = (dir.MUNICIPIO || "________________").toString().trim();
+        const ESTADO = (dir.ESTADO || "________________").toString().trim();
+        const NOMBRE_SUCURSAL = (dir.Nombre_Sucursal || sucursal || "________________").toString().trim();
+        const DIRECCION = (dir.DIRECCION || "________________").toString().trim();
+        const GERENTE = (dir.GERENTE || "__________________________").toString().trim();
 
-    const valorCoord = selCoord.value;
+        const inicioLocal = ahoraCDMX();
+        const cierreLocal = new Date(inicioLocal.getTime() + 30*60000); // +30 minutos
+        const FECHA_INICIO_LETRAS = fechaEnLetrasFrom(inicioLocal);
+        const FECHA_CIERRE_LETRAS = fechaEnLetrasFrom(cierreLocal);
 
-    if (valorCoord === "OFICINA_CENTRAL") {
-      oficinaCentral.forEach(p => {
-        subSel.innerHTML += `<option value="${p.nombre}">${p.nombre} (${p.puesto})</option>`;
-      });
-      subDiv.style.display = "block";
-      actualizarSucursales();
-    } else if (valorCoord) {
-      subDiv.style.display = "none";
-      if (valorCoord === "ALCNCA") {
-        subDiv.style.display = "block";
-        subSel.innerHTML += `<option value="ALCNCA">${nombresCoordinadores["ALCNCA"]} (Coordinador)</option>`;
-        subSel.innerHTML += `<option value="IVANI">IVANI ARCOS LAINES (Gestor Regional Zona Maya)</option>`;
+        const intro = 
+`En el Municipio de ${MUNICIPIO}, ${ESTADO}, en la sucursal de ${NOMBRE_SUCURSAL}, siendo las ${FECHA_INICIO_LETRAS}, estando presentes en las instalaciones de la COOPERATIVA ACREIMEX S.C. de A.P. de R.L. de C.V., con domicilio en ${DIRECCION}, los ciudadanos ${firmanteCoord}, que ostenta el puesto de Coordinador de Recuperación y ${asesor} con el puesto de Asesor de Créditos y Recuperación Individual. Estando presentes en su carácter de testigos los ciudadanos ${GERENTE} que ostenta el puesto de Gerente de Sucursal y ADAN GUTIERREZ HERNANDEZ con el puesto de Gerente de Recuperación Extrajudicial, a quienes les constan los hechos que dan origen al levantamiento de la presente acta.
+
+A continuación, el ciudadano ${firmanteCoord}, narra a los comparecientes los hechos y las razones por las cuales se procede a levantar la presente acta administrativa que consiste en lo siguiente:
+
+En términos de lo dispuesto en el Manual de Gestión de Recuperación de Cartera de la Cooperativa, particularmente en lo relativo a las formalidades para desempeñar las gestiones de cobro (numerales 1.4, 1.5, 2 y 3.14), se establece la obligación del Asesor de Crédito y Recuperación de:
+
+• Dar seguimiento diario y permanente a la cartera asignada a partir de cero días de mora.
+• Evidenciar y documentar todas las gestiones de recuperación realizadas en sus diferentes etapas, digitalizándolas en el sistema informático.
+• Mantener actualizada la información del socio acreditado, avales o garantes, a fin de facilitar su localización.
+• Utilizar los mecanismos autorizados para la gestión de cobranza (llamadas telefónicas, visitas, mensajería SMS o WhatsApp, notificaciones escritas, etc.), siempre con respeto y dentro del horario permitido.
+• Registrar en el sistema informático las negociaciones, acuerdos o compromisos de pago establecidos con el socio, así como anexar físicamente al expediente los documentos correspondientes, cuando aplique.`;
+
+        const hechos =
+`Hechos:
+Se hace constar que el C. ${asesor}, en su calidad de Asesor de Crédito y Recuperación, omitió realizar la gestión de seguimiento a los créditos señalados en la tabla anterior, mismos que presentan un atraso considerable hasta la fecha de la presente acta.
+
+De la revisión efectuada al sistema informático, se constató lo siguiente:
+
+• No existen registros de llamadas, visitas domiciliarias, mensajes, ni cartas de cobranza en los plazos correspondientes, y si bien lo existieran no se encuetran actualizadad
+• No se documentaron convenios, acuerdos o compromisos de pago con el socio deudor ni con sus avales.
+• Se incumplió con la obligación de prevenir el incremento del atraso, al no dar seguimiento oportuno desde los primeros días de mora.`;
+
+        const faltas =
+`Faltas y omisiones detectadas:
+La conducta descrita constituye un incumplimiento a lo dispuesto en los numerales:
+
+1.4 Formalidades para desempeñar las gestiones de cobro, al no registrar ni evidenciar convenios, acuerdos o contactos con el socio.
+1.5 La recuperación es parte integral del ciclo crediticio, al no aplicar las políticas de prevención y recuperación administrativa.
+2. Políticas generales, al no generar ni respaldar las evidencias mínimas de gestión de recuperación (carta invitación, requerimientos, llamadas, mensajería, etc.).
+3.14 Responsabilidades del Asesor de Crédito y Recuperación, al no dar seguimiento diario ni documentar en el sistema las gestiones correspondientes.`;
+
+        const determinacion =
+`Determinación:
+Por lo anterior, se procede a formalizar la presente acta como parte del procedimiento tendiente para
+la aplicación de la medida disciplinaria correspondiente a fin de dejar constancia de las faltas y
+omisiones cometidas por el Asesor de Crédito y Recuperación, mismas que impactan negativamente
+en los indicadores de recuperación de cartera de la sucursal.
+Acto posterior, se le concede al socio colaborador el derecho del uso de la palabra con relación a los
+hechos que anteceden, manifestando:`;
+
+        const cierre =
+`Leída que fue la presente, se ratifica en todas y cada una de sus partes por los comparecientes.
+Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al calce y al margen para constancia.`;
+
+        return {
+          titulo: "ACTA ADMINISTRATIVA",
+          subtitulo: "Se levanta la presente ACTA ADMINISTRATIVA",
+          intro, hechos, faltas, determinacion, cierre,
+          gerenteSucursal: GERENTE
+        };
       }
-      const sucursalesCoord = [...new Set(data.filter(d => d.Coordinador === valorCoord).map(d => d.Sucursal))];
-      llenarSucursales(sucursalesCoord);
-    }
-  });
 
-  actualizarSucursales();
-});
-
-function llenarSucursales(lista) {
-  const selSuc = document.getElementById("sucursalSelect");
-  const sucursalActual = selSuc.value;
-  selSuc.innerHTML = '<option value="">-- Selecciona --</option>';
-  lista.forEach(s => selSuc.innerHTML += `<option value="${s}">${s}</option>`);
-  if (lista.includes(sucursalActual)) {
-    selSuc.value = sucursalActual;
-  } else {
-    selSuc.value = "";
-    sucursalSeleccionada = "";
-  }
-}
-
-function actualizarSucursales() {
-  const soloSin = document.getElementById("soloSinGestion").checked;
-  const coord = document.getElementById("coordinadorSelect").value;
-
-  let base = data.slice();
-  if (coord && coord !== "OFICINA_CENTRAL") {
-    base = base.filter(d => d.Coordinador === coord);
-  }
-
-  let sucursales;
-  if (soloSin) {
-    sucursales = [...new Set(
-      base.filter(d => estaSinGestion(d["Dias sin Gestion"])).map(d => d.Sucursal)
-    )];
-  } else {
-    sucursales = [...new Set(base.map(d => d.Sucursal))];
-  }
-  llenarSucursales(sucursales);
-}
-
-document.getElementById("soloSinGestion").addEventListener("change", actualizarSucursales);
-
-/* =======================
-   Carga y armado de tarjetas
-   ======================= */
-async function cargarDatos() {
-  const diasFiltro = parseInt(document.getElementById("diasMinimos").value) || 30;
-  const soloSinGestion = document.getElementById("soloSinGestion").checked;
-  sucursalSeleccionada = document.getElementById("sucursalSelect").value;
-  if (!sucursalSeleccionada) return;
-
-  const registros = data.filter(d => {
-    if (d.Sucursal !== sucursalSeleccionada) return false;
-
-    const dias = parseDiasSinGestion(d["Dias sin Gestion"]);
-    if (soloSinGestion) {
-      return dias === null;
-    } else {
-      return (dias === null) || (typeof dias === "number" && dias >= diasFiltro);
-    }
-  });
-
-  const asesores = {};
-  registros.forEach(r => {
-    const ejecutivo = r.Ejecutivo || "SIN ASESOR";
-    if (!asesores[ejecutivo]) asesores[ejecutivo] = [];
-    asesores[ejecutivo].push(r);
-  });
-
-  const cont = document.getElementById("contenido");
-  cont.innerHTML = "";
-
-  const nombresAsesores = Object.keys(asesores).sort((a, b) => a.localeCompare(b, "es"));
-
-  if (nombresAsesores.length === 0) {
-    cont.innerHTML = `<div class="alert alert-info">No se encontraron créditos con los criterios seleccionados.</div>`;
-    return;
-  }
-
-  for (let asesor of nombresAsesores) {
-    const total = asesores[asesor].reduce((acc, r) => acc + toNumberSafe(r["Saldo Total"]), 0);
-
-    const card = document.createElement("div");
-    card.className = "card mb-3";
-    card.innerHTML = `
-      <div class="card-header bg-primary text-white">${asesor}</div>
-      <div class="card-body d-flex justify-content-between align-items-center">
-        <div>
-          Créditos: ${asesores[asesor].length}<br>
-          Total: $${total.toLocaleString("es-MX", { minimumFractionDigits: 2 })}
-        </div>
-        <button class="btn btn-warning btn-sm">Vista Previa</button>
-      </div>
-    `;
-    card.querySelector("button").onclick = () =>
-      mostrarVistaPrevia(asesor, asesores[asesor]);
-    cont.appendChild(card);
-  }
-}
-
-/* =======================
-   Vista previa y PDF
-   ======================= */
-function mostrarVistaPrevia(asesor, creditos) {
-  asesorSeleccionado = asesor;
-  creditosSeleccionados = creditos;
-  document.getElementById("asesorTitulo").textContent =
-    `Asesor: ${asesor} | Sucursal: ${sucursalSeleccionada}`;
-
-  const tbody = document.getElementById("tablaPreview");
-  tbody.innerHTML = "";
-
-  let total = 0;
-  creditos.forEach(c => {
-    const saldo = toNumberSafe(c["Saldo Total"]);
-    total += saldo;
-
-    const dsgParsed = parseDiasSinGestion(c["Dias sin Gestion"]);
-    const dsgDisplay = (dsgParsed === null) ? "SIN GESTIÓN" : dsgParsed;
-
-    tbody.innerHTML += `
-      <tr>
-        <td>${c.Linea ?? ""}</td>
-        <td>${c.Nombre ?? ""}</td>
-        <td>${(toNumberSafe(c["Saldo Total"])).toLocaleString("es-MX", { style: "currency", currency: "MXN" })}</td>
-        <td>${c["Dias de Atraso"] ?? ""}</td>
-        <td>${dsgDisplay}</td>
-      </tr>
-    `;
-  });
-
-  document.getElementById("totalPreview").textContent =
-    `TOTAL: ${total.toLocaleString("es-MX", { style: "currency", currency: "MXN" })}`;
-
-  // Enlazar los dos botones del modal para generar el tipo elegido
-  document.getElementById("btnGenerarExhorto").onclick = () =>
-    generarPDF(asesorSeleccionado, sucursalSeleccionada, creditosSeleccionados, "exhorto");
-
-  document.getElementById("btnGenerarActa").onclick = () =>
-    generarPDF(asesorSeleccionado, sucursalSeleccionada, creditosSeleccionados, "acta");
-
-  const modal = new bootstrap.Modal(document.getElementById("vistaPreviaModal"));
-  modal.show();
-}
-
-function generarPDF(asesor, sucursal, creditos, tipo) {
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF("p", "pt", "a4");
-
-  // Interlineado compacto
-  doc.setLineHeightFactor(1.0);
-
-  const fecha = new Date().toLocaleDateString("es-MX", { day:"2-digit", month:"long", year:"numeric" });
-  const diasMinimos = parseInt(document.getElementById("diasMinimos").value) || 30;
-
-  const headerUrl = "https://raw.githubusercontent.com/alcnca/mapa-semaforo/main/encabezado.png";
-  const footerUrl = "https://alcnca.github.io/mapa-semaforo/piepagina.png";
-
-  const headerImg = new Image();
-  headerImg.crossOrigin = "Anonymous"; headerImg.src = headerUrl;
-
-  const footerImg = new Image();
-  footerImg.crossOrigin = "Anonymous"; footerImg.src = footerUrl;
-
-  headerImg.onload = function () {
-    doc.addImage(headerImg, "PNG", 50, 20, 500, 80);
-    let y = 120;
-
-    // Textos por tipo
-    const { titulo, subtitulo, intro, postTabla } = getTextosDocumento(tipo, diasMinimos);
-
-    doc.setFontSize(10);
-    doc.text(`Fecha: ${fecha}`, 50, y);
-    y += 18;
-
-    doc.setFontSize(14);
-    doc.text(titulo, 300, y, { align: "center" });
-    y += 18;
-
-    doc.setFontSize(12);
-    doc.text(subtitulo, 300, y, { align: "center" });
-    y += 24;
-
-    doc.setFontSize(11);
-    doc.text(`Para: ${asesor}`, 50, y);
-    y += 14;
-    doc.text(`Sucursal: ${sucursal}`, 50, y);
-    y += 16;
-
-    // Intro
-    doc.autoTable({
-      startY: y,
-      body: [[intro]],
-      theme: "plain",
-      styles: { fontSize: 11, halign: "justify", cellPadding: 1.5 },
-      margin: { left: 50, right: 50 }
-    });
-
-    y = doc.lastAutoTable.finalY + 12;
-
-    // Tabla principal compacta
-    const rows = creditos.map(c => {
-      const dsgParsed = parseDiasSinGestion(c["Dias sin Gestion"]);
-      const dsgDisplay = (dsgParsed === null) ? "SIN GESTIÓN" : dsgParsed;
-      return [
-        c.Linea ?? "",
-        c.Nombre ?? "",
-        toNumberSafe(c["Saldo Total"]).toLocaleString("es-MX", { style: "currency", currency: "MXN" }),
-        c["Dias de Atraso"] ?? "",
-        dsgDisplay
-      ];
-    });
-
-    doc.autoTable({
-      startY: y,
-      head: [['Crédito','Nombre del Socio','Saldo','Días atraso','Días sin gestión']],
-      body: rows,
-      styles: { fontSize: 9, cellPadding: 1.5, lineWidth: 0.1, valign: "middle" },
-      headStyles: { fillColor: [220,220,220] },
-      margin: { left: 40, right: 40 }
-    });
-
-    y = doc.lastAutoTable.finalY + 10;
-
-    // Total
-    const totalSaldo = creditos.reduce((acc, c) => acc + toNumberSafe(c["Saldo Total"]), 0);
-    doc.setFontSize(11);
-    doc.text(`TOTAL: ${totalSaldo.toLocaleString("es-MX", { style: "currency", currency: "MXN" })}`, 50, y);
-    y += 16;
-
-    // Cierre
-    doc.autoTable({
-      startY: y,
-      body: [[postTabla]],
-      theme: "plain",
-      styles: { fontSize: 11, halign: "justify", cellPadding: 1.5 },
-      margin: { left: 50, right: 50 }
-    });
-
-    // ===== Firma al final del texto (NO en el pie) =====
-    let firmaY = doc.lastAutoTable.finalY + 22;
-
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-
-    if (firmaY > pageHeight - 180) {
-      doc.addPage();
-      firmaY = 100;
+      // EXHORTO
+      const subtitulo = `Motivo: Tener créditos en su cartera con más de ${diasMinimos} días sin gestión`;
+      const intro = `Me permito informarle que, derivado de la revisión del seguimiento a los créditos con más de 30 días de atraso de la cartera que usted administra, se han detectado créditos que carecen de gestión y seguimiento en el sistema, por el tiempo indicando en el motivo de la presente y que a continuación se enlistan:`;
+      const postTabla = `Derivado de esta situación se detecta su falta de responsabilidad, compromiso, esmero y dedicación en la ejecución de sus responsabilidades; por dicha omisión SE LEVANTA EL PRESENTE EXHORTO para su conocimiento y cumplimiento de dichas actividades, ya que nos ayuda a llevar un sano control de la cartera, manteniendo el menor porcentaje de mora y cuidando el patrimonio de la cooperativa. Para el caso de nueva omisión se tomarán las medidas necesarias de manera inmediata.`;
+      return { titulo: "EXHORTO", subtitulo, intro, postTabla };
     }
 
-    // Determinar firmante
-    const inicial = document.getElementById("coordinadorSelect").value;
-    const subFirmante = document.getElementById("subFirmanteSelect").value || inicial;
+    /* =======================
+       Carga inicial (datos + imágenes)
+       ======================= */
+    window.addEventListener("DOMContentLoaded", async () => {
+      try {
+        const [resDatos, resDir, headerData, footerData] = await Promise.all([
+          fetch(URL_DATOS, { cache: "no-store" }),
+          fetch(URL_DIRECCION, { cache: "no-store" }),
+          fetchAsDataURL(HEADER_URL),
+          fetchAsDataURL(FOOTER_URL)
+        ]);
+        data = await resDatos.json();
 
-    let nombreFirmante = "";
-    let puestoFirmante = "";
+        const dirJson = await resDir.json();
+        if (Array.isArray(dirJson)) {
+          direcciones = dirJson;
+        } else if (dirJson && typeof dirJson === "object") {
+          const vals = Object.values(dirJson);
+          direcciones = (vals.length && typeof vals[0] === "object") ? vals : [dirJson];
+        } else {
+          direcciones = [];
+        }
+        HEADER_DATA = headerData;
+        FOOTER_DATA = footerData;
+      } catch (e) {
+        alert("Error cargando datos: " + e.message);
+        return;
+      }
 
-    if (subFirmante === "IVANI") {
-      nombreFirmante = "IVANI ARCOS LAINES";
-      puestoFirmante = "Gestor Regional Zona Maya";
-    } else if (inicial === "OFICINA_CENTRAL") {
-      nombreFirmante = subFirmante;
-      const asist = oficinaCentral.find(a => a.nombre === subFirmante);
-      puestoFirmante = asist ? asist.puesto : "ASISTENTE";
-    } else {
-      nombreFirmante = nombresCoordinadores[subFirmante] || "NOMBRE NO DEFINIDO";
-      puestoFirmante = "Coordinador de Recuperación Extrajudicial";
+      // Coordinador primero
+      const selCoord = document.getElementById("coordinadorSelect");
+      selCoord.innerHTML = '<option value="">-- Selecciona --</option>';
+      for (let clave in nombresCoordinadores) {
+        selCoord.innerHTML += `<option value="${clave}">${nombresCoordinadores[clave]}</option>`;
+      }
+
+      // Eventos de UI
+      document.getElementById("carteraSelect").addEventListener("change", () => {
+        carteraSeleccionada = document.getElementById("carteraSelect").value;
+        document.getElementById("mostrarDiv").style.display = carteraSeleccionada ? "block" : "none";
+        actualizarSucursales();
+      });
+
+      document.getElementById("mostrarSelect").addEventListener("change", () => {
+        mostrarModo = document.getElementById("mostrarSelect").value; // SIN | TODOS | PAGOS_UNICOS
+        document.getElementById("diasMinimosDiv").style.display = (mostrarModo === "TODOS") ? "block" : "none";
+        actualizarSucursales();
+      });
+
+      selCoord.addEventListener("change", () => {
+        const subDiv = document.getElementById("subFirmanteDiv");
+        const subSel = document.getElementById("subFirmanteSelect");
+        subSel.innerHTML = "";
+        const valorCoord = selCoord.value;
+
+        if (valorCoord === "OFICINA_CENTRAL") {
+          oficinaCentral.forEach(p => {
+            subSel.innerHTML += `<option value="${p.nombre}">${p.nombre} (${p.puesto})</option>`;
+          });
+          subDiv.style.display = "block";
+        } else if (valorCoord) {
+          subDiv.style.display = "none";
+          if (valorCoord === "ALCNCA") {
+            subDiv.style.display = "block";
+            subSel.innerHTML += `<option value="ALCNCA">${nombresCoordinadores["ALCNCA"]} (Coordinador)</option>`;
+            subSel.innerHTML += `<option value="IVANI">IVANI ARCOS LAINES (Gestor Regional Zona Maya)</option>`;
+          }
+        }
+        actualizarSucursales();
+      });
+
+      document.getElementById("btnAplicar").addEventListener("click", cargarDatos);
+
+      // Estado inicial
+      document.getElementById("mostrarDiv").style.display = "none";
+      document.getElementById("diasMinimosDiv").style.display = "none";
+
+      actualizarSucursales();
+    });
+
+    /* =======================
+       Sucursales
+       ======================= */
+    function llenarSucursales(lista) {
+      const selSuc = document.getElementById("sucursalSelect");
+      const sucursalActual = selSuc.value;
+      selSuc.innerHTML = '<option value="TODAS">Todas</option>';
+      lista.forEach(s => selSuc.innerHTML += `<option value="${s}">${s}</option>`);
+      if (lista.includes(sucursalActual)) selSuc.value = sucursalActual;
+      else selSuc.value = "TODAS";
     }
 
-    doc.setFontSize(11);
-    doc.text("Atentamente,", pageWidth / 2, firmaY, { align: "center" });
-    firmaY += 36;
-    doc.text("_______________________________", pageWidth / 2, firmaY, { align: "center" });
-    firmaY += 14;
-    doc.text(nombreFirmante, pageWidth / 2, firmaY, { align: "center" });
-    firmaY += 14;
-    doc.text(puestoFirmante, pageWidth / 2, firmaY, { align: "center" });
+    function creditosBaseFiltradosPorCartera() {
+      // Aplica cartera ADMIN (DV ≤ 44) o EXTRA (DV ≥ 45) o TODAS
+      return data.filter(d => {
+        const dv = parseInt(d["Dias de Atraso"]) || 0;
+        if (carteraSeleccionada === "ADMIN") return dv <= 44;
+        if (carteraSeleccionada === "EXTRA") return dv >= 45;
+        if (carteraSeleccionada === "TODAS") return true;
+        return false; // si no eligieron cartera aún
+      });
+    }
 
-    // Pie gráfico institucional (no afecta la firma)
-    footerImg.onload = function () {
-      const footerWidth = 500;
-      const footerHeight = 50;
-      const footerX = (pageWidth - footerWidth) / 2;
-      const footerY = pageHeight - footerHeight - 20;
+    function actualizarSucursales() {
+      const coord = document.getElementById("coordinadorSelect").value;
 
+      let base = data.slice();
+      if (carteraSeleccionada) {
+        base = creditosBaseFiltradosPorCartera();
+      } else {
+        llenarSucursales([]);
+        return;
+      }
+
+      // luego por coordinador (si aplica y no es Oficina Central)
+      if (coord && coord !== "OFICINA_CENTRAL") {
+        base = base.filter(d => d.Coordinador === coord);
+      }
+
+      // luego por "Qué mostrar"
+      if (mostrarModo === "SIN") {
+        base = base.filter(d => estaSinGestion(d["Dias sin Gestion"]));
+      } else if (mostrarModo === "PAGOS_UNICOS") {
+        // filtrar por la columna 'modalidad' (soporta varias claves)
+        base = base.filter(d => esPagoUnico(d["modalidad"] || d["Modalidad"] || d.modalidad || d.Modalidad));
+      } // en "TODOS" se aplica el umbral luego
+
+      const sucursales = [...new Set(base.map(d => d.Sucursal))].filter(Boolean).sort((a,b)=>a.localeCompare(b,'es'));
+      llenarSucursales(sucursales);
+    }
+
+    /* =======================
+       Renderizar tarjetas (por sucursal)
+       ======================= */
+    function renderTarjetasPorSucursal(base, sucursal) {
+      // Agrupar por asesor dentro de esta sucursal
+      const porAsesor = {};
+      base.filter(r => r.Sucursal === sucursal).forEach(r => {
+        const ejecutivo = r.Ejecutivo || "SIN ASESOR";
+        (porAsesor[ejecutivo] ||= []).push(r);
+      });
+
+      const cont = document.getElementById("contenido");
+      // Cabecera de sucursal
+      const h4 = document.createElement("h4");
+      h4.className = "mt-3 mb-3";
+      h4.textContent = `Sucursal: ${sucursal}`;
+      cont.appendChild(h4);
+
+      const nombresAsesores = Object.keys(porAsesor).sort((a, b) => a.localeCompare(b, "es"));
+      if (nombresAsesores.length === 0) {
+        const alert = document.createElement("div");
+        alert.className = "alert alert-info";
+        alert.textContent = "Sin registros con los criterios seleccionados en esta sucursal.";
+        cont.appendChild(alert);
+        return;
+      }
+
+      for (let asesor of nombresAsesores) {
+        const lista = porAsesor[asesor];
+        const total = lista.reduce((acc, r) => acc + toNumberSafe(r["Saldo Total"]), 0);
+
+        const card = document.createElement("div");
+        card.className = "card mb-3";
+        card.innerHTML = `
+          <div class="card-header bg-primary text-white">${asesor}</div>
+          <div class="card-body d-flex justify-content-between align-items-center">
+            <div>
+              Créditos: ${lista.length}<br />
+              Total: $${total.toLocaleString("es-MX", { minimumFractionDigits: 2 })}
+            </div>
+            <button class="btn btn-warning btn-sm">Vista Previa</button>
+          </div>
+        `;
+        card.querySelector("button").onclick = () => {
+          sucursalSeleccionada = sucursal; // asegurar la sucursal correcta para el PDF
+          mostrarVistaPrevia(asesor, lista);
+        };
+        cont.appendChild(card);
+      }
+    }
+
+    /* =======================
+       Cargar tarjetas
+       ======================= */
+    async function cargarDatos() {
+      if (!carteraSeleccionada) {
+        alert("Selecciona primero la Cartera a revisar.");
+        return;
+      }
+
+      const selSuc = document.getElementById("sucursalSelect");
+      const sucSel = selSuc.value || "TODAS";
+      const diasFiltro = parseInt(document.getElementById("diasMinimos").value) || 30;
+
+      // Base: cartera
+      let base = creditosBaseFiltradosPorCartera();
+
+      // coordinador (si corresponde)
+      const coord = document.getElementById("coordinadorSelect").value;
+      if (coord && coord !== "OFICINA_CENTRAL") {
+        base = base.filter(d => d.Coordinador === coord);
+      }
+
+      // Qué mostrar
+      if (mostrarModo === "SIN") {
+        base = base.filter(d => estaSinGestion(d["Dias sin Gestion"]));
+      } else if (mostrarModo === "PAGOS_UNICOS") {
+        // Mostrar solamente los créditos cuya modalidad indique "Pago(s) único(s)"
+        base = base.filter(d => esPagoUnico(d["modalidad"] || d["Modalidad"] || d.modalidad || d.Modalidad));
+      } else { // TODOS -> aplicar umbral de días sin gestión
+        base = base.filter(d => {
+          const dias = parseDiasSinGestion(d["Dias sin Gestion"]);
+          return (dias === null) || (typeof dias === "number" && dias >= diasFiltro);
+        });
+      }
+
+      const cont = document.getElementById("contenido");
+      cont.innerHTML = "";
+
+      if (sucSel !== "TODAS") {
+        // Solo una sucursal
+        if (!sucSel) { alert("Selecciona una Sucursal."); return; }
+        renderTarjetasPorSucursal(base, sucSel);
+      } else {
+        // Todas: iterar por sucursal (orden alfabético)
+        const sucursales = [...new Set(base.map(d => d.Sucursal))].filter(Boolean).sort((a,b)=>a.localeCompare(b,'es'));
+        if (sucursales.length === 0) {
+          cont.innerHTML = `<div class="alert alert-info">No se encontraron créditos con los criterios seleccionados.</div>`;
+          return;
+        }
+        for (const suc of sucursales) {
+          renderTarjetasPorSucursal(base, suc);
+        }
+      }
+    }
+
+    /* =======================
+       Vista previa
+       ======================= */
+    function mostrarVistaPrevia(asesor, creditos) {
+      asesorSeleccionado = asesor;
+      creditosSeleccionados = creditos;
+      document.getElementById("asesorTitulo").textContent =
+        `Asesor: ${asesor} | Sucursal: ${sucursalSeleccionada}`;
+
+      const tbody = document.getElementById("tablaPreview");
+      tbody.innerHTML = "";
+
+      let total = 0;
+      creditos.forEach(c => {
+        const saldo = toNumberSafe(c["Saldo Total"]);
+        total += saldo;
+        const dsgParsed = parseDiasSinGestion(c["Dias sin Gestion"]);
+        const dsgDisplay = (dsgParsed === null) ? "SIN GESTIÓN" : dsgParsed;
+
+        tbody.innerHTML += `
+          <tr>
+            <td>${c.Linea ?? ""}</td>
+            <td>${c.Nombre ?? ""}</td>
+            <td class="text-end">${saldo.toLocaleString("es-MX", { style: "currency", currency: "MXN" })}</td>
+            <td class="text-center">${c["Dias de Atraso"] ?? ""}</td>
+            <td class="text-center">${dsgDisplay}</td>
+          </tr>
+        `;
+      });
+
+      document.getElementById("totalPreview").textContent =
+        `TOTAL: ${total.toLocaleString("es-MX", { style: "currency", currency: "MXN" })}`;
+
+      const btnExhorto = document.getElementById("btnGenerarExhorto");
+      const btnActa = document.getElementById("btnGenerarActa");
+
+      btnExhorto.onclick = async () => { btnExhorto.disabled = true; try { await generarPDF(asesorSeleccionado, sucursalSeleccionada, creditosSeleccionados, "exhorto"); } finally { btnExhorto.disabled = false; } };
+      btnActa.onclick = async () => { btnActa.disabled = true; try { await generarPDF(asesorSeleccionado, sucursalSeleccionada, creditosSeleccionados, "acta"); } finally { btnActa.disabled = false; } };
+
+      new bootstrap.Modal(document.getElementById("vistaPreviaModal")).show();
+    }
+
+    /* =======================
+       Helpers PDF
+       ======================= */
+    function pageEnv(doc){
+      const HEADER = { x: 50, y: 20, w: 500, h: 80 };
+      const CONTENT_TOP = HEADER.y + HEADER.h + 20; // 120 pt
+      const FOOTER_RESERVE = 90;
+      return {
+        CONTENT_TOP,
+        FOOTER_RESERVE,
+        marginFor: (left=50, right=50) => ({ top: CONTENT_TOP, left, right, bottom: FOOTER_RESERVE }),
+        didDrawPage: () => {
+          if (HEADER_DATA) {
+            try { doc.addImage(HEADER_DATA, "PNG", HEADER.x, HEADER.y, HEADER.w, HEADER.h); } catch {}
+          }
+        },
+        ensureSpace: (y, extra=0) => {
+          const usableBottom = doc.internal.pageSize.getHeight() - FOOTER_RESERVE;
+          if (y + extra > usableBottom) { doc.addPage(); return CONTENT_TOP; }
+          return y;
+        }
+      };
+    }
+
+    function addParagraph(doc, text, startY, env, left=50, right=50) {
+      doc.autoTable({
+        startY,
+        body: [[text]],
+        theme: "plain",
+        styles: { fontSize: 11, halign: "justify", cellPadding: 1.2 },
+        margin: env.marginFor(left, right),
+        didDrawPage: env.didDrawPage
+      });
+      return (doc.lastAutoTable && doc.lastAutoTable.finalY) || startY;
+    }
+
+    /* =======================
+       PDF
+       ======================= */
+    async function generarPDF(asesor, sucursal, creditos, tipo) {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF("p", "pt", "a4");
+      doc.setLineHeightFactor(1.0);
+
+      const env = pageEnv(doc);
+
+      const fecha = new Date().toLocaleDateString("es-MX", { day:"2-digit", month:"long", year:"numeric" });
+      const diasMinimos = parseInt(document.getElementById("diasMinimos").value) || 30;
+
+      // Determinar firmante coordinador
+      const inicial = document.getElementById("coordinadorSelect").value;
+      const subFirmanteVal = document.getElementById("subFirmanteSelect").value || inicial;
+      let firmanteCoord;
+      if (inicial === "OFICINA_CENTRAL") {
+        firmanteCoord = subFirmanteVal || "__________________________";
+      } else if (subFirmanteVal && nombresCoordinadores[subFirmanteVal]) {
+        firmanteCoord = nombresCoordinadores[subFirmanteVal];
+      } else {
+        firmanteCoord = nombresCoordinadores[inicial] || "__________________________";
+      }
+
+      const textos = getTextosDocumento(tipo, diasMinimos, asesor, sucursal, firmanteCoord);
+
+      // ===== Cabecera textual =====
+      let y = env.CONTENT_TOP;
+      const pageWidth = doc.internal.pageSize.getWidth();
+
+      doc.setFontSize(10); doc.text(`Fecha: ${fecha}`, 50, y); y += 18;
+      doc.setFontSize(14); doc.text(textos.titulo, pageWidth/2, y, { align: "center" }); y += 18;
+      doc.setFontSize(12); doc.text(textos.subtitulo || "", pageWidth/2, y, { align: "center" }); y += 24;
+      doc.setFontSize(11); doc.text(`Para: ${asesor}`, 50, y); y += 14; doc.text(`Sucursal: ${sucursal}`, 50, y); y += 10;
+
+      // Intro
+      y = addParagraph(doc, textos.intro, y, env, 50, 50);
+
+      // ===== Tabla de créditos =====
+      y = (doc.lastAutoTable?.finalY || y) + 12; y = env.ensureSpace(y, 10);
+
+      const rows = creditos.map(c => {
+        const dsgParsed = parseDiasSinGestion(c["Dias sin Gestion"]);
+        const dsgDisplay = (dsgParsed === null) ? "SIN GESTIÓN" : dsgParsed;
+        return [
+          c.Linea ?? "",
+          c.Nombre ?? "",
+          toNumberSafe(c["Saldo Total"]).toLocaleString("es-MX", { style: "currency", currency: "MXN" }),
+          c["Dias de Atraso"] ?? "",
+          dsgDisplay
+        ];
+      });
+
+      doc.autoTable({
+        startY: y,
+        head: [["Crédito","Nombre del Socio","Saldo","Días atraso","Días sin gestión"]],
+        body: rows,
+        styles: { fontSize: 9, cellPadding: 1.5, lineWidth: 0.1, valign: "middle" },
+        headStyles: { fillColor: [0,0,0], textColor: [255,255,255], halign: "center" },
+        columnStyles: { 3: { halign: "center" }, 4: { halign: "center" } },
+        margin: env.marginFor(40, 40),
+        didDrawPage: env.didDrawPage
+      });
+      y = (doc.lastAutoTable?.finalY || y) + 8; y = env.ensureSpace(y, 10);
+
+      // Total (CENTRADO)
+      doc.setFontSize(11);
+      const totalImporte = creditos.reduce((acc, c) => acc + toNumberSafe(c["Saldo Total"]), 0);
+      doc.text(`TOTAL: ${totalImporte.toLocaleString("es-MX", { style: "currency", currency: "MXN" })}`, pageWidth/2, y, { align: "center" });
+      y += 12;
+
+      if (tipo === "acta") {
+        // Hechos, Faltas, Determinación
+        y = addParagraph(doc, textos.hechos, y, env, 50, 50); y = (doc.lastAutoTable?.finalY || y) + 6;
+        y = addParagraph(doc, textos.faltas, y, env, 50, 50); y = (doc.lastAutoTable?.finalY || y) + 6;
+        y = addParagraph(doc, textos.determinacion, y, env, 50, 50);
+
+        // Espacio ~8 saltos de línea (96pt)
+        y = (doc.lastAutoTable?.finalY || y) + 96;
+
+        // Cierre (+30 min del inicio)
+        y = addParagraph(doc, textos.cierre, y, env, 50, 50); y = (doc.lastAutoTable?.finalY || y) + 18;
+
+        // ===== Firmas (4) =====
+        const colW = (pageWidth - 100 - 40) / 2; // márgenes 50, gap 40
+        const x1 = 50, x2 = 50 + colW + 40;
+        function firmaBlock(x, y0, nombre, puesto) {
+          y0 = env.ensureSpace(y0, 90);
+          doc.setFontSize(11);
+          doc.line(x + 10, y0 + 40, x + colW - 10, y0 + 40);
+          doc.text(nombre || "__________________________", x + colW/2, y0 + 56, { align: "center" });
+          doc.setFontSize(10);
+          doc.text(puesto || "", x + colW/2, y0 + 72, { align: "center" });
+          return y0 + 90;
+        }
+        y = firmaBlock(x1, y, textos.gerenteSucursal, "Gerente de Sucursal");
+        y = firmaBlock(x2, y - 90, "ADAN GUTIERREZ HERNANDEZ", "Gerente de Recuperación Extrajudicial");
+        let y2 = y + 6; y2 = firmaBlock(x1, y2, firmanteCoord, "Coordinador de Recuperación");
+        firmaBlock(x2, y2 - 90, asesor, "Asesor de Créditos y Recuperación Individual");
+      } else {
+        // EXHORTO – cierre y firma
+        const { postTabla } = getTextosDocumento("exhorto", diasMinimos);
+        y = addParagraph(doc, postTabla, y, env, 50, 50); y = (doc.lastAutoTable?.finalY || y) + 18;
+
+        y = env.ensureSpace(y, 120);
+        doc.setFontSize(11);
+        doc.text("Atentamente,", pageWidth / 2, y, { align: "center" }); y += 30;
+        doc.text("_______________________________", pageWidth / 2, y, { align: "center" }); y += 14;
+
+        let nombreFirmante, puestoFirmante;
+        const inicial2 = document.getElementById("coordinadorSelect").value;
+        const subFirmante = document.getElementById("subFirmanteSelect").value || inicial2;
+        if (subFirmante === "IVANI") {
+          nombreFirmante = "IVANI ARCOS LAINES";
+          puestoFirmante = "Gestor Regional Zona Maya";
+        } else if (inicial2 === "OFICINA_CENTRAL") {
+          nombreFirmante = subFirmante;
+          const asist = oficinaCentral.find(a => a.nombre === subFirmante);
+          puestoFirmante = asist ? asist.puesto : "ASISTENTE";
+        } else {
+          nombreFirmante = nombresCoordinadores[subFirmante] || nombresCoordinadores[inicial2] || "NOMBRE NO DEFINIDO";
+          puestoFirmante = "Coordinador de Recuperación Extrajudicial";
+        }
+        doc.text(nombreFirmante, pageWidth / 2, y, { align: "center" }); y += 14;
+        doc.text(puestoFirmante, pageWidth / 2, y, { align: "center" });
+      }
+
+      // ===== Pie + numeración =====
       const pageCount = doc.getNumberOfPages();
       for (let i = 1; i <= pageCount; i++) {
         doc.setPage(i);
-        doc.addImage(footerImg, "PNG", footerX, footerY, footerWidth, footerHeight);
+        const pageW = doc.internal.pageSize.getWidth();
+        const pageH = doc.internal.pageSize.getHeight();
+        const footerWidth = 500, footerHeight = 50; const footerX = (pageW - footerWidth) / 2; const footerY = pageH - footerHeight - 20;
+        if (FOOTER_DATA) { try { doc.addImage(FOOTER_DATA, "PNG", footerX, footerY, footerWidth, footerHeight); } catch {} }
+        doc.setFontSize(9); doc.text(`Página ${i} de ${pageCount}`, pageW - 60, footerY - 6, { align: "right" });
       }
 
       const nombreArchivo = (tipo === "acta" ? "ACTA_ADMINISTRATIVA" : "EXHORTO");
       doc.save(`${nombreArchivo}_${asesor.replace(/ /g, "_")}.pdf`);
-    };
-  };
-}
-</script>
+    }
+  </script>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
