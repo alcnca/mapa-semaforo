@@ -7,10 +7,19 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
   <style>
-    /* Vista previa: sólo centrar las 2 últimas columnas; las demás, a la izquierda */
-    #tablaPreview td:nth-child(1), #tablaPreview td:nth-child(2) { text-align: left; }
-    #tablaPreview td:nth-child(3) { text-align: right; }
-    #tablaPreview td:nth-child(4), #tablaPreview td:nth-child(5) { text-align: center; }
+    /* Letras más pequeñas en el cuadro (vista previa) */
+    .table.table-sm th, .table.table-sm td { font-size: 10px; line-height: 1.10; }
+
+    /* Alineaciones vista previa: 8 columnas
+       1:Crédito 2:Producto 3:Socio 4:Nombre 5:Saldo 6:DV 7:DSG 8:Fase */
+    #tablaPreview td:nth-child(1),
+    #tablaPreview td:nth-child(2) { text-align: center; }
+    #tablaPreview td:nth-child(3),
+    #tablaPreview td:nth-child(4) { text-align: left; }
+    #tablaPreview td:nth-child(5) { text-align: right; }
+    #tablaPreview td:nth-child(6),
+    #tablaPreview td:nth-child(7),
+    #tablaPreview td:nth-child(8) { text-align: center; }
   </style>
 </head>
 <body class="container py-4">
@@ -23,8 +32,9 @@
       <select id="carteraSelect" class="form-select">
         <option value="">-- Selecciona --</option>
         <option value="TODAS">Todas</option>
-        <option value="ADMIN">Cartera Administrativa (DV ≤ 44)</option>
-        <option value="EXTRA">Cartera Extrajudicial (DV ≥ 45)</option>
+        <!-- ACTUALIZADO: ahora se filtra por FASE -->
+        <option value="ADMIN">Cartera Administrativa (Fase: Administrativa)</option>
+        <option value="EXTRA">Cartera Extrajudicial (Fase: Extrajudicial)</option>
       </select>
     </div>
     <div class="col-md-3" id="mostrarDiv" style="display:none;">
@@ -69,7 +79,7 @@
 
   <!-- Modal Vista Previa -->
   <div class="modal fade" id="vistaPreviaModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-xl">
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title">Vista Previa del Documento</h5>
@@ -77,18 +87,23 @@
         </div>
         <div class="modal-body">
           <h6 id="asesorTitulo"></h6>
-          <table class="table table-sm table-bordered align-middle">
-            <thead class="table-dark text-center">
-              <tr>
-                <th>Crédito</th>
-                <th>Nombre del Socio</th>
-                <th>Saldo</th>
-                <th>Días atraso</th>
-                <th>Días sin gestión</th>
-              </tr>
-            </thead>
-            <tbody id="tablaPreview"></tbody>
-          </table>
+          <div class="table-responsive">
+            <table class="table table-sm table-bordered align-middle">
+              <thead class="table-dark text-center">
+                <tr>
+                  <th>Crédito</th>
+                  <th>Producto</th>
+                  <th>Socio</th>
+                  <th>Nombre del Socio</th>
+                  <th>Saldo</th>
+                  <th>Días atraso</th>
+                  <th>Días sin gestión</th>
+                  <th>Fase</th>
+                </tr>
+              </thead>
+              <tbody id="tablaPreview"></tbody>
+            </table>
+          </div>
           <h6 class="mt-3 text-center" id="totalPreview"></h6>
         </div>
         <div class="modal-footer gap-2">
@@ -156,7 +171,7 @@
       { nombre: "ROLANDO VALERIANO HURTADO", puesto: "ASISTENTE DE RECUPERACIÓN EXTRAJUDICIAL" },
       { nombre: "ANDREA ACELA MORGA DÁVILA", puesto: "ASISTENTE DE RECUPERACIÓN EXTRAJUDICIAL" },
       { nombre: "GUSTAVO ESTUDILLO DE LA CRUZ", puesto: "ASISTENTE DE RECUPERACIÓN EXTRAJUDICIAL" },
-      /* NUEVOS PREVENTIVA/ADMINISTRATIVA */
+      /* PREVENTIVA/ADMINISTRATIVA */
       { nombre: "ALFONSO JERÓNIMO HERNÁNDEZ", puesto: "COORDINADOR DE RECUPERACIÓN PREVENTIVA Y ADMINISTRATIVA" },
       { nombre: "ZOIBETH YANELI SORIANO IBAÑEZ", puesto: "ASISTENTE DE RECUPERACIÓN PREVENTIVA Y ADMINISTRATIVA" },
       { nombre: "ABEL EDUARDO JIMENEZ GASPAR", puesto: "ASISTENTE DE RECUPERACIÓN PREVENTIVA Y ADMINISTRATIVA" }
@@ -193,13 +208,11 @@
         .toUpperCase();
     }
 
-    // NUEVA: detectar Pagos únicos en la columna 'modalidad'
+    // (Compatibilidad) detección textual de "pago(s) único(s)" en modalidad
     function esPagoUnico(modalidad) {
       if (!modalidad) return false;
       const m = norm(modalidad);
-      // Coincide frases como "PAGO UNICO", "PAGOS UNICOS", "PAGO ÚNICO - CONTADO"
       if (/\bPAGO(S)?\s*UNICO(S)?\b/.test(m)) return true;
-      // cobertura extra: que contenga ambas palabras
       return (m.includes("PAGO") && m.includes("UNICO"));
     }
 
@@ -239,6 +252,51 @@
       return `${numEnEsp(h)} horas con ${m===0?"cero":numEnEsp(m)} minutos del ${numEnEsp(d)} de ${meses[mm]} de ${anioEnLetras(y)}`;
     }
 
+    /* Accesores robustos */
+    function valProducto(r){
+      return r.producto ?? r.Producto ?? r.product ?? r.Product ?? "";
+    }
+    function valSocio(r){
+      return r.socio ?? r.Socio ?? r["Num Socio"] ?? r["Numero Socio"] ?? r["Número de Socio"] ?? "";
+    }
+    function valFase(r){
+      return r.fase ?? r.Fase ?? r.FASE ?? r["Fase del crédito"] ?? r["Fase del credito"] ?? "";
+    }
+
+    /* ====== NUEVO: Pagos únicos por Coordinación y Cuotas ====== */
+    // Parseo robusto de "Cuotas": acepta "1", "01", "1/1", "1 de 1", etc.
+    function parseCuotas(raw){
+      if (raw == null) return NaN;
+      const s = String(raw).trim().toLowerCase();
+      const m = s.match(/^\s*(\d+)\s*(?:\/|\s*de\s*)?\s*(\d+)?\s*$/i);
+      if (m) return parseInt(m[1], 10);
+      const n = parseInt(s.replace(/[^\d-]/g, ""), 10);
+      return isNaN(n) ? NaN : n;
+    }
+    // Cumple si Coordinación = AGRONEGOCIOS y Cuotas = 1
+    function cumplePagosUnicos(r){
+      const coord = (r.Coordinacion ?? r.coordinacion ?? r["Coordinación"] ?? r["COORDINACION"] ?? r["COORDINACIÓN"] ?? "").toString();
+      const coordNorm = coord.normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim().toUpperCase();
+      const cuotas = parseCuotas(
+        r.Cuotas ?? r.cuotas ?? r["Cuotas"] ?? r["CUOTAS"] ??
+        r["Numero de Cuotas"] ?? r["Número de Cuotas"] ?? r["Num Cuotas"] ??
+        r["NumCuotas"] ?? r["Cuota"] ?? r["Pagos"]
+      );
+      return coordNorm === "AGRONEGOCIOS" && cuotas === 1;
+    }
+
+    /* ====== NUEVO: Mapeo por FASE para filtrar cartera ====== */
+    const FASES_MAP = {
+      ADMIN: ["ADMINISTRATIVA"],     // agrega aquí variantes si las tienes (p.ej. "PREVENTIVA")
+      EXTRA: ["EXTRAJUDICIAL"]       // agrega aquí "JUDICIAL"/"LEGAL" si aplica en tus datos
+    };
+    function faseEnGrupo(rec, grupo){
+      const f = norm(valFase(rec));
+      if (!f) return false;
+      const lista = FASES_MAP[grupo] || [];
+      return lista.some(alias => f.includes(norm(alias)));
+    }
+
     /* =======================
        Textos por tipo
        ======================= */
@@ -275,7 +333,7 @@ Se hace constar que el C. ${asesor}, en su calidad de Asesor de Crédito y Recup
 
 De la revisión efectuada al sistema informático, se constató lo siguiente:
 
-• No existen registros de llamadas, visitas domiciliarias, mensajes, ni cartas de cobranza en los plazos correspondientes, y si bien lo existieran no se encuetran actualizadad
+• No existen registros de llamadas, visitas domiciliarias, mensajes, ni cartas de cobranza en los plazos correspondientes, y si bien lo existieran no se encuentran actualizadas.
 • No se documentaron convenios, acuerdos o compromisos de pago con el socio deudor ni con sus avales.
 • Se incumplió con la obligación de prevenir el incremento del atraso, al no dar seguimiento oportuno desde los primeros días de mora.`;
 
@@ -408,12 +466,11 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
       else selSuc.value = "TODAS";
     }
 
+    // ACTUALIZADO: ahora filtra por FASE (no por días)
     function creditosBaseFiltradosPorCartera() {
-      // Aplica cartera ADMIN (DV ≤ 44) o EXTRA (DV ≥ 45) o TODAS
       return data.filter(d => {
-        const dv = parseInt(d["Dias de Atraso"]) || 0;
-        if (carteraSeleccionada === "ADMIN") return dv <= 44;
-        if (carteraSeleccionada === "EXTRA") return dv >= 45;
+        if (carteraSeleccionada === "ADMIN") return faseEnGrupo(d, "ADMIN");
+        if (carteraSeleccionada === "EXTRA") return faseEnGrupo(d, "EXTRA");
         if (carteraSeleccionada === "TODAS") return true;
         return false; // si no eligieron cartera aún
       });
@@ -439,8 +496,8 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
       if (mostrarModo === "SIN") {
         base = base.filter(d => estaSinGestion(d["Dias sin Gestion"]));
       } else if (mostrarModo === "PAGOS_UNICOS") {
-        // filtrar por la columna 'modalidad' (soporta varias claves)
-        base = base.filter(d => esPagoUnico(d["modalidad"] || d["Modalidad"] || d.modalidad || d.Modalidad));
+        // sólo AGRONEGOCIOS con 1 sola cuota
+        base = base.filter(cumplePagosUnicos);
       } // en "TODOS" se aplica el umbral luego
 
       const sucursales = [...new Set(base.map(d => d.Sucursal))].filter(Boolean).sort((a,b)=>a.localeCompare(b,'es'));
@@ -511,7 +568,7 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
       const sucSel = selSuc.value || "TODAS";
       const diasFiltro = parseInt(document.getElementById("diasMinimos").value) || 30;
 
-      // Base: cartera
+      // Base: cartera (por FASE)
       let base = creditosBaseFiltradosPorCartera();
 
       // coordinador (si corresponde)
@@ -524,8 +581,7 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
       if (mostrarModo === "SIN") {
         base = base.filter(d => estaSinGestion(d["Dias sin Gestion"]));
       } else if (mostrarModo === "PAGOS_UNICOS") {
-        // Mostrar solamente los créditos cuya modalidad indique "Pago(s) único(s)"
-        base = base.filter(d => esPagoUnico(d["modalidad"] || d["Modalidad"] || d.modalidad || d.Modalidad));
+        base = base.filter(cumplePagosUnicos);
       } else { // TODOS -> aplicar umbral de días sin gestión
         base = base.filter(d => {
           const dias = parseDiasSinGestion(d["Dias sin Gestion"]);
@@ -537,11 +593,9 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
       cont.innerHTML = "";
 
       if (sucSel !== "TODAS") {
-        // Solo una sucursal
         if (!sucSel) { alert("Selecciona una Sucursal."); return; }
         renderTarjetasPorSucursal(base, sucSel);
       } else {
-        // Todas: iterar por sucursal (orden alfabético)
         const sucursales = [...new Set(base.map(d => d.Sucursal))].filter(Boolean).sort((a,b)=>a.localeCompare(b,'es'));
         if (sucursales.length === 0) {
           cont.innerHTML = `<div class="alert alert-info">No se encontraron créditos con los criterios seleccionados.</div>`;
@@ -575,11 +629,14 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
         tbody.innerHTML += `
           <tr>
             <td>${c.Linea ?? ""}</td>
+            <td>${valProducto(c)}</td>
+            <td>${valSocio(c)}</td>
             <td>${c.Nombre ?? ""}</td>
             <td class="text-end">${saldo.toLocaleString("es-MX", { style: "currency", currency: "MXN" })}</td>
             <td class="text-center">${c["Dias de Atraso"] ?? ""}</td>
             <td class="text-center">${dsgDisplay}</td>
-          </tr>
+            <td class="text-center">${valFase(c)}</td>
+         </tr>
         `;
       });
 
@@ -624,7 +681,7 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
         startY,
         body: [[text]],
         theme: "plain",
-        styles: { fontSize: 11, halign: "justify", cellPadding: 1.2 },
+        styles: { fontSize: 9, halign: "justify", cellPadding: 1.2 },
         margin: env.marginFor(left, right),
         didDrawPage: env.didDrawPage
       });
@@ -678,45 +735,53 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
         const dsgDisplay = (dsgParsed === null) ? "SIN GESTIÓN" : dsgParsed;
         return [
           c.Linea ?? "",
+          valProducto(c),
+          valSocio(c),
           c.Nombre ?? "",
           toNumberSafe(c["Saldo Total"]).toLocaleString("es-MX", { style: "currency", currency: "MXN" }),
           c["Dias de Atraso"] ?? "",
-          dsgDisplay
+          dsgDisplay,
+          valFase(c)
         ];
       });
 
       doc.autoTable({
         startY: y,
-        head: [["Crédito","Nombre del Socio","Saldo","Días atraso","Días sin gestión"]],
+        head: [["Crédito","Producto","Socio","Nombre del Socio","Saldo","Días atraso","Días sin gestión","Fase"]],
         body: rows,
-        styles: { fontSize: 9, cellPadding: 1.5, lineWidth: 0.1, valign: "middle" },
-        headStyles: { fillColor: [0,0,0], textColor: [255,255,255], halign: "center" },
-        columnStyles: { 3: { halign: "center" }, 4: { halign: "center" } },
+        styles: { fontSize: 8, cellPadding: 1.3, lineWidth: 0.1, valign: "middle" },
+        headStyles: { fillColor: [0,0,0], textColor: [255,255,255], halign: "center", fontSize: 8 },
+        columnStyles: {
+          0: { halign: "left" },
+          1: { halign: "center" },
+          2: { halign: "left" },
+          3: { halign: "center" },
+          4: { halign: "right" },
+          5: { halign: "center" },
+          6: { halign: "center" },
+          7: { halign: "center" }
+        },
         margin: env.marginFor(40, 40),
         didDrawPage: env.didDrawPage
       });
       y = (doc.lastAutoTable?.finalY || y) + 8; y = env.ensureSpace(y, 10);
 
-      // Total (CENTRADO)
+      // Total (centrado)
       doc.setFontSize(11);
       const totalImporte = creditos.reduce((acc, c) => acc + toNumberSafe(c["Saldo Total"]), 0);
       doc.text(`TOTAL: ${totalImporte.toLocaleString("es-MX", { style: "currency", currency: "MXN" })}`, pageWidth/2, y, { align: "center" });
       y += 12;
 
       if (tipo === "acta") {
-        // Hechos, Faltas, Determinación
         y = addParagraph(doc, textos.hechos, y, env, 50, 50); y = (doc.lastAutoTable?.finalY || y) + 6;
         y = addParagraph(doc, textos.faltas, y, env, 50, 50); y = (doc.lastAutoTable?.finalY || y) + 6;
         y = addParagraph(doc, textos.determinacion, y, env, 50, 50);
 
-        // Espacio ~8 saltos de línea (96pt)
         y = (doc.lastAutoTable?.finalY || y) + 96;
 
-        // Cierre (+30 min del inicio)
         y = addParagraph(doc, textos.cierre, y, env, 50, 50); y = (doc.lastAutoTable?.finalY || y) + 18;
 
-        // ===== Firmas (4) =====
-        const colW = (pageWidth - 100 - 40) / 2; // márgenes 50, gap 40
+        const colW = (pageWidth - 100 - 40) / 2;
         const x1 = 50, x2 = 50 + colW + 40;
         function firmaBlock(x, y0, nombre, puesto) {
           y0 = env.ensureSpace(y0, 90);
@@ -732,7 +797,6 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
         let y2 = y + 6; y2 = firmaBlock(x1, y2, firmanteCoord, "Coordinador de Recuperación");
         firmaBlock(x2, y2 - 90, asesor, "Asesor de Créditos y Recuperación Individual");
       } else {
-        // EXHORTO – cierre y firma
         const { postTabla } = getTextosDocumento("exhorto", diasMinimos);
         y = addParagraph(doc, postTabla, y, env, 50, 50); y = (doc.lastAutoTable?.finalY || y) + 18;
 
