@@ -16,6 +16,7 @@
         "Coordinador":  "ALCNCA",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "156",
         "Cuotas Vencidas":  null
     },
@@ -36,6 +37,7 @@
         "Coordinador":  "ALCNCA",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "156",
         "Cuotas Vencidas":  null
     },
@@ -56,6 +58,7 @@
         "Coordinador":  "ALCNCA",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "156",
         "Cuotas Vencidas":  null
     },
@@ -76,6 +79,7 @@
         "Coordinador":  "MISADA",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "24",
         "Cuotas Vencidas":  null
     },
@@ -96,6 +100,7 @@
         "Coordinador":  "ALCNCA",
         "Banda":  "B5",
         "Coordinacion":  "ACREINOMINA",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "24",
         "Cuotas Vencidas":  null
     },
@@ -116,6 +121,7 @@
         "Coordinador":  "FAPERO",
         "Banda":  "B5",
         "Coordinacion":  "AGRONEGOCIOS",
+        "Fase":  "JUDICIAL",
         "Cuotas":  "60",
         "Cuotas Vencidas":  null
     },
@@ -136,6 +142,7 @@
         "Coordinador":  "FAPERO",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "24",
         "Cuotas Vencidas":  null
     },
@@ -156,6 +163,7 @@
         "Coordinador":  "ALCNCA",
         "Banda":  "B5",
         "Coordinacion":  "VIVIENDA",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "36",
         "Cuotas Vencidas":  null
     },
@@ -176,6 +184,7 @@
         "Coordinador":  "ALCNCA",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "104",
         "Cuotas Vencidas":  null
     },
@@ -196,6 +205,7 @@
         "Coordinador":  "ALCNCA",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "36",
         "Cuotas Vencidas":  null
     },
@@ -216,6 +226,7 @@
         "Coordinador":  "ALCNCA",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "36",
         "Cuotas Vencidas":  null
     },
@@ -236,6 +247,7 @@
         "Coordinador":  "MISADA",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "18",
         "Cuotas Vencidas":  null
     },
@@ -256,6 +268,7 @@
         "Coordinador":  "MISADA",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "24",
         "Cuotas Vencidas":  null
     },
@@ -276,6 +289,7 @@
         "Coordinador":  "INANME",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "12",
         "Cuotas Vencidas":  null
     },
@@ -296,6 +310,7 @@
         "Coordinador":  "INANME",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "12",
         "Cuotas Vencidas":  null
     },
@@ -316,6 +331,7 @@
         "Coordinador":  "DASADI",
         "Banda":  "B5",
         "Coordinacion":  "GRUPALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "18",
         "Cuotas Vencidas":  null
     },
@@ -336,6 +352,7 @@
         "Coordinador":  "DASADI",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "ADMINISTRATIVA",
         "Cuotas":  "24",
         "Cuotas Vencidas":  null
     },
@@ -356,6 +373,7 @@
         "Coordinador":  "DASADI",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "12",
         "Cuotas Vencidas":  null
     },
@@ -376,6 +394,7 @@
         "Coordinador":  "DASADI",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "24",
         "Cuotas Vencidas":  null
     },
@@ -396,6 +415,7 @@
         "Coordinador":  "DASADI",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "ADMINISTRATIVA",
         "Cuotas":  "28",
         "Cuotas Vencidas":  null
     },
@@ -416,6 +436,7 @@
         "Coordinador":  "DASADI",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "ADMINISTRATIVA",
         "Cuotas":  "6",
         "Cuotas Vencidas":  null
     },
@@ -436,6 +457,7 @@
         "Coordinador":  "FAPERO",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "36",
         "Cuotas Vencidas":  null
     },
@@ -456,6 +478,7 @@
         "Coordinador":  "MISADA",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "36",
         "Cuotas Vencidas":  null
     },
@@ -476,6 +499,7 @@
         "Coordinador":  "MISADA",
         "Banda":  "B5",
         "Coordinacion":  "ACREINOMINA",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "120",
         "Cuotas Vencidas":  null
     },
@@ -496,6 +520,7 @@
         "Coordinador":  "MISADA",
         "Banda":  "B5",
         "Coordinacion":  "ACREINOMINA",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "120",
         "Cuotas Vencidas":  null
     },
@@ -516,6 +541,7 @@
         "Coordinador":  "MISADA",
         "Banda":  "B5",
         "Coordinacion":  "VIVIENDA",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "60",
         "Cuotas Vencidas":  null
     },
@@ -536,6 +562,7 @@
         "Coordinador":  "MISADA",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "24",
         "Cuotas Vencidas":  null
     },
@@ -556,6 +583,7 @@
         "Coordinador":  "MISADA",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "ADMINISTRATIVA",
         "Cuotas":  "72",
         "Cuotas Vencidas":  null
     },
@@ -576,6 +604,7 @@
         "Coordinador":  "MCRAVI",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "24",
         "Cuotas Vencidas":  null
     },
@@ -596,6 +625,7 @@
         "Coordinador":  "MCRAVI",
         "Banda":  "B5",
         "Coordinacion":  "VIVIENDA",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "36",
         "Cuotas Vencidas":  null
     },
@@ -616,6 +646,7 @@
         "Coordinador":  "MCRAVI",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "12",
         "Cuotas Vencidas":  null
     },
@@ -636,6 +667,7 @@
         "Coordinador":  "MCRAVI",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "12",
         "Cuotas Vencidas":  null
     },
@@ -656,6 +688,7 @@
         "Coordinador":  "MISADA",
         "Banda":  "B5",
         "Coordinacion":  "VIVIENDA",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "30",
         "Cuotas Vencidas":  null
     },
@@ -676,6 +709,7 @@
         "Coordinador":  "MISADA",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "24",
         "Cuotas Vencidas":  null
     },
@@ -696,6 +730,7 @@
         "Coordinador":  "MISADA",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "24",
         "Cuotas Vencidas":  null
     },
@@ -716,6 +751,7 @@
         "Coordinador":  "MISADA",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "24",
         "Cuotas Vencidas":  null
     },
@@ -736,6 +772,7 @@
         "Coordinador":  "MISADA",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "ADMINISTRATIVA",
         "Cuotas":  "18",
         "Cuotas Vencidas":  null
     },
@@ -756,6 +793,7 @@
         "Coordinador":  "MISADA",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "18",
         "Cuotas Vencidas":  null
     },
@@ -776,6 +814,7 @@
         "Coordinador":  "MISADA",
         "Banda":  "B5",
         "Coordinacion":  "GRUPALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "14",
         "Cuotas Vencidas":  null
     },
@@ -796,6 +835,7 @@
         "Coordinador":  "MISADA",
         "Banda":  "B5",
         "Coordinacion":  "GRUPALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "14",
         "Cuotas Vencidas":  null
     },
@@ -816,6 +856,7 @@
         "Coordinador":  "MISADA",
         "Banda":  "B5",
         "Coordinacion":  "GRUPALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "14",
         "Cuotas Vencidas":  null
     },
@@ -836,6 +877,7 @@
         "Coordinador":  "MISADA",
         "Banda":  "B5",
         "Coordinacion":  "GRUPALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "14",
         "Cuotas Vencidas":  null
     },
@@ -856,6 +898,7 @@
         "Coordinador":  "MISADA",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "ADMINISTRATIVA",
         "Cuotas":  "24",
         "Cuotas Vencidas":  null
     },
@@ -876,6 +919,7 @@
         "Coordinador":  "MISADA",
         "Banda":  "B5",
         "Coordinacion":  "GRUPALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "14",
         "Cuotas Vencidas":  null
     },
@@ -896,6 +940,7 @@
         "Coordinador":  "MISADA",
         "Banda":  "B5",
         "Coordinacion":  "GRUPALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "10",
         "Cuotas Vencidas":  null
     },
@@ -916,6 +961,7 @@
         "Coordinador":  "MISADA",
         "Banda":  "B5",
         "Coordinacion":  "GRUPALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "10",
         "Cuotas Vencidas":  null
     },
@@ -936,6 +982,7 @@
         "Coordinador":  "MISADA",
         "Banda":  "B5",
         "Coordinacion":  "GRUPALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "10",
         "Cuotas Vencidas":  null
     },
@@ -956,6 +1003,7 @@
         "Coordinador":  "MISADA",
         "Banda":  "B5",
         "Coordinacion":  "GRUPALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "10",
         "Cuotas Vencidas":  null
     },
@@ -976,6 +1024,7 @@
         "Coordinador":  "MISADA",
         "Banda":  "B5",
         "Coordinacion":  "GRUPALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "10",
         "Cuotas Vencidas":  null
     },
@@ -996,6 +1045,7 @@
         "Coordinador":  "MISADA",
         "Banda":  "B5",
         "Coordinacion":  "ACREINOMINA",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "120",
         "Cuotas Vencidas":  null
     },
@@ -1016,6 +1066,7 @@
         "Coordinador":  "MCRAVI",
         "Banda":  "B5",
         "Coordinacion":  "ACREINOMINA",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "120",
         "Cuotas Vencidas":  null
     },
@@ -1036,6 +1087,7 @@
         "Coordinador":  "MCRAVI",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "36",
         "Cuotas Vencidas":  null
     },
@@ -1056,6 +1108,7 @@
         "Coordinador":  "MCRAVI",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "ADMINISTRATIVA",
         "Cuotas":  "24",
         "Cuotas Vencidas":  null
     },
@@ -1076,6 +1129,7 @@
         "Coordinador":  "MCRAVI",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "ADMINISTRATIVA",
         "Cuotas":  "24",
         "Cuotas Vencidas":  null
     },
@@ -1096,6 +1150,7 @@
         "Coordinador":  "MCRAVI",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "ADMINISTRATIVA",
         "Cuotas":  "24",
         "Cuotas Vencidas":  null
     },
@@ -1116,6 +1171,7 @@
         "Coordinador":  "MCRAVI",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "24",
         "Cuotas Vencidas":  null
     },
@@ -1136,6 +1192,7 @@
         "Coordinador":  "MCRAVI",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "ADMINISTRATIVA",
         "Cuotas":  "12",
         "Cuotas Vencidas":  null
     },
@@ -1156,6 +1213,7 @@
         "Coordinador":  "ALCNCA",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "72",
         "Cuotas Vencidas":  null
     },
@@ -1176,6 +1234,7 @@
         "Coordinador":  "ALCNCA",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "24",
         "Cuotas Vencidas":  null
     },
@@ -1196,6 +1255,7 @@
         "Coordinador":  "ALCNCA",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "24",
         "Cuotas Vencidas":  null
     },
@@ -1216,6 +1276,7 @@
         "Coordinador":  "ALCNCA",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "12",
         "Cuotas Vencidas":  null
     },
@@ -1236,6 +1297,7 @@
         "Coordinador":  "MCRAVI",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "96",
         "Cuotas Vencidas":  null
     },
@@ -1256,6 +1318,7 @@
         "Coordinador":  "MISADA",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "36",
         "Cuotas Vencidas":  null
     },
@@ -1276,6 +1339,7 @@
         "Coordinador":  "ALCNCA",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "30",
         "Cuotas Vencidas":  null
     },
@@ -1296,6 +1360,7 @@
         "Coordinador":  "ALCNCA",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "130",
         "Cuotas Vencidas":  null
     },
@@ -1316,6 +1381,7 @@
         "Coordinador":  "MISADA",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "36",
         "Cuotas Vencidas":  null
     },
@@ -1336,6 +1402,7 @@
         "Coordinador":  "MISADA",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "24",
         "Cuotas Vencidas":  null
     },
@@ -1356,6 +1423,7 @@
         "Coordinador":  "MISADA",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "30",
         "Cuotas Vencidas":  null
     },
@@ -1376,6 +1444,7 @@
         "Coordinador":  "MISADA",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "36",
         "Cuotas Vencidas":  null
     },
@@ -1396,6 +1465,7 @@
         "Coordinador":  "MISADA",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "12",
         "Cuotas Vencidas":  null
     },
@@ -1416,6 +1486,7 @@
         "Coordinador":  "MISADA",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "36",
         "Cuotas Vencidas":  null
     },
@@ -1436,6 +1507,7 @@
         "Coordinador":  "MISADA",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "ADMINISTRATIVA",
         "Cuotas":  "12",
         "Cuotas Vencidas":  null
     },
@@ -1456,6 +1528,7 @@
         "Coordinador":  "MCRAVI",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "12",
         "Cuotas Vencidas":  null
     },
@@ -1476,6 +1549,7 @@
         "Coordinador":  "ALCNCA",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "24",
         "Cuotas Vencidas":  null
     },
@@ -1496,6 +1570,7 @@
         "Coordinador":  "INANME",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "24",
         "Cuotas Vencidas":  null
     },
@@ -1516,6 +1591,7 @@
         "Coordinador":  "INANME",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "12",
         "Cuotas Vencidas":  null
     },
@@ -1536,6 +1612,7 @@
         "Coordinador":  "INANME",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "24",
         "Cuotas Vencidas":  null
     },
@@ -1556,6 +1633,7 @@
         "Coordinador":  "INANME",
         "Banda":  "B5",
         "Coordinacion":  "GRUPALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "16",
         "Cuotas Vencidas":  null
     },
@@ -1576,6 +1654,7 @@
         "Coordinador":  "INANME",
         "Banda":  "B5",
         "Coordinacion":  "GRUPALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "16",
         "Cuotas Vencidas":  null
     },
@@ -1596,6 +1675,7 @@
         "Coordinador":  "INANME",
         "Banda":  "B5",
         "Coordinacion":  "GRUPALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "16",
         "Cuotas Vencidas":  null
     },
@@ -1616,6 +1696,7 @@
         "Coordinador":  "INANME",
         "Banda":  "B5",
         "Coordinacion":  "GRUPALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "16",
         "Cuotas Vencidas":  null
     },
@@ -1636,6 +1717,7 @@
         "Coordinador":  "INANME",
         "Banda":  "B5",
         "Coordinacion":  "GRUPALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "16",
         "Cuotas Vencidas":  null
     },
@@ -1656,6 +1738,7 @@
         "Coordinador":  "INANME",
         "Banda":  "B5",
         "Coordinacion":  "GRUPALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "16",
         "Cuotas Vencidas":  null
     },
@@ -1676,6 +1759,7 @@
         "Coordinador":  "INANME",
         "Banda":  "B5",
         "Coordinacion":  "GRUPALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "16",
         "Cuotas Vencidas":  null
     },
@@ -1696,6 +1780,7 @@
         "Coordinador":  "INANME",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "12",
         "Cuotas Vencidas":  null
     },
@@ -1716,6 +1801,7 @@
         "Coordinador":  "INANME",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "ADMINISTRATIVA",
         "Cuotas":  "18",
         "Cuotas Vencidas":  null
     },
@@ -1736,6 +1822,7 @@
         "Coordinador":  "INANME",
         "Banda":  "B5",
         "Coordinacion":  "GRUPALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "20",
         "Cuotas Vencidas":  null
     },
@@ -1756,6 +1843,7 @@
         "Coordinador":  "INANME",
         "Banda":  "B5",
         "Coordinacion":  "GRUPALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "20",
         "Cuotas Vencidas":  null
     },
@@ -1776,6 +1864,7 @@
         "Coordinador":  "INANME",
         "Banda":  "B5",
         "Coordinacion":  "GRUPALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "20",
         "Cuotas Vencidas":  null
     },
@@ -1796,6 +1885,7 @@
         "Coordinador":  "INANME",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "ADMINISTRATIVA",
         "Cuotas":  "12",
         "Cuotas Vencidas":  null
     },
@@ -1816,6 +1906,7 @@
         "Coordinador":  "INANME",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "ADMINISTRATIVA",
         "Cuotas":  "12",
         "Cuotas Vencidas":  null
     },
@@ -1836,6 +1927,7 @@
         "Coordinador":  "DASADI",
         "Banda":  "B5",
         "Coordinacion":  "GRUPALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "12",
         "Cuotas Vencidas":  null
     },
@@ -1856,6 +1948,7 @@
         "Coordinador":  "DASADI",
         "Banda":  "B5",
         "Coordinacion":  "GRUPALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "18",
         "Cuotas Vencidas":  null
     },
@@ -1876,6 +1969,7 @@
         "Coordinador":  "DASADI",
         "Banda":  "B5",
         "Coordinacion":  "GRUPALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "25",
         "Cuotas Vencidas":  null
     },
@@ -1896,6 +1990,7 @@
         "Coordinador":  "DASADI",
         "Banda":  "B5",
         "Coordinacion":  "GRUPALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "25",
         "Cuotas Vencidas":  null
     },
@@ -1916,6 +2011,7 @@
         "Coordinador":  "DASADI",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "12",
         "Cuotas Vencidas":  null
     },
@@ -1936,6 +2032,7 @@
         "Coordinador":  "FAPERO",
         "Banda":  "B5",
         "Coordinacion":  "AGRONEGOCIOS",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "48",
         "Cuotas Vencidas":  null
     },
@@ -1956,6 +2053,7 @@
         "Coordinador":  "FAPERO",
         "Banda":  "B5",
         "Coordinacion":  "EMPRESARIAL",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "60",
         "Cuotas Vencidas":  null
     },
@@ -1976,6 +2074,7 @@
         "Coordinador":  "FAPERO",
         "Banda":  "B5",
         "Coordinacion":  "AGRONEGOCIOS",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "36",
         "Cuotas Vencidas":  null
     },
@@ -1996,6 +2095,7 @@
         "Coordinador":  "FAPERO",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "24",
         "Cuotas Vencidas":  null
     },
@@ -2016,6 +2116,7 @@
         "Coordinador":  "FAPERO",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "24",
         "Cuotas Vencidas":  null
     },
@@ -2036,6 +2137,7 @@
         "Coordinador":  "FAPERO",
         "Banda":  "B5",
         "Coordinacion":  "EMPRESARIAL",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "60",
         "Cuotas Vencidas":  null
     },
@@ -2056,6 +2158,7 @@
         "Coordinador":  "FAPERO",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "ADMINISTRATIVA",
         "Cuotas":  "52",
         "Cuotas Vencidas":  null
     },
@@ -2076,6 +2179,7 @@
         "Coordinador":  "INANME",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "24",
         "Cuotas Vencidas":  null
     },
@@ -2096,6 +2200,7 @@
         "Coordinador":  "INANME",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "36",
         "Cuotas Vencidas":  null
     },
@@ -2116,6 +2221,7 @@
         "Coordinador":  "INANME",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "36",
         "Cuotas Vencidas":  null
     },
@@ -2136,6 +2242,7 @@
         "Coordinador":  "INANME",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "24",
         "Cuotas Vencidas":  null
     },
@@ -2156,6 +2263,7 @@
         "Coordinador":  "INANME",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "36",
         "Cuotas Vencidas":  null
     },
@@ -2176,6 +2284,7 @@
         "Coordinador":  "INANME",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "24",
         "Cuotas Vencidas":  null
     },
@@ -2196,6 +2305,7 @@
         "Coordinador":  "INANME",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "24",
         "Cuotas Vencidas":  null
     },
@@ -2216,6 +2326,7 @@
         "Coordinador":  "INANME",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "24",
         "Cuotas Vencidas":  null
     },
@@ -2236,6 +2347,7 @@
         "Coordinador":  "INANME",
         "Banda":  "B5",
         "Coordinacion":  "VIVIENDA",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "60",
         "Cuotas Vencidas":  null
     },
@@ -2256,6 +2368,7 @@
         "Coordinador":  "MISADA",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "24",
         "Cuotas Vencidas":  null
     },
@@ -2276,6 +2389,7 @@
         "Coordinador":  "ALCNCA",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "156",
         "Cuotas Vencidas":  null
     },
@@ -2296,6 +2410,7 @@
         "Coordinador":  "FAPERO",
         "Banda":  "B5",
         "Coordinacion":  "ACREINOMINA",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "104",
         "Cuotas Vencidas":  null
     },
@@ -2316,6 +2431,7 @@
         "Coordinador":  "FAPERO",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "12",
         "Cuotas Vencidas":  null
     },
@@ -2336,6 +2452,7 @@
         "Coordinador":  "MISADA",
         "Banda":  "B5",
         "Coordinacion":  "ACREINOMINA",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "96",
         "Cuotas Vencidas":  null
     },
@@ -2356,6 +2473,7 @@
         "Coordinador":  "MISADA",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "24",
         "Cuotas Vencidas":  null
     },
@@ -2376,6 +2494,7 @@
         "Coordinador":  "MCRAVI",
         "Banda":  "B5",
         "Coordinacion":  "AGRONEGOCIOS",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "12",
         "Cuotas Vencidas":  null
     },
@@ -2396,6 +2515,7 @@
         "Coordinador":  "DASADI",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "36",
         "Cuotas Vencidas":  null
     },
@@ -2416,6 +2536,7 @@
         "Coordinador":  "DASADI",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "24",
         "Cuotas Vencidas":  null
     },
@@ -2436,6 +2557,7 @@
         "Coordinador":  "DASADI",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "18",
         "Cuotas Vencidas":  null
     },
@@ -2456,6 +2578,7 @@
         "Coordinador":  "DASADI",
         "Banda":  "B5",
         "Coordinacion":  "ACREINOMINA",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "120",
         "Cuotas Vencidas":  null
     },
@@ -2476,6 +2599,7 @@
         "Coordinador":  "DASADI",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "36",
         "Cuotas Vencidas":  null
     },
@@ -2496,6 +2620,7 @@
         "Coordinador":  "DASADI",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "30",
         "Cuotas Vencidas":  null
     },
@@ -2516,6 +2641,7 @@
         "Coordinador":  "DASADI",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "12",
         "Cuotas Vencidas":  null
     },
@@ -2536,6 +2662,7 @@
         "Coordinador":  "DASADI",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "ADMINISTRATIVA",
         "Cuotas":  "8",
         "Cuotas Vencidas":  null
     },
@@ -2556,6 +2683,7 @@
         "Coordinador":  "DASADI",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "ADMINISTRATIVA",
         "Cuotas":  "18",
         "Cuotas Vencidas":  null
     },
@@ -2576,6 +2704,7 @@
         "Coordinador":  "DASADI",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "ADMINISTRATIVA",
         "Cuotas":  "14",
         "Cuotas Vencidas":  null
     },
@@ -2596,6 +2725,7 @@
         "Coordinador":  "MCRAVI",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "156",
         "Cuotas Vencidas":  null
     },
@@ -2616,6 +2746,7 @@
         "Coordinador":  "MCRAVI",
         "Banda":  "B5",
         "Coordinacion":  "AGRONEGOCIOS",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "5",
         "Cuotas Vencidas":  null
     },
@@ -2636,6 +2767,7 @@
         "Coordinador":  "MCRAVI",
         "Banda":  "B5",
         "Coordinacion":  "GRUPALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "18",
         "Cuotas Vencidas":  null
     },
@@ -2656,6 +2788,7 @@
         "Coordinador":  "MCRAVI",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "12",
         "Cuotas Vencidas":  null
     },
@@ -2676,6 +2809,7 @@
         "Coordinador":  "MISADA",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "24",
         "Cuotas Vencidas":  null
     },
@@ -2696,6 +2830,7 @@
         "Coordinador":  "MISADA",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "24",
         "Cuotas Vencidas":  null
     },
@@ -2716,6 +2851,7 @@
         "Coordinador":  "MISADA",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "24",
         "Cuotas Vencidas":  null
     },
@@ -2736,6 +2872,7 @@
         "Coordinador":  "MISADA",
         "Banda":  "B5",
         "Coordinacion":  "VIVIENDA",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "30",
         "Cuotas Vencidas":  null
     },
@@ -2756,6 +2893,7 @@
         "Coordinador":  "MISADA",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "24",
         "Cuotas Vencidas":  null
     },
@@ -2776,6 +2914,7 @@
         "Coordinador":  "MISADA",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "18",
         "Cuotas Vencidas":  null
     },
@@ -2796,6 +2935,7 @@
         "Coordinador":  "MISADA",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "12",
         "Cuotas Vencidas":  null
     },
@@ -2816,6 +2956,7 @@
         "Coordinador":  "MISADA",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "18",
         "Cuotas Vencidas":  null
     },
@@ -2836,6 +2977,7 @@
         "Coordinador":  "MISADA",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "14",
         "Cuotas Vencidas":  null
     },
@@ -2856,6 +2998,7 @@
         "Coordinador":  "MISADA",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "12",
         "Cuotas Vencidas":  null
     },
@@ -2876,6 +3019,7 @@
         "Coordinador":  "MISADA",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "ADMINISTRATIVA",
         "Cuotas":  "12",
         "Cuotas Vencidas":  null
     },
@@ -2896,6 +3040,7 @@
         "Coordinador":  "MISADA",
         "Banda":  "B5",
         "Coordinacion":  "AGRONEGOCIOS",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "24",
         "Cuotas Vencidas":  null
     },
@@ -2916,6 +3061,7 @@
         "Coordinador":  "MISADA",
         "Banda":  "B5",
         "Coordinacion":  "GRUPALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "6",
         "Cuotas Vencidas":  null
     },
@@ -2936,6 +3082,7 @@
         "Coordinador":  "MISADA",
         "Banda":  "B5",
         "Coordinacion":  "GRUPALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "16",
         "Cuotas Vencidas":  null
     },
@@ -2956,6 +3103,7 @@
         "Coordinador":  "MISADA",
         "Banda":  "B5",
         "Coordinacion":  "GRUPALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "16",
         "Cuotas Vencidas":  null
     },
@@ -2976,6 +3124,7 @@
         "Coordinador":  "MISADA",
         "Banda":  "B5",
         "Coordinacion":  "GRUPALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "16",
         "Cuotas Vencidas":  null
     },
@@ -2996,6 +3145,7 @@
         "Coordinador":  "MISADA",
         "Banda":  "B5",
         "Coordinacion":  "GRUPALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "16",
         "Cuotas Vencidas":  null
     },
@@ -3016,6 +3166,7 @@
         "Coordinador":  "MISADA",
         "Banda":  "B5",
         "Coordinacion":  "GRUPALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "16",
         "Cuotas Vencidas":  null
     },
@@ -3036,6 +3187,7 @@
         "Coordinador":  "MISADA",
         "Banda":  "B5",
         "Coordinacion":  "GRUPALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "16",
         "Cuotas Vencidas":  null
     },
@@ -3056,6 +3208,7 @@
         "Coordinador":  "MISADA",
         "Banda":  "B5",
         "Coordinacion":  "GRUPALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "16",
         "Cuotas Vencidas":  null
     },
@@ -3076,6 +3229,7 @@
         "Coordinador":  "MISADA",
         "Banda":  "B5",
         "Coordinacion":  "GRUPALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "16",
         "Cuotas Vencidas":  null
     },
@@ -3096,6 +3250,7 @@
         "Coordinador":  "MISADA",
         "Banda":  "B5",
         "Coordinacion":  "GRUPALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "16",
         "Cuotas Vencidas":  null
     },
@@ -3116,6 +3271,7 @@
         "Coordinador":  "MISADA",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "36",
         "Cuotas Vencidas":  null
     },
@@ -3136,6 +3292,7 @@
         "Coordinador":  "MISADA",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "52",
         "Cuotas Vencidas":  null
     },
@@ -3156,6 +3313,7 @@
         "Coordinador":  "ALCNCA",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "15",
         "Cuotas Vencidas":  null
     },
@@ -3176,6 +3334,7 @@
         "Coordinador":  "MISADA",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "18",
         "Cuotas Vencidas":  null
     },
@@ -3196,6 +3355,7 @@
         "Coordinador":  "MISADA",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "24",
         "Cuotas Vencidas":  null
     },
@@ -3216,6 +3376,7 @@
         "Coordinador":  "MISADA",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "24",
         "Cuotas Vencidas":  null
     },
@@ -3236,6 +3397,7 @@
         "Coordinador":  "MISADA",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "24",
         "Cuotas Vencidas":  null
     },
@@ -3256,6 +3418,7 @@
         "Coordinador":  "MISADA",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "36",
         "Cuotas Vencidas":  null
     },
@@ -3276,6 +3439,7 @@
         "Coordinador":  "DASADI",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "24",
         "Cuotas Vencidas":  null
     },
@@ -3296,6 +3460,7 @@
         "Coordinador":  "DASADI",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "12",
         "Cuotas Vencidas":  null
     },
@@ -3316,6 +3481,7 @@
         "Coordinador":  "ALCNCA",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "36",
         "Cuotas Vencidas":  null
     },
@@ -3336,6 +3502,7 @@
         "Coordinador":  "ALCNCA",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "24",
         "Cuotas Vencidas":  null
     },
@@ -3356,6 +3523,7 @@
         "Coordinador":  "FAPERO",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "24",
         "Cuotas Vencidas":  null
     },
@@ -3376,6 +3544,7 @@
         "Coordinador":  "FAPERO",
         "Banda":  "B5",
         "Coordinacion":  "VIVIENDA",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "120",
         "Cuotas Vencidas":  null
     },
@@ -3396,6 +3565,7 @@
         "Coordinador":  "DASADI",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "36",
         "Cuotas Vencidas":  null
     },
@@ -3416,6 +3586,7 @@
         "Coordinador":  "DASADI",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "36",
         "Cuotas Vencidas":  null
     },
@@ -3436,6 +3607,7 @@
         "Coordinador":  "DASADI",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "18",
         "Cuotas Vencidas":  null
     },
@@ -3456,6 +3628,7 @@
         "Coordinador":  "DASADI",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "24",
         "Cuotas Vencidas":  null
     },
@@ -3476,6 +3649,7 @@
         "Coordinador":  "DASADI",
         "Banda":  "B5",
         "Coordinacion":  "GRUPALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "16",
         "Cuotas Vencidas":  null
     },
@@ -3496,6 +3670,7 @@
         "Coordinador":  "DASADI",
         "Banda":  "B5",
         "Coordinacion":  "GRUPALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "16",
         "Cuotas Vencidas":  null
     },
@@ -3516,6 +3691,7 @@
         "Coordinador":  "DASADI",
         "Banda":  "B5",
         "Coordinacion":  "GRUPALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "16",
         "Cuotas Vencidas":  null
     },
@@ -3536,6 +3712,7 @@
         "Coordinador":  "ALCNCA",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "48",
         "Cuotas Vencidas":  null
     },
@@ -3556,6 +3733,7 @@
         "Coordinador":  "MISADA",
         "Banda":  "B5",
         "Coordinacion":  "ACREINOMINA",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "48",
         "Cuotas Vencidas":  null
     },
@@ -3576,6 +3754,7 @@
         "Coordinador":  "MISADA",
         "Banda":  "B5",
         "Coordinacion":  "ACREINOMINA",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "120",
         "Cuotas Vencidas":  null
     },
@@ -3596,6 +3775,7 @@
         "Coordinador":  "MISADA",
         "Banda":  "B5",
         "Coordinacion":  "ACREINOMINA",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "120",
         "Cuotas Vencidas":  null
     },
@@ -3616,6 +3796,7 @@
         "Coordinador":  "MISADA",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "12",
         "Cuotas Vencidas":  null
     },
@@ -3636,6 +3817,7 @@
         "Coordinador":  "MISADA",
         "Banda":  "B5",
         "Coordinacion":  "GRUPALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "12",
         "Cuotas Vencidas":  null
     },
@@ -3656,6 +3838,7 @@
         "Coordinador":  "MCRAVI",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "36",
         "Cuotas Vencidas":  null
     },
@@ -3676,6 +3859,7 @@
         "Coordinador":  "MCRAVI",
         "Banda":  "B5",
         "Coordinacion":  "VIVIENDA",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "30",
         "Cuotas Vencidas":  null
     },
@@ -3696,6 +3880,7 @@
         "Coordinador":  "MCRAVI",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "24",
         "Cuotas Vencidas":  null
     },
@@ -3716,6 +3901,7 @@
         "Coordinador":  "ALCNCA",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "36",
         "Cuotas Vencidas":  null
     },
@@ -3736,6 +3922,7 @@
         "Coordinador":  "ALCNCA",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "36",
         "Cuotas Vencidas":  null
     },
@@ -3756,6 +3943,7 @@
         "Coordinador":  "ALCNCA",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "36",
         "Cuotas Vencidas":  null
     },
@@ -3776,6 +3964,7 @@
         "Coordinador":  "ALCNCA",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "36",
         "Cuotas Vencidas":  null
     },
@@ -3796,6 +3985,7 @@
         "Coordinador":  "ALCNCA",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "30",
         "Cuotas Vencidas":  null
     },
@@ -3816,6 +4006,7 @@
         "Coordinador":  "ALCNCA",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "36",
         "Cuotas Vencidas":  null
     },
@@ -3836,6 +4027,7 @@
         "Coordinador":  "ALCNCA",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "18",
         "Cuotas Vencidas":  null
     },
@@ -3856,6 +4048,7 @@
         "Coordinador":  "ALCNCA",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "24",
         "Cuotas Vencidas":  null
     },
@@ -3876,6 +4069,7 @@
         "Coordinador":  "ALCNCA",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "24",
         "Cuotas Vencidas":  null
     },
@@ -3896,6 +4090,7 @@
         "Coordinador":  "ALCNCA",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "12",
         "Cuotas Vencidas":  null
     },
@@ -3916,6 +4111,7 @@
         "Coordinador":  "ALCNCA",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "18",
         "Cuotas Vencidas":  null
     },
@@ -3936,6 +4132,7 @@
         "Coordinador":  "MISADA",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "36",
         "Cuotas Vencidas":  null
     },
@@ -3956,6 +4153,7 @@
         "Coordinador":  "INANME",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "104",
         "Cuotas Vencidas":  null
     },
@@ -3976,6 +4174,7 @@
         "Coordinador":  "INANME",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "48",
         "Cuotas Vencidas":  null
     },
@@ -3996,6 +4195,7 @@
         "Coordinador":  "INANME",
         "Banda":  "B5",
         "Coordinacion":  "VIVIENDA",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "36",
         "Cuotas Vencidas":  null
     },
@@ -4016,6 +4216,7 @@
         "Coordinador":  "INANME",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "36",
         "Cuotas Vencidas":  null
     },
@@ -4036,6 +4237,7 @@
         "Coordinador":  "INANME",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "36",
         "Cuotas Vencidas":  null
     },
@@ -4056,6 +4258,7 @@
         "Coordinador":  "INANME",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "104",
         "Cuotas Vencidas":  null
     },
@@ -4076,6 +4279,7 @@
         "Coordinador":  "INANME",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "24",
         "Cuotas Vencidas":  null
     },
@@ -4096,6 +4300,7 @@
         "Coordinador":  "INANME",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "36",
         "Cuotas Vencidas":  null
     },
@@ -4116,6 +4321,7 @@
         "Coordinador":  "INANME",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "18",
         "Cuotas Vencidas":  null
     },
@@ -4136,6 +4342,7 @@
         "Coordinador":  "INANME",
         "Banda":  "B5",
         "Coordinacion":  "INDIVIDUALES",
+        "Fase":  "EXTRAJUDICIAL",
         "Cuotas":  "72",
         "Cuotas Vencidas":  null
     }
