@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Exhortos / Actas Administrativas</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+  <style>
+   
+    .table.table-sm th, .table.table-sm td { font-size: 10px; line-height: 1.10; }
+
+    #tablaPreview td:nth-child(1),
+    #tablaPreview td:nth-child(2) { text-align: center; }
+    #tablaPreview td:nth-child(3),
+    #tablaPreview td:nth-child(4) { text-align: left; }
+    #tablaPreview td:nth-child(5) { text-align: right; }
+    #tablaPreview td:nth-child(6),
+    #tablaPreview td:nth-child(7),
+    #tablaPreview td:nth-child(8) { text-align: center; }
+  </style>
+</head>
+<body class="container py-4">
+  <h1 class="mb-4">Seguimiento SemiAutomatico</h1>
+
+  
+  <div class="mb-4 row g-3">
+    <div class="col-md-3">
+      <label class="form-label">Cartera a revisar:</label>
+      <select id="carteraSelect" class="form-select">
+        <option value="">-- Selecciona --</option>
+        <option value="TODAS">Todas</option>
+        
+        <option value="ADMIN">Cartera Administrativa (Fase: Administrativa)</option>
+        <option value="EXTRA">Cartera Extrajudicial (Fase: Extrajudicial)</option>
+      </select>
+    </div>
+    <div class="col-md-3" id="mostrarDiv" style="display:none;">
+      <label class="form-label">¿Qué mostrar?</label>
+      <select id="mostrarSelect" class="form-select">
+        <option value="SIN">Solo créditos sin gestión</option>
+        <option value="TODOS">Todos</option>
+        <option value="PAGOS_UNICOS">Pagos únicos</option>
+      </select>
+    </div>
+
+   
+    <div class="col-md-3">
+      <label class="form-label">Coordinador que firma:</label>
+      <select id="coordinadorSelect" class="form-select"></select>
+    </div>
+
+    <div class="col-md-3">
+      <label class="form-label">Sucursal:</label>
+      <select id="sucursalSelect" class="form-select"></select>
+    </div>
+
+
+    <div class="col-md-3" id="subFirmanteDiv" style="display: none">
+      <label class="form-label">Firmante:</label>
+      <select id="subFirmanteSelect" class="form-select"></select>
+    </div>
+
+
+    <div class="col-md-3" id="diasMinimosDiv" style="display:none;">
+      <label class="form-label">Días mínimos sin gestión:</label>
+      <input type="number" id="diasMinimos" value="30" class="form-control" />
+      <div class="form-text">Aplica sólo si elegiste “Todos”.</div>
+    </div>
+  </div>
+
+  <div class="mb-4">
+    <button class="btn btn-primary w-100" id="btnAplicar">Aplicar</button>
+  </div>
+
+  <div id="contenido"></div>
+
+
+  <div class="modal fade" id="vistaPreviaModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Vista Previa del Documento</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <h6 id="asesorTitulo"></h6>
+          <div class="table-responsive">
+            <table class="table table-sm table-bordered align-middle">
+              <thead class="table-dark text-center">
+                <tr>
+                  <th>Crédito</th>
+                  <th>Producto</th>
+                  <th>Socio</th>
+                  <th>Nombre del Socio</th>
+                  <th>Saldo</th>
+                  <th>Días atraso</th>
+                  <th>Días sin gestión</th>
+                  <th>Fase</th>
+                </tr>
+              </thead>
+              <tbody id="tablaPreview"></tbody>
+            </table>
+          </div>
+          <h6 class="mt-3 text-center" id="totalPreview"></h6>
+        </div>
+        <div class="modal-footer gap-2">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+          <button class="btn btn-success" id="btnGenerarExhorto">Generar Exhorto</button>
+          <button class="btn btn-outline-success" id="btnGenerarActa">Generar Acta Administrativa</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+
+    const URL_DATOS = "https://raw.githubusercontent.com/alcnca/mapa-semaforo/refs/heads/main/datos.json";
+    const URL_DIRECCION = "https://raw.githubusercontent.com/alcnca/mapa-semaforo/refs/heads/main/Direccion.json";
+
+    
+    const HEADER_URL = "https://alcnca.github.io/mapa-semaforo/encabezado.png";
+    const FOOTER_URL = "https://alcnca.github.io/mapa-semaforo/piepagina.png";
+    let HEADER_DATA = null;
+    let FOOTER_DATA = null;
+
+    async function blobToDataURL(blob){
+      return await new Promise(res => { const r=new FileReader(); r.onload=()=>res(r.result); r.readAsDataURL(blob); });
+    }
+    async function fetchAsDataURL(url){
+      try{
+        const r = await fetch(url, { cache: "force-cache" });
+        if (!r.ok) throw 0;
+        const b = await r.blob();
+        return await blobToDataURL(b);
+      }catch{ return null; }
+    }
+
+
+    let data = [];
+    let direcciones = [];
+    let creditosSeleccionados = [];
+    let asesorSeleccionado = "";
+    let sucursalSeleccionada = "";
+
+
+    let carteraSeleccionada = ""; 
+    let mostrarModo = "SIN";      
+
+
+    const nombresCoordinadores = {
+      DASADI: "DANIEL SANCHEZ DIAZ",
+      FAPERO: "FRANCISCO ANTONIO PEREZ RODRIGUEZ",
+      ALCNCA: "ALONSO CANCHE CASTILLO",
+      MCRAVI: "MARLEN CECILIA RAMIREZ VILLANUEVA",
+      INANME: "INES ANDRADE MENDEZ",
+      MISADA: "MARIO ISRAEL SALINAS DAMIAN",
+      OFICINA_CENTRAL: "OFICINA CENTRAL"
+    };
+
+    const oficinaCentral = [
+      { nombre: "SANDRA LORENA PACHECO ROBLES", puesto: "ASISTENTE DE RECUPERACIÓN EXTRAJUDICIAL" },
+      { nombre: "ROLANDO VALERIANO HURTADO", puesto: "ASISTENTE DE RECUPERACIÓN EXTRAJUDICIAL" },
+      { nombre: "ANDREA ACELA MORGA DÁVILA", puesto: "ASISTENTE DE RECUPERACIÓN EXTRAJUDICIAL" },
+      { nombre: "GUSTAVO ESTUDILLO DE LA CRUZ", puesto: "ASISTENTE DE RECUPERACIÓN EXTRAJUDICIAL" },
+      
+      { nombre: "ALFONSO JERÓNIMO HERNÁNDEZ", puesto: "COORDINADOR DE RECUPERACIÓN PREVENTIVA Y ADMINISTRATIVA" },
+      { nombre: "ZOIBETH YANELI SORIANO IBAÑEZ", puesto: "ASISTENTE DE RECUPERACIÓN PREVENTIVA Y ADMINISTRATIVA" },
+      { nombre: "ABEL EDUARDO JIMENEZ GASPAR", puesto: "ASISTENTE DE RECUPERACIÓN PREVENTIVA Y ADMINISTRATIVA" }
+    ];
+
+
+    function toNumberSafe(val) {
+      if (val == null) return 0;
+      if (typeof val === "number") return isFinite(val) ? val : 0;
+      const clean = String(val).replace(/[^0-9.-]/g, "");
+      const n = parseFloat(clean);
+      return isNaN(n) ? 0 : n;
+    }
+    function parseDiasSinGestion(raw) {
+      if (raw == null) return null;
+      const s = String(raw).toLowerCase().trim();
+      const marcadores = new Set(["", "sin gestion", "sin gestión", "s/g", "sg", "sen gestion", "sin-gestion", "sin_gestion"]);
+      if (marcadores.has(s)) return null;
+      const soloNum = s.replace(/[^0-9-]/g, "");
+      if (soloNum === "" || soloNum === "-" || soloNum === "--") return null;
+      const n = parseInt(soloNum, 10);
+      return isNaN(n) ? null : n;
+    }
+    function estaSinGestion(raw) { return parseDiasSinGestion(raw) === null; }
+
+    function norm(s) {
+      return (s ?? "")
+        .toString()
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+        .replace(/\s+/g, " ")
+        .trim()
+        .toUpperCase();
+    }
+
+
+    function esPagoUnico(modalidad) {
+      if (!modalidad) return false;
+      const m = norm(modalidad);
+      if (/\bPAGO(S)?\s*UNICO(S)?\b/.test(m)) return true;
+      return (m.includes("PAGO") && m.includes("UNICO"));
+    }
+
+    function getDireccionPorSucursal(sucursal) {
+      const sNorm = norm(sucursal);
+      let found = direcciones.find(d => norm(d.Nombre_Sucursal) === sNorm);
+      if (found) return found;
+      found = direcciones.find(d =>
+        norm(d.SUCURSAL) === sNorm ||
+        norm(d.Sucursal) === sNorm ||
+        norm(d.Nombre) === sNorm
+      );
+      if (found) return found;
+      found = direcciones.find(d => norm(d.Nombre_Sucursal || "").includes(sNorm));
+      return found || null;
+    }
+
+
+    const meses = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+    function numEnEsp(n){
+      const u=["cero","uno","dos","tres","cuatro","cinco","seis","siete","ocho","nueve","diez","once","doce","trece","catorce","quince","dieciséis","diecisiete","dieciocho","diecinueve","veinte","veintiuno","veintidós","veintitrés","veinticuatro","veinticinco","veintiséis","veintisiete","veintiocho","veintinueve"];
+      if(n<30) return u[n];
+      const d=["","","","treinta","cuarenta","cincuenta"];
+      const dec=Math.floor(n/10), uni=n%10;
+      return uni===0? d[dec] : `${d[dec]} y ${u[uni]}`;
+    }
+    function anioEnLetras(y){
+      const map={2023:"dos mil veintitrés",2024:"dos mil veinticuatro",2025:"dos mil veinticinco",2026:"dos mil veintiséis"};
+      return map[y]||y.toString();
+    }
+    function ahoraCDMX(){
+      const ahora = new Date();
+      return new Date(ahora.toLocaleString("en-US",{timeZone:"America/Mexico_City"}));
+    }
+    function fechaEnLetrasFrom(dateObj){
+      const h=dateObj.getHours(), m=dateObj.getMinutes(), d=dateObj.getDate(), mm=dateObj.getMonth(), y=dateObj.getFullYear();
+      return `${numEnEsp(h)} horas con ${m===0?"cero":numEnEsp(m)} minutos del ${numEnEsp(d)} de ${meses[mm]} de ${anioEnLetras(y)}`;
+    }
+
+   
+    function valProducto(r){
+      return r.producto ?? r.Producto ?? r.product ?? r.Product ?? "";
+    }
+    function valSocio(r){
+      return r.socio ?? r.Socio ?? r["Num Socio"] ?? r["Numero Socio"] ?? r["Número de Socio"] ?? "";
+    }
+    function valFase(r){
+      return r.fase ?? r.Fase ?? r.FASE ?? r["Fase del crédito"] ?? r["Fase del credito"] ?? "";
+    }
+
+
+    
+    function parseCuotas(raw){
+      if (raw == null) return NaN;
+      const s = String(raw).trim().toLowerCase();
+      const m = s.match(/^\s*(\d+)\s*(?:\/|\s*de\s*)?\s*(\d+)?\s*$/i);
+      if (m) return parseInt(m[1], 10);
+      const n = parseInt(s.replace(/[^\d-]/g, ""), 10);
+      return isNaN(n) ? NaN : n;
+    }
+ 
+    function cumplePagosUnicos(r){
+      const coord = (r.Coordinacion ?? r.coordinacion ?? r["Coordinación"] ?? r["COORDINACION"] ?? r["COORDINACIÓN"] ?? "").toString();
+      const coordNorm = coord.normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim().toUpperCase();
+      const cuotas = parseCuotas(
+        r.Cuotas ?? r.cuotas ?? r["Cuotas"] ?? r["CUOTAS"] ??
+        r["Numero de Cuotas"] ?? r["Número de Cuotas"] ?? r["Num Cuotas"] ??
+        r["NumCuotas"] ?? r["Cuota"] ?? r["Pagos"]
+      );
+      return coordNorm === "AGRONEGOCIOS" && cuotas === 1;
+    }
+
+
+    const FASES_MAP = {
+      ADMIN: ["ADMINISTRATIVA"],    
+      EXTRA: ["EXTRAJUDICIAL"]       
+    };
+    function faseEnGrupo(rec, grupo){
+      const f = norm(valFase(rec));
+      if (!f) return false;
+      const lista = FASES_MAP[grupo] || [];
+      return lista.some(alias => f.includes(norm(alias)));
+    }
+
+
+    function getTextosDocumento(tipo, diasMinimos, asesor, sucursal, firmanteCoord) {
+      if (tipo === "acta") {
+        const dir = getDireccionPorSucursal(sucursal) || {};
+        const MUNICIPIO = (dir.MUNICIPIO || "________________").toString().trim();
+        const ESTADO = (dir.ESTADO || "________________").toString().trim();
+        const NOMBRE_SUCURSAL = (dir.Nombre_Sucursal || sucursal || "________________").toString().trim();
+        const DIRECCION = (dir.DIRECCION || "________________").toString().trim();
+        const GERENTE = (dir.GERENTE || "__________________________").toString().trim();
+
+        const inicioLocal = ahoraCDMX();
+        const cierreLocal = new Date(inicioLocal.getTime() + 30*60000);
+        const FECHA_INICIO_LETRAS = fechaEnLetrasFrom(inicioLocal);
+        const FECHA_CIERRE_LETRAS = fechaEnLetrasFrom(cierreLocal);
+
+        const intro = 
+`En el Municipio de ${MUNICIPIO}, ${ESTADO}, en la sucursal de ${NOMBRE_SUCURSAL}, siendo las ${FECHA_INICIO_LETRAS}, estando presentes en las instalaciones de la COOPERATIVA ACREIMEX S.C. de A.P. de R.L. de C.V., con domicilio en ${DIRECCION}, los ciudadanos ${firmanteCoord}, que ostenta el puesto de Coordinador de Recuperación y ${asesor} con el puesto de Asesor de Créditos y Recuperación Individual. Estando presentes en su carácter de testigos los ciudadanos ${GERENTE} que ostenta el puesto de Gerente de Sucursal y ADAN GUTIERREZ HERNANDEZ con el puesto de Gerente de Recuperación Extrajudicial, a quienes les constan los hechos que dan origen al levantamiento de la presente acta.
+
+A continuación, el ciudadano ${firmanteCoord}, narra a los comparecientes los hechos y las razones por las cuales se procede a levantar la presente acta administrativa que consiste en lo siguiente:
+
+En términos de lo dispuesto en el Manual de Gestión de Recuperación de Cartera de la Cooperativa, particularmente en lo relativo a las formalidades para desempeñar las gestiones de cobro (numerales 1.4, 1.5, 2 y 3.14), se establece la obligación del Asesor de Crédito y Recuperación de:
+
+• Dar seguimiento diario y permanente a la cartera asignada a partir de cero días de mora.
+• Evidenciar y documentar todas las gestiones de recuperación realizadas en sus diferentes etapas, digitalizándolas en el sistema informático.
+• Mantener actualizada la información del socio acreditado, avales o garantes, a fin de facilitar su localización.
+• Utilizar los mecanismos autorizados para la gestión de cobranza (llamadas telefónicas, visitas, mensajería SMS o WhatsApp, notificaciones escritas, etc.), siempre con respeto y dentro del horario permitido.
+• Registrar en el sistema informático las negociaciones, acuerdos o compromisos de pago establecidos con el socio, así como anexar físicamente al expediente los documentos correspondientes, cuando aplique.`;
+
+        const hechos =
+`Hechos:
+Se hace constar que el C. ${asesor}, en su calidad de Asesor de Crédito y Recuperación, omitió realizar la gestión de seguimiento a los créditos señalados en la tabla anterior, mismos que presentan un atraso considerable hasta la fecha de la presente acta.
+
+De la revisión efectuada al sistema informático, se constató lo siguiente:
+
+• No existen registros de llamadas, visitas domiciliarias, mensajes, ni cartas de cobranza en los plazos correspondientes, y si bien lo existieran no se encuentran actualizadas.
+• No se documentaron convenios, acuerdos o compromisos de pago con el socio deudor ni con sus avales.
+• Se incumplió con la obligación de prevenir el incremento del atraso, al no dar seguimiento oportuno desde los primeros días de mora.`;
+
+        const faltas =
+`Faltas y omisiones detectadas:
+La conducta descrita constituye un incumplimiento a lo dispuesto en los numerales:
+
+1.4 Formalidades para desempeñar las gestiones de cobro, al no registrar ni evidenciar convenios, acuerdos o contactos con el socio.
+1.5 La recuperación es parte integral del ciclo crediticio, al no aplicar las políticas de prevención y recuperación administrativa.
+2. Políticas generales, al no generar ni respaldar las evidencias mínimas de gestión de recuperación (carta invitación, requerimientos, llamadas, mensajería, etc.).
+3.14 Responsabilidades del Asesor de Crédito y Recuperación, al no dar seguimiento diario ni documentar en el sistema las gestiones correspondientes.`;
+
+        const determinacion =
+`Determinación:
+Por lo anterior, se procede a formalizar la presente acta como parte del procedimiento tendiente para
+la aplicación de la medida disciplinaria correspondiente a fin de dejar constancia de las faltas y
+omisiones cometidas por el Asesor de Crédito y Recuperación, mismas que impactan negativamente
+en los indicadores de recuperación de cartera de la sucursal.
+Acto posterior, se le concede al socio colaborador el derecho del uso de la palabra con relación a los
+hechos que anteceden, manifestando:`;
+
+        const cierre =
+`Leída que fue la presente, se ratifica en todas y cada una de sus partes por los comparecientes.
+Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al calce y al margen para constancia.`;
+
+        return {
+          titulo: "ACTA ADMINISTRATIVA",
+          subtitulo: "Se levanta la presente ACTA ADMINISTRATIVA",
+          intro, hechos, faltas, determinacion, cierre,
+          gerenteSucursal: GERENTE
+        };
+      }
+
+    
+      const subtitulo = `Motivo: Tener créditos en su cartera con más de ${diasMinimos} días sin gestión`;
+      const intro = `Me permito informarle que, derivado de la revisión del seguimiento a los créditos con más de 30 días de atraso de la cartera que usted administra, se han detectado créditos que carecen de gestión y seguimiento en el sistema, por el tiempo indicando en el motivo de la presente y que a continuación se enlistan:`;
+      const postTabla = `Derivado de esta situación se detecta su falta de responsabilidad, compromiso, esmero y dedicación en la ejecución de sus responsabilidades; por dicha omisión SE LEVANTA EL PRESENTE EXHORTO para su conocimiento y cumplimiento de dichas actividades, ya que nos ayuda a llevar un sano control de la cartera, manteniendo el menor porcentaje de mora y cuidando el patrimonio de la cooperativa. Para el caso de nueva omisión se tomarán las medidas necesarias de manera inmediata.`;
+      return { titulo: "EXHORTO", subtitulo, intro, postTabla };
+    }
+
+
+    window.addEventListener("DOMContentLoaded", async () => {
+      try {
+        const [resDatos, resDir, headerData, footerData] = await Promise.all([
+          fetch(URL_DATOS, { cache: "no-store" }),
+          fetch(URL_DIRECCION, { cache: "no-store" }),
+          fetchAsDataURL(HEADER_URL),
+          fetchAsDataURL(FOOTER_URL)
+        ]);
+        data = await resDatos.json();
+
+        const dirJson = await resDir.json();
+        if (Array.isArray(dirJson)) {
+          direcciones = dirJson;
+        } else if (dirJson && typeof dirJson === "object") {
+          const vals = Object.values(dirJson);
+          direcciones = (vals.length && typeof vals[0] === "object") ? vals : [dirJson];
+        } else {
+          direcciones = [];
+        }
+        HEADER_DATA = headerData;
+        FOOTER_DATA = footerData;
+      } catch (e) {
+        alert("Error cargando datos: " + e.message);
+        return;
+      }
+
+  
+      const selCoord = document.getElementById("coordinadorSelect");
+      selCoord.innerHTML = '<option value="">-- Selecciona --</option>';
+      for (let clave in nombresCoordinadores) {
+        selCoord.innerHTML += `<option value="${clave}">${nombresCoordinadores[clave]}</option>`;
+      }
+
+
+      document.getElementById("carteraSelect").addEventListener("change", () => {
+        carteraSeleccionada = document.getElementById("carteraSelect").value;
+        document.getElementById("mostrarDiv").style.display = carteraSeleccionada ? "block" : "none";
+        actualizarSucursales();
+      });
+
+      document.getElementById("mostrarSelect").addEventListener("change", () => {
+        mostrarModo = document.getElementById("mostrarSelect").value; 
+        document.getElementById("diasMinimosDiv").style.display = (mostrarModo === "TODOS") ? "block" : "none";
+        actualizarSucursales();
+      });
+
+      selCoord.addEventListener("change", () => {
+        const subDiv = document.getElementById("subFirmanteDiv");
+        const subSel = document.getElementById("subFirmanteSelect");
+        subSel.innerHTML = "";
+        const valorCoord = selCoord.value;
+
+        if (valorCoord === "OFICINA_CENTRAL") {
+          oficinaCentral.forEach(p => {
+            subSel.innerHTML += `<option value="${p.nombre}">${p.nombre} (${p.puesto})</option>`;
+          });
+          subDiv.style.display = "block";
+        } else if (valorCoord) {
+          subDiv.style.display = "none";
+          if (valorCoord === "ALCNCA") {
+            subDiv.style.display = "block";
+            subSel.innerHTML += `<option value="ALCNCA">${nombresCoordinadores["ALCNCA"]} (Coordinador)</option>`;
+            subSel.innerHTML += `<option value="IVANI">IVANI ARCOS LAINES (Gestor Regional Zona Maya)</option>`;
+          }
+        }
+        actualizarSucursales();
+      });
+
+      document.getElementById("btnAplicar").addEventListener("click", cargarDatos);
+
+
+      document.getElementById("mostrarDiv").style.display = "none";
+      document.getElementById("diasMinimosDiv").style.display = "none";
+
+      actualizarSucursales();
+    });
+
+
+    function llenarSucursales(lista) {
+      const selSuc = document.getElementById("sucursalSelect");
+      const sucursalActual = selSuc.value;
+      selSuc.innerHTML = '<option value="TODAS">Todas</option>';
+      lista.forEach(s => selSuc.innerHTML += `<option value="${s}">${s}</option>`);
+      if (lista.includes(sucursalActual)) selSuc.value = sucursalActual;
+      else selSuc.value = "TODAS";
+    }
+
+
+    function creditosBaseFiltradosPorCartera() {
+      return data.filter(d => {
+        if (carteraSeleccionada === "ADMIN") return faseEnGrupo(d, "ADMIN");
+        if (carteraSeleccionada === "EXTRA") return faseEnGrupo(d, "EXTRA");
+        if (carteraSeleccionada === "TODAS") return true;
+        return false; // si no eligieron cartera aún
+      });
+    }
+
+    function actualizarSucursales() {
+      const coord = document.getElementById("coordinadorSelect").value;
+
+      let base = data.slice();
+      if (carteraSeleccionada) {
+        base = creditosBaseFiltradosPorCartera();
+      } else {
+        llenarSucursales([]);
+        return;
+      }
+
+
+      if (coord && coord !== "OFICINA_CENTRAL") {
+        base = base.filter(d => d.Coordinador === coord);
+      }
+
+
+      if (mostrarModo === "SIN") {
+        base = base.filter(d => estaSinGestion(d["Dias sin Gestion"]));
+      } else if (mostrarModo === "PAGOS_UNICOS") {
+       
+        base = base.filter(cumplePagosUnicos);
+      } 
+
+      const sucursales = [...new Set(base.map(d => d.Sucursal))].filter(Boolean).sort((a,b)=>a.localeCompare(b,'es'));
+      llenarSucursales(sucursales);
+    }
+
+
+    function renderTarjetasPorSucursal(base, sucursal) {
+  
+      const porAsesor = {};
+      base.filter(r => r.Sucursal === sucursal).forEach(r => {
+        const ejecutivo = r.Ejecutivo || "SIN ASESOR";
+        (porAsesor[ejecutivo] ||= []).push(r);
+      });
+
+      const cont = document.getElementById("contenido");
+   
+      const h4 = document.createElement("h4");
+      h4.className = "mt-3 mb-3";
+      h4.textContent = `Sucursal: ${sucursal}`;
+      cont.appendChild(h4);
+
+      const nombresAsesores = Object.keys(porAsesor).sort((a, b) => a.localeCompare(b, "es"));
+      if (nombresAsesores.length === 0) {
+        const alert = document.createElement("div");
+        alert.className = "alert alert-info";
+        alert.textContent = "Sin registros con los criterios seleccionados en esta sucursal.";
+        cont.appendChild(alert);
+        return;
+      }
+
+      for (let asesor of nombresAsesores) {
+        const lista = porAsesor[asesor];
+        const total = lista.reduce((acc, r) => acc + toNumberSafe(r["Saldo Total"]), 0);
+
+        const card = document.createElement("div");
+        card.className = "card mb-3";
+        card.innerHTML = `
+          <div class="card-header bg-primary text-white">${asesor}</div>
+          <div class="card-body d-flex justify-content-between align-items-center">
+            <div>
+              Créditos: ${lista.length}<br />
+              Total: $${total.toLocaleString("es-MX", { minimumFractionDigits: 2 })}
+            </div>
+            <button class="btn btn-warning btn-sm">Vista Previa</button>
+          </div>
+        `;
+        card.querySelector("button").onclick = () => {
+          sucursalSeleccionada = sucursal; 
+          mostrarVistaPrevia(asesor, lista);
+        };
+        cont.appendChild(card);
+      }
+    }
+
+
+    async function cargarDatos() {
+      if (!carteraSeleccionada) {
+        alert("Selecciona primero la Cartera a revisar.");
+        return;
+      }
+
+      const selSuc = document.getElementById("sucursalSelect");
+      const sucSel = selSuc.value || "TODAS";
+      const diasFiltro = parseInt(document.getElementById("diasMinimos").value) || 30;
+
+ 
+      let base = creditosBaseFiltradosPorCartera();
+
+   
+      const coord = document.getElementById("coordinadorSelect").value;
+      if (coord && coord !== "OFICINA_CENTRAL") {
+        base = base.filter(d => d.Coordinador === coord);
+      }
+
+
+      if (mostrarModo === "SIN") {
+        base = base.filter(d => estaSinGestion(d["Dias sin Gestion"]));
+      } else if (mostrarModo === "PAGOS_UNICOS") {
+        base = base.filter(cumplePagosUnicos);
+      } else { 
+        base = base.filter(d => {
+          const dias = parseDiasSinGestion(d["Dias sin Gestion"]);
+          return (dias === null) || (typeof dias === "number" && dias >= diasFiltro);
+        });
+      }
+
+      const cont = document.getElementById("contenido");
+      cont.innerHTML = "";
+
+      if (sucSel !== "TODAS") {
+        if (!sucSel) { alert("Selecciona una Sucursal."); return; }
+        renderTarjetasPorSucursal(base, sucSel);
+      } else {
+        const sucursales = [...new Set(base.map(d => d.Sucursal))].filter(Boolean).sort((a,b)=>a.localeCompare(b,'es'));
+        if (sucursales.length === 0) {
+          cont.innerHTML = `<div class="alert alert-info">No se encontraron créditos con los criterios seleccionados.</div>`;
+          return;
+        }
+        for (const suc of sucursales) {
+          renderTarjetasPorSucursal(base, suc);
+        }
+      }
+    }
+
+   
+    function mostrarVistaPrevia(asesor, creditos) {
+      asesorSeleccionado = asesor;
+      creditosSeleccionados = creditos;
+      document.getElementById("asesorTitulo").textContent =
+        `Asesor: ${asesor} | Sucursal: ${sucursalSeleccionada}`;
+
+      const tbody = document.getElementById("tablaPreview");
+      tbody.innerHTML = "";
+
+      let total = 0;
+      creditos.forEach(c => {
+        const saldo = toNumberSafe(c["Saldo Total"]);
+        total += saldo;
+        const dsgParsed = parseDiasSinGestion(c["Dias sin Gestion"]);
+        const dsgDisplay = (dsgParsed === null) ? "SIN GESTIÓN" : dsgParsed;
+
+        tbody.innerHTML += `
+          <tr>
+            <td>${c.Linea ?? ""}</td>
+            <td>${valProducto(c)}</td>
+            <td>${valSocio(c)}</td>
+            <td>${c.Nombre ?? ""}</td>
+            <td class="text-end">${saldo.toLocaleString("es-MX", { style: "currency", currency: "MXN" })}</td>
+            <td class="text-center">${c["Dias de Atraso"] ?? ""}</td>
+            <td class="text-center">${dsgDisplay}</td>
+            <td class="text-center">${valFase(c)}</td>
+         </tr>
+        `;
+      });
+
+      document.getElementById("totalPreview").textContent =
+        `TOTAL: ${total.toLocaleString("es-MX", { style: "currency", currency: "MXN" })}`;
+
+      const btnExhorto = document.getElementById("btnGenerarExhorto");
+      const btnActa = document.getElementById("btnGenerarActa");
+
+      btnExhorto.onclick = async () => { btnExhorto.disabled = true; try { await generarPDF(asesorSeleccionado, sucursalSeleccionada, creditosSeleccionados, "exhorto"); } finally { btnExhorto.disabled = false; } };
+      btnActa.onclick = async () => { btnActa.disabled = true; try { await generarPDF(asesorSeleccionado, sucursalSeleccionada, creditosSeleccionados, "acta"); } finally { btnActa.disabled = false; } };
+
+      new bootstrap.Modal(document.getElementById("vistaPreviaModal")).show();
+    }
+
+
+    function pageEnv(doc){
+      const HEADER = { x: 50, y: 20, w: 500, h: 80 };
+      const CONTENT_TOP = HEADER.y + HEADER.h + 20; // 120 pt
+      const FOOTER_RESERVE = 90;
+      return {
+        CONTENT_TOP,
+        FOOTER_RESERVE,
+        marginFor: (left=50, right=50) => ({ top: CONTENT_TOP, left, right, bottom: FOOTER_RESERVE }),
+        didDrawPage: () => {
+          if (HEADER_DATA) {
+            try { doc.addImage(HEADER_DATA, "PNG", HEADER.x, HEADER.y, HEADER.w, HEADER.h); } catch {}
+          }
+        },
+        ensureSpace: (y, extra=0) => {
+          const usableBottom = doc.internal.pageSize.getHeight() - FOOTER_RESERVE;
+          if (y + extra > usableBottom) { doc.addPage(); return CONTENT_TOP; }
+          return y;
+        }
+      };
+    }
+
+    function addParagraph(doc, text, startY, env, left=50, right=50) {
+      doc.autoTable({
+        startY,
+        body: [[text]],
+        theme: "plain",
+        styles: { fontSize: 9, halign: "justify", cellPadding: 1.2 },
+        margin: env.marginFor(left, right),
+        didDrawPage: env.didDrawPage
+      });
+      return (doc.lastAutoTable && doc.lastAutoTable.finalY) || startY;
+    }
+
+
+    async function generarPDF(asesor, sucursal, creditos, tipo) {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF("p", "pt", "a4");
+      doc.setLineHeightFactor(1.0);
+
+      const env = pageEnv(doc);
+
+      const fecha = new Date().toLocaleDateString("es-MX", { day:"2-digit", month:"long", year:"numeric" });
+      const diasMinimos = parseInt(document.getElementById("diasMinimos").value) || 30;
+
+      // Determinar firmante coordinador
+      const inicial = document.getElementById("coordinadorSelect").value;
+      const subFirmanteVal = document.getElementById("subFirmanteSelect").value || inicial;
+      let firmanteCoord;
+      if (inicial === "OFICINA_CENTRAL") {
+        firmanteCoord = subFirmanteVal || "__________________________";
+      } else if (subFirmanteVal && nombresCoordinadores[subFirmanteVal]) {
+        firmanteCoord = nombresCoordinadores[subFirmanteVal];
+      } else {
+        firmanteCoord = nombresCoordinadores[inicial] || "__________________________";
+      }
+
+      const textos = getTextosDocumento(tipo, diasMinimos, asesor, sucursal, firmanteCoord);
+
+
+      let y = env.CONTENT_TOP;
+      const pageWidth = doc.internal.pageSize.getWidth();
+
+      doc.setFontSize(10); doc.text(`Fecha: ${fecha}`, 50, y); y += 18;
+      doc.setFontSize(14); doc.text(textos.titulo, pageWidth/2, y, { align: "center" }); y += 18;
+      doc.setFontSize(12); doc.text(textos.subtitulo || "", pageWidth/2, y, { align: "center" }); y += 24;
+      doc.setFontSize(11); doc.text(`Para: ${asesor}`, 50, y); y += 14; doc.text(`Sucursal: ${sucursal}`, 50, y); y += 10;
+
+     
+      y = addParagraph(doc, textos.intro, y, env, 50, 50);
+
+      y = (doc.lastAutoTable?.finalY || y) + 12; y = env.ensureSpace(y, 10);
+
+      const rows = creditos.map(c => {
+        const dsgParsed = parseDiasSinGestion(c["Dias sin Gestion"]);
+        const dsgDisplay = (dsgParsed === null) ? "SIN GESTIÓN" : dsgParsed;
+        return [
+          c.Linea ?? "",
+          valProducto(c),
+          valSocio(c),
+          c.Nombre ?? "",
+          toNumberSafe(c["Saldo Total"]).toLocaleString("es-MX", { style: "currency", currency: "MXN" }),
+          c["Dias de Atraso"] ?? "",
+          dsgDisplay,
+          valFase(c)
+        ];
+      });
+
+      doc.autoTable({
+        startY: y,
+        head: [["Crédito","Producto","Socio","Nombre del Socio","Saldo","Días atraso","Días sin gestión","Fase"]],
+        body: rows,
+        styles: { fontSize: 8, cellPadding: 1.3, lineWidth: 0.1, valign: "middle" },
+        headStyles: { fillColor: [0,0,0], textColor: [255,255,255], halign: "center", fontSize: 8 },
+        columnStyles: {
+          0: { halign: "left" },
+          1: { halign: "center" },
+          2: { halign: "left" },
+          3: { halign: "center" },
+          4: { halign: "right" },
+          5: { halign: "center" },
+          6: { halign: "center" },
+          7: { halign: "center" }
+        },
+        margin: env.marginFor(40, 40),
+        didDrawPage: env.didDrawPage
+      });
+      y = (doc.lastAutoTable?.finalY || y) + 8; y = env.ensureSpace(y, 10);
+
+   
+      doc.setFontSize(11);
+      const totalImporte = creditos.reduce((acc, c) => acc + toNumberSafe(c["Saldo Total"]), 0);
+      doc.text(`TOTAL: ${totalImporte.toLocaleString("es-MX", { style: "currency", currency: "MXN" })}`, pageWidth/2, y, { align: "center" });
+      y += 12;
+
+      if (tipo === "acta") {
+        y = addParagraph(doc, textos.hechos, y, env, 50, 50); y = (doc.lastAutoTable?.finalY || y) + 6;
+        y = addParagraph(doc, textos.faltas, y, env, 50, 50); y = (doc.lastAutoTable?.finalY || y) + 6;
+        y = addParagraph(doc, textos.determinacion, y, env, 50, 50);
+
+        y = (doc.lastAutoTable?.finalY || y) + 96;
+
+        y = addParagraph(doc, textos.cierre, y, env, 50, 50); y = (doc.lastAutoTable?.finalY || y) + 18;
+
+        const colW = (pageWidth - 100 - 40) / 2;
+        const x1 = 50, x2 = 50 + colW + 40;
+        function firmaBlock(x, y0, nombre, puesto) {
+          y0 = env.ensureSpace(y0, 90);
+          doc.setFontSize(11);
+          doc.line(x + 10, y0 + 40, x + colW - 10, y0 + 40);
+          doc.text(nombre || "__________________________", x + colW/2, y0 + 56, { align: "center" });
+          doc.setFontSize(10);
+          doc.text(puesto || "", x + colW/2, y0 + 72, { align: "center" });
+          return y0 + 90;
+        }
+        y = firmaBlock(x1, y, textos.gerenteSucursal, "Gerente de Sucursal");
+        y = firmaBlock(x2, y - 90, "ADAN GUTIERREZ HERNANDEZ", "Gerente de Recuperación Extrajudicial");
+        let y2 = y + 6; y2 = firmaBlock(x1, y2, firmanteCoord, "Coordinador de Recuperación");
+        firmaBlock(x2, y2 - 90, asesor, "Asesor de Créditos y Recuperación Individual");
+      } else {
+        const { postTabla } = getTextosDocumento("exhorto", diasMinimos);
+        y = addParagraph(doc, postTabla, y, env, 50, 50); y = (doc.lastAutoTable?.finalY || y) + 18;
+
+        y = env.ensureSpace(y, 120);
+        doc.setFontSize(11);
+        doc.text("Atentamente,", pageWidth / 2, y, { align: "center" }); y += 30;
+        doc.text("_______________________________", pageWidth / 2, y, { align: "center" }); y += 14;
+
+        let nombreFirmante, puestoFirmante;
+        const inicial2 = document.getElementById("coordinadorSelect").value;
+        const subFirmante = document.getElementById("subFirmanteSelect").value || inicial2;
+        if (subFirmante === "IVANI") {
+          nombreFirmante = "IVANI ARCOS LAINES";
+          puestoFirmante = "Gestor Regional Zona Maya";
+        } else if (inicial2 === "OFICINA_CENTRAL") {
+          nombreFirmante = subFirmante;
+          const asist = oficinaCentral.find(a => a.nombre === subFirmante);
+          puestoFirmante = asist ? asist.puesto : "ASISTENTE";
+        } else {
+          nombreFirmante = nombresCoordinadores[subFirmante] || nombresCoordinadores[inicial2] || "NOMBRE NO DEFINIDO";
+          puestoFirmante = "Coordinador de Recuperación Extrajudicial";
+        }
+        doc.text(nombreFirmante, pageWidth / 2, y, { align: "center" }); y += 14;
+        doc.text(puestoFirmante, pageWidth / 2, y, { align: "center" });
+      }
+
+
+      const pageCount = doc.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        const pageW = doc.internal.pageSize.getWidth();
+        const pageH = doc.internal.pageSize.getHeight();
+        const footerWidth = 500, footerHeight = 50; const footerX = (pageW - footerWidth) / 2; const footerY = pageH - footerHeight - 20;
+        if (FOOTER_DATA) { try { doc.addImage(FOOTER_DATA, "PNG", footerX, footerY, footerWidth, footerHeight); } catch {} }
+        doc.setFontSize(9); doc.text(`Página ${i} de ${pageCount}`, pageW - 60, footerY - 6, { align: "right" });
+      }
+
+      const nombreArchivo = (tipo === "acta" ? "ACTA_ADMINISTRATIVA" : "EXHORTO");
+      doc.save(`${nombreArchivo}_${asesor.replace(/ /g, "_")}.pdf`);
+    }
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
