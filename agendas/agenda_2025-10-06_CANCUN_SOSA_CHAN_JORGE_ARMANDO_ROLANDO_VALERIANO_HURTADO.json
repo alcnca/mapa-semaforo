@@ -1,0 +1,24 @@
+{
+  "generado_en": "2025-10-06T21:58:58.700Z",
+  "quien_realiza": "ROLANDO VALERIANO HURTADO",
+  "sucursal": "CANCÚN",
+  "asesor": "SOSA CHAN JORGE ARMANDO",
+  "total": 1,
+  "items": [
+    {
+      "fecha_registro": "2025-10-06T21:58:41.033Z",
+      "credito": "1351398",
+      "socio": "250606571",
+      "nombre": "ROJAS AREVALO REBECA",
+      "sucursal": "CANCÚN",
+      "asesor": "SOSA CHAN JORGE ARMANDO",
+      "producto": "ACREINÓMINA PREFERENTE",
+      "saldo": "$18,557.00",
+      "dias_atraso": "8",
+      "dias_sin_gestion": "SIN GESTIÓN",
+      "fase": "EXTRAJUDICIAL",
+      "fecha_programada": "2025-10-10",
+      "observaciones": "se compromete a tener las evidencias"
+    }
+  ]
+}
