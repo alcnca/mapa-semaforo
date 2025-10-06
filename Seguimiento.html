@@ -592,8 +592,15 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
     function mostrarVistaPrevia(asesor, creditos) {
       asesorSeleccionado = asesor;
       creditosSeleccionados = creditos;
-      document.getElementById("asesorTitulo").textContent =
-        `Asesor: ${asesor} | Sucursal: ${sucursalSeleccionada}`;
+      const telEjecutivo =
+  (creditos.find(c => c["Telefono Ejecutivo"])?.["Telefono Ejecutivo"]) ??
+  (creditos.find(c => c.Telefono_Ejecutivo)?.Telefono_Ejecutivo) ??
+  (creditos.find(c => c.TelefonoEjecutivo)?.TelefonoEjecutivo) ??
+  "";
+
+// Título con teléfono entre asesor y sucursal
+document.getElementById("asesorTitulo").textContent =
+  `Asesor: ${asesor} | Tel: ${telEjecutivo || "s/n"} | Sucursal: ${sucursalSeleccionada}`;
 
       const tbody = document.getElementById("tablaPreview");
       tbody.innerHTML = "";
