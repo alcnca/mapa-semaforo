@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Exhortos / Actas + Agenda (GAS backend)</title>
+  <title>Exhortos / Actas + Agenda (GAS proxy seguro)</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
@@ -15,8 +15,6 @@
     .tdSaldo { text-align: right; }
     .tdCenter { text-align: center; }
     .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 10px; }
-    /* Si quieres que los modales sean más amplios */
-    .modal-xxl { max-width: 95vw; }
   </style>
 </head>
 <body class="container py-4">
@@ -54,7 +52,7 @@
       <select id="subFirmanteSelect" class="form-select"></select>
     </div>
     <div class="col-md-3" id="diasMinimosDiv" style="display:none;">
-      <label class="form-label">Días mínimos sin gestión:</label>
+      <label class="form-label">Dias Transcurridos desde la Ultima Gestión:</label>
       <input type="number" id="diasMinimos" value="30" class="form-control" />
       <div class="form-text">Aplica sólo si elegiste “Todos”.</div>
     </div>
@@ -73,7 +71,7 @@
 
   <!-- Modal de Vista Previa -->
   <div class="modal fade" id="vistaPreviaModal" tabindex="-1">
-    <div class="modal-dialog modal-xl">
+    <div class="modal-dialog modal-fullscreen">
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title">Vista Previa del Documento</h5>
@@ -110,9 +108,9 @@
     </div>
   </div>
 
-  <!-- MODAL: Crear agenda (guardado vía GAS) -->
+  <!-- MODAL: Crear agenda y guardar -->
   <div class="modal fade" id="agendaModal" tabindex="-1">
-    <div class="modal-dialog modal-xxl">
+    <div class="modal-dialog modal-fullscreen">
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title">
@@ -123,17 +121,14 @@
 
         <div class="modal-body">
           <div class="alert alert-info mb-3">
-            Completa la <strong>Fecha programada</strong> y <strong>Observaciones</strong> por socio. <br>
-            La <strong>Fecha de registro</strong> se llena automáticamente. <br>
-            Al guardar, se envía a <strong>Google Apps Script</strong> (que lo sube a GitHub).
+            Completa la <strong>Fecha programada</strong> y <strong>Observaciones</strong> por socio.
           </div>
 
-          <!-- Quién realiza (automático) -->
+          <!-- QUIEN REALIZA (AUTOMÁTICO y OBLIGATORIO) -->
           <div class="row g-2 mb-3">
             <div class="col-md-6">
               <label class="form-label">Quién realiza la agenda (automático) <span class="text-danger">*</span></label>
               <input id="agendaRealizaRO" class="form-control" readonly />
-              <div class="form-text">Se toma del Coordinador seleccionado o del Firmante de Oficina Central.</div>
             </div>
             <div class="col-md-6">
               <label class="form-label">Fecha de registro (automática)</label>
@@ -167,15 +162,15 @@
 
         <div class="modal-footer gap-2">
           <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-          <button class="btn btn-primary" id="btnGuardarAgenda">Guardar agenda (GAS)</button>
+          <button class="btn btn-primary" id="btnGuardarAgenda">Guardar en Agenda</button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- MODAL: Visualizar compromisos (consulta vía GAS, sin “Archivo”) -->
+  <!-- MODAL: Visualizar compromisos (desde GAS proxy) -->
   <div class="modal fade" id="agendaListaModal" tabindex="-1">
-    <div class="modal-dialog modal-xxl">
+    <div class="modal-dialog modal-fullscreen">
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title">Agenda guardada</h5>
@@ -185,13 +180,17 @@
         <div class="modal-body">
           <div class="row g-2 mb-3">
             <div class="col-md-3">
-              <button class="btn btn-outline-primary w-100" id="btnCargarHoy">Cargar agendas de HOY</button>
+              <button class="btn btn-outline-primary w-100" id="btnCargarHoy">CARGAR AGENDA</button>
             </div>
             <div class="col-md-3">
               <input id="filtroTextoAgenda" class="form-control" placeholder="Buscar (socio, nombre, asesor, sucursal)">
             </div>
             <div class="col-md-3">
               <input id="filtroFechaAgenda" class="form-control" type="date" />
+            </div>
+            <div class="col-md-3">
+              <button class="btn btn-outline-secondary w-100" id="btnCargarArchivo">Cargar archivo(s) .json</button>
+              <input id="inputArchivoAgenda" type="file" accept=".json" multiple style="display:none;">
             </div>
           </div>
 
@@ -218,9 +217,6 @@
               <tbody id="agendaListaTbody"></tbody>
             </table>
           </div>
-          <div class="small text-muted">
-            *Si tu backend GAS aún no implementa el listado (doGet), el sistema usa un respaldo local (localStorage).
-          </div>
         </div>
 
         <div class="modal-footer gap-2">
@@ -231,23 +227,28 @@
   </div>
 
   <script>
-    /* ===================== CONFIG (Backend GAS) ===================== */
-    const GAS_URL="https://script.google.com/macros/s/AKfycbxfW4HCOyKIeKCVwCIvi1fwfhaH05VL3G2Ci90Ct4kD9S61vxSIzev0elfud6lxcajt/exec"; // p. ej. https://script.google.com/macros/s/AKfycb.../exec
+    /* ===================== CONFIGURACIÓN DE INTEGRACIONES ===================== */
+    // Tu Apps Script Web App (proxy seguro):
+    const GH_PROXY_URL = "https://script.google.com/macros/s/AKfycbxokMMJw3fEqFULKhXS8Q9KGQLBe_yXeY_52FwFgYBbkC9jg0xsnuIdUfWAy6qQu8oP/exec";
 
-    /* ===================== Origen de datos ===================== */
+    // MODO DE GUARDADO:
+    // - "proxy": usa Apps Script para subir automáticamente al repo de GitHub
+    // - "download": descarga el .json localmente (fallback si el proxy falla)
+    const SAVE_MODE = "proxy";
+
+    // Origen de datos (público):
     const URL_DATOS = "https://raw.githubusercontent.com/alcnca/mapa-semaforo/refs/heads/main/datos.json";
     const URL_DIRECCION = "https://raw.githubusercontent.com/alcnca/mapa-semaforo/refs/heads/main/Direccion.json";
     const HEADER_URL = "https://alcnca.github.io/mapa-semaforo/encabezado.png";
     const FOOTER_URL = "https://alcnca.github.io/mapa-semaforo/piepagina.png";
 
+    /* ===================== Estado ===================== */
     let HEADER_DATA = null, FOOTER_DATA = null;
     let data = [], direcciones = [];
     let creditosSeleccionados = [];
     let asesorSeleccionado = "", sucursalSeleccionada = "";
     let carteraSeleccionada = "", mostrarModo = "SIN";
-    let cacheAgendas = [];
 
-    /* ===================== Catálogos ===================== */
     const nombresCoordinadores = {
       DASADI: "DANIEL SANCHEZ DIAZ",
       FAPERO: "FRANCISCO ANTONIO PEREZ RODRIGUEZ",
@@ -270,7 +271,10 @@
 
     /* ===================== Utils ===================== */
     async function blobToDataURL(blob){ return await new Promise(res => { const r=new FileReader(); r.onload=()=>res(r.result); r.readAsDataURL(blob); }); }
-    async function fetchAsDataURL(url){ try{ const r=await fetch(url,{cache:"force-cache"}); if(!r.ok) throw 0; const b=await r.blob(); return await blobToDataURL(b); } catch{ return null; } }
+    async function fetchAsDataURL(url){
+      try{ const r = await fetch(url, { cache: "force-cache" }); if (!r.ok) throw 0; const b = await r.blob(); return await blobToDataURL(b); }
+      catch{ return null; }
+    }
     const norm = (s) => (s ?? "").toString().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ").trim().toUpperCase();
     function toNumberSafe(val){ if (val == null) return 0; if (typeof val === "number") return isFinite(val) ? val : 0; const n = parseFloat(String(val).replace(/[^0-9.-]/g, "")); return isNaN(n) ? 0 : n; }
     function parseDiasSinGestion(raw){
@@ -284,11 +288,14 @@
       return isNaN(n) ? null : n;
     }
     const estaSinGestion = (raw) => parseDiasSinGestion(raw) === null;
+
+    function esPagoUnico(modalidad){ if (!modalidad) return false; const m=norm(modalidad); return (/\bPAGO(S)?\s*UNICO(S)?\b/.test(m)) || (m.includes("PAGO") && m.includes("UNICO")); }
     const valProducto = (r) => r.producto ?? r.Producto ?? r.product ?? r.Product ?? "";
     const valSocio    = (r) => r.socio ?? r.Socio ?? r["Num Socio"] ?? r["Numero Socio"] ?? r["Número de Socio"] ?? "";
     const valFase     = (r) => r.fase ?? r.Fase ?? r.FASE ?? r["Fase del crédito"] ?? r["Fase del credito"] ?? "";
     const valDiasAtr  = (r) => r["Dias de Atraso"] ?? r["Días de atraso"] ?? r["Dias atraso"] ?? r["Días atraso"] ?? "";
     const valSaldo    = (r) => toNumberSafe(r["Saldo Total"]);
+
     function parseCuotas(raw){ if(raw==null) return NaN; const s=String(raw).trim().toLowerCase(); const m=s.match(/^\s*(\d+)\s*(?:\/|\s*de\s*)?\s*(\d+)?\s*$/i); if(m) return parseInt(m[1],10); const n=parseInt(s.replace(/[^\d-]/g,""),10); return isNaN(n)?NaN:n; }
     function cumplePagosUnicos(r){
       const coord=(r.Coordinacion ?? r.coordinacion ?? r["Coordinación"] ?? r["COORDINACION"] ?? r["COORDINACIÓN"] ?? "").toString();
@@ -299,7 +306,7 @@
     const FASES_MAP={ ADMIN:["ADMINISTRATIVA"], EXTRA:["EXTRAJUDICIAL"] };
     function faseEnGrupo(rec,grupo){ const f=norm(valFase(rec)); if(!f) return false; const lista=FASES_MAP[grupo]||[]; return lista.some(alias=> f.includes(norm(alias))); }
 
-    /* ===================== Textos (PDF resumido) ===================== */
+    /* ===================== Textos PDF (resumidos) ===================== */
     const meses=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
     function numEnEsp(n){ const u=["cero","uno","dos","tres","cuatro","cinco","seis","siete","ocho","nueve","diez","once","doce","trece","catorce","quince","dieciséis","diecisiete","dieciocho","diecinueve","veinte","veintiuno","veintidós","veintitrés","veinticuatro","veinticinco","veintiséis","veintisiete","veintiocho","veintinueve"]; if(n<30)return u[n]; const d=["","","","treinta","cuarenta","cincuenta"]; const dec=Math.floor(n/10),uni=n%10; return uni===0? d[dec]:`${d[dec]} y ${u[uni]}`; }
     function anioEnLetras(y){ const map={2023:"dos mil veintitrés",2024:"dos mil veinticuatro",2025:"dos mil veinticinco",2026:"dos mil veintiséis"}; return map[y]||y.toString(); }
@@ -317,18 +324,33 @@
     function getTextosDocumento(tipo, diasMinimos, asesor, sucursal, firmanteCoord){
       if(tipo==="acta"){
         const dir=getDireccionPorSucursal(sucursal)||{};
+        const MUNICIPIO=(dir.MUNICIPIO||"________________").toString().trim();
+        const ESTADO=(dir.ESTADO||"________________").toString().trim();
+        const NOMBRE_SUCURSAL=(dir.Nombre_Sucursal||sucursal||"________________").toString().trim();
+        const DIRECCION=(dir.DIRECCION||"________________").toString().trim();
         const inicioLocal=ahoraCDMX(), cierreLocal=new Date(inicioLocal.getTime()+30*60000);
-        const intro=`En la sucursal de ${dir.Nombre_Sucursal||sucursal}, siendo las ${fechaEnLetrasFrom(inicioLocal)}...`;
+        const intro=`En el Municipio de ${MUNICIPIO}, ${ESTADO}, en la sucursal de ${NOMBRE_SUCURSAL}, siendo las ${fechaEnLetrasFrom(inicioLocal)}, ... con domicilio en ${DIRECCION} ...`;
         const hechos=`Hechos:\nSe hace constar que el C. ${asesor} ...`;
         const faltas=`Faltas y omisiones detectadas:\n1.4 ...\n1.5 ...\n2. ...\n3.14 ...`;
         const determinacion=`Determinación:\nPor lo anterior, ...`;
-        const cierre=`Leída que fue la presente... Siendo las ${fechaEnLetrasFrom(cierreLocal)} ...`;
+        const cierre=`Leída que fue la presente, ... Siendo las ${fechaEnLetrasFrom(cierreLocal)} ...`;
         return { titulo:"ACTA ADMINISTRATIVA", subtitulo:"Se levanta la presente ACTA ADMINISTRATIVA", intro, hechos, faltas, determinacion, cierre, gerenteSucursal: (dir.GERENTE||"_________________") };
       }
       const subtitulo=`Motivo: Tener créditos en su cartera con más de ${diasMinimos} días sin gestión`;
       const intro=`Me permito informarle que, derivado de la revisión ...`;
       const postTabla=`Derivado de esta situación se detecta su falta ...`;
       return { titulo:"EXHORTO", subtitulo, intro, postTabla };
+    }
+
+    /* ===================== Descarga local (fallback) ===================== */
+    function descargarJSON(nombre, objeto){
+      const blob = new Blob([JSON.stringify(objeto, null, 2)], {type: "application/json"});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = nombre;
+      a.click();
+      URL.revokeObjectURL(url);
     }
 
     /* ===================== Inicio ===================== */
@@ -340,9 +362,13 @@
         ]);
         data = await resDatos.json();
         const dirJson = await resDir.json();
-        if(Array.isArray(dirJson)) direcciones=dirJson; else if (dirJson && typeof dirJson==="object"){ const vals=Object.values(dirJson); direcciones=(vals.length && typeof vals[0]==="object")? vals : [dirJson]; } else direcciones=[];
+        if(Array.isArray(dirJson)) direcciones=dirJson;
+        else if (dirJson && typeof dirJson==="object"){
+          const vals=Object.values(dirJson);
+          direcciones=(vals.length && typeof vals[0]==="object")? vals : [dirJson];
+        } else direcciones=[];
         HEADER_DATA=headerData; FOOTER_DATA=footerData;
-      }catch(e){ alert("Error cargando datos: "+e.message); return; }
+      }catch(e){ alert("Error cargando datos: "+(e.message||e)); return; }
 
       const selCoord=document.getElementById("coordinadorSelect");
       selCoord.innerHTML='<option value="">-- Selecciona --</option>';
@@ -380,16 +406,23 @@
 
       document.getElementById("btnAplicar").addEventListener("click", cargarDatos);
 
+      // Abrir modal "Revisar Agenda"
       document.getElementById("btnAbrirAgenda").addEventListener("click", () => {
         const today = new Date().toISOString().slice(0,10);
         document.getElementById("filtroFechaAgenda").value = today;
-        document.getElementById("agendaListaTbody").innerHTML = `<tr><td colspan="14" class="text-center text-muted">Clic en "Cargar agendas de HOY".</td></tr>`;
+        document.getElementById("agendaListaTbody").innerHTML = `<tr><td colspan="14" class="text-center text-muted">Clic en "CARGAR AGENDA".</td></tr>`;
         new bootstrap.Modal(document.getElementById("agendaListaModal")).show();
       });
 
-      document.getElementById("btnCargarHoy").addEventListener("click", cargarAgendasDesdeServidor);
+      document.getElementById("btnCargarHoy").addEventListener("click", cargarAgendasDesdeProxy);
       document.getElementById("filtroTextoAgenda").addEventListener("input", aplicarFiltrosTablaAgenda);
       document.getElementById("filtroFechaAgenda").addEventListener("change", aplicarFiltrosTablaAgenda);
+
+      // Cargar archivo(s) manual(es)
+      document.getElementById("btnCargarArchivo").addEventListener("click", () => {
+        document.getElementById("inputArchivoAgenda").click();
+      });
+      document.getElementById("inputArchivoAgenda").addEventListener("change", onCargarArchivosLocales);
     });
 
     /* ===================== Render principal ===================== */
@@ -468,7 +501,7 @@
       }
     }
 
-    /* ===================== Vista previa + AGENDA (GAS) ===================== */
+    /* ===================== Vista previa + AGENDA ===================== */
     function getResponsableActual(){
       const coordVal = document.getElementById("coordinadorSelect").value;
       if (!coordVal) return "";
@@ -517,6 +550,7 @@
         document.getElementById("agendaTitulo").textContent = `${sucursalSeleccionada} — ${asesorSeleccionado}`;
         document.getElementById("agendaRealizaRO").value = responsable;
 
+        // Fecha de registro (ahora)
         const isoNow = new Date().toISOString();
         document.getElementById("agendaFechaRegistroRO").value = isoNow;
 
@@ -555,7 +589,7 @@
           <td><input type="date" class="form-control form-control-sm fecha-prog" value="${hoy}"></td>
           <td><input type="text" class="form-control form-control-sm obs-prog" maxlength="320" placeholder="Observación (máx. 320)"></td>
         `;
-        tr.dataset.fechaRegistro = isoRegistro;
+        tr.dataset.fechaRegistro = isoRegistro; // guarda la fecha de registro
         tbody.appendChild(tr);
       });
     }
@@ -635,19 +669,53 @@
         doc.text("Coordinación de Recuperación", pageWidth/2, y, {align:"center"});
       }
       const pageCount=doc.getNumberOfPages();
-      for(let i=1;i<=pageCount;i++){ doc.setPage(i); const pageW=doc.internal.pageSize.getWidth(), pageH=doc.internal.pageSize.getHeight(); const footerWidth=500, footerHeight=50, footerX=(pageW-footerWidth)/2, footerY=pageH-footerHeight-20; if(FOOTER_DATA){ try{ doc.addImage(FOOTER_DATA,"PNG",footerX,footerY,footerWidth,footerHeight);}catch{} } doc.setFontSize(9); doc.text(`Página ${i} de ${pageCount}`, pageW-60, footerY-6, {align:"right"}); }
+      for(let i=1;i<=pageCount;i++){
+        doc.setPage(i);
+        const pageW=doc.internal.pageSize.getWidth(), pageH=doc.internal.pageSize.getHeight();
+        const footerWidth=500, footerHeight=50, footerX=(pageW-footerWidth)/2, footerY=pageH-footerHeight-20;
+        if(FOOTER_DATA){ try{ doc.addImage(FOOTER_DATA,"PNG",footerX,footerY,footerWidth,footerHeight);}catch{} }
+        doc.setFontSize(9); doc.text(`Página ${i} de ${pageCount}`, pageW-60, footerY-6, {align:"right"});
+      }
       const nombreArchivo=(tipo==="acta"?"ACTA_ADMINISTRATIVA":"EXHORTO");
       doc.save(`${nombreArchivo}_${asesor.replace(/ /g,"_")}_${norm(sucursal).replace(/[^A-Z0-9_]/g,"")}.pdf`);
     }
 
-    /* ===================== Guardar en GAS (sube a GitHub en el backend) ===================== */
-    async function subirAgendaViaGAS(agendaData) {
-      if (!GAS_URL || GAS_URL.includes("PEGAR_AQUI")) throw new Error("Configura GAS_URL con tu Web App de Google Apps Script.");
-      // Importante: SIN headers para evitar preflight/OPTIONS
-      const res = await fetch(GAS_URL, { method: "POST", body: JSON.stringify(agendaData) });
-      const j = await res.json();
-      if (!j.ok) throw new Error(j.error || "Error subiendo agenda");
-      return j; // { ok:true, path, file, gh }
+    /* ===================== Guardar agenda (Apps Script proxy + fallback) ===================== */
+    async function guardarAgendaProxy(agendaData, fileName){
+      const payload = {
+        action: "upload",
+        // owner/repo/branch/folder quedan bloqueados del lado servidor por seguridad,
+        branch: "main",
+        folder: "agendas",
+        fileName,
+        content: agendaData,
+        commitMessage: `chore(agenda): ${fileName}`,
+        author: { name: "Agenda Bot", email: "bot@example.com" }
+      };
+      const res = await fetch(GH_PROXY_URL, {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify(payload)
+      });
+      const json = await res.json().catch(()=> ({}));
+      if (!res.ok || !json.ok) {
+        throw new Error(json.error || `HTTP ${res.status}`);
+      }
+      return true;
+    }
+
+    async function guardarAgenda(agendaData, fileName){
+      if (SAVE_MODE === "proxy") {
+        try { return await guardarAgendaProxy(agendaData, fileName); }
+        catch (e) {
+          console.warn("Fallo proxy, usando descarga local:", e);
+          descargarJSON(fileName, agendaData);
+          return true;
+        }
+      } else {
+        descargarJSON(fileName, agendaData);
+        return true;
+      }
     }
 
     document.getElementById("btnGuardarAgenda").addEventListener("click", async () => {
@@ -656,12 +724,16 @@
         alert("Selecciona primero el 'Coordinador que firma' (o un firmante de Oficina Central).");
         return;
       }
+      // Construir items desde la tabla
       const filas = document.querySelectorAll("#agendaTbody tr");
       if (!filas.length) { alert("No hay filas para guardar."); return; }
 
       const items = [];
+      let fechaRegistroGeneral = null;
       filas.forEach(tr => {
         const fechaRegistro = tr.dataset.fechaRegistro || new Date().toISOString();
+        if (!fechaRegistroGeneral) fechaRegistroGeneral = fechaRegistro;
+
         const credito = tr.querySelector(".tdCredito")?.innerText.trim() || "";
         const socio   = tr.querySelector(".tdSocio")?.innerText.trim() || "";
         const nombre  = tr.querySelector(".tdNombre")?.innerText.trim() || "";
@@ -684,6 +756,7 @@
         });
       });
 
+      const hoy = new Date().toISOString().slice(0,10);
       const agendaData = {
         generado_en: new Date().toISOString(),
         quien_realiza: responsable,
@@ -693,83 +766,92 @@
         items
       };
 
+      const safe = s => (s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^A-Za-z0-9_-]/g,"_");
+      const fileName = `agenda_${hoy}_${safe(sucursalSeleccionada)}_${safe(asesorSeleccionado)}_${safe(responsable)}.json`;
+
       try {
-        const r = await subirAgendaViaGAS(agendaData);
-        // respaldo local opcional (por si quieres ver sin backend de listados)
-        try {
-          const local = JSON.parse(localStorage.getItem("agendas_local_backup") || "[]");
-          local.push({ saved_at: new Date().toISOString(), path: r.path, data: agendaData });
-          localStorage.setItem("agendas_local_backup", JSON.stringify(local));
-        } catch {}
-        alert("✅ Agenda subida: " + r.path);
-        bootstrap.Modal.getInstance(document.getElementById("agendaModal"))?.hide();
+        const ok = await guardarAgenda(agendaData, fileName);
+        if (ok) {
+          alert(SAVE_MODE === "proxy" ? "✅ Agenda subida a GitHub." : "✅ Agenda generada (descargada).");
+          bootstrap.Modal.getInstance(document.getElementById("agendaModal"))?.hide();
+        }
       } catch (e) {
-        alert("❌ Error al subir:\n" + (e.message || e));
+        alert("❌ Error al guardar:\n" + (e.message || e));
       }
     });
 
-    /* ===================== Listar Agendas (GAS doGet?mode=list&date=YYYY-MM-DD) ===================== */
-    async function cargarAgendasDesdeServidor(){
-      const tbody = document.getElementById("agendaListaTbody");
-      const fecha = (document.getElementById("filtroFechaAgenda").value || new Date().toISOString().slice(0,10));
-      tbody.innerHTML = `<tr><td colspan="14" class="text-center text-muted">Cargando...</td></tr>`;
+    /* ===================== Revisar Agenda (leer vía Apps Script) ===================== */
+    async function listarArchivosEnCarpetaViaProxy(folder="agendas", branch="main"){
+      const url = `${GH_PROXY_URL}?action=list&folder=${encodeURIComponent(folder)}&branch=${encodeURIComponent(branch)}`;
+      const res = await fetch(url);
+      const json = await res.json();
+      if (!json.ok) throw new Error(json.error || "No se pudo listar la carpeta.");
+      return json.entries || [];
+    }
+    async function leerArchivoViaProxy(path, branch="main"){
+      const url = `${GH_PROXY_URL}?action=read&path=${encodeURIComponent(path)}&branch=${encodeURIComponent(branch)}`;
+      const res = await fetch(url);
+      const json = await res.json();
+      if (!json.ok) throw new Error(json.error || ("No se pudo leer el archivo " + path));
+      return json.file; // { name, path, data }
+    }
+
+    let cacheAgendas = []; // [{data, name, html_url?}]
+    async function cargarAgendasDesdeProxy(){
       try{
-        if (!GAS_URL || GAS_URL.includes("PEGAR_AQUI")) throw new Error("Configura GAS_URL");
-        const url = `${GAS_URL}?mode=list&date=${encodeURIComponent(fecha)}`;
-        const res = await fetch(url, { method: "GET" });
-        const j = await res.json();
-        if (!j.ok) throw new Error(j.error || "Backend no respondió OK");
-        cacheAgendas = Array.isArray(j.items) ? j.items : [];
-        if (cacheAgendas.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="14" class="text-center text-muted">Sin agendas para la fecha.</td></tr>`;
+        const today = new Date().toISOString().slice(0,10);
+        const entries = await listarArchivosEnCarpetaViaProxy("agendas", "main");
+        const cand = entries.filter(e => e.type==="file" && /\.json$/i.test(e.name) && e.name.includes(`agenda_${today}_`));
+        if (cand.length === 0) {
+          alert("No se encontraron archivos de agenda para hoy.");
+          document.getElementById("agendaListaTbody").innerHTML = `<tr><td colspan="14" class="text-center text-muted">Sin archivos de hoy.</td></tr>`;
           return;
         }
-        renderTablaAgendaDesdeCache();
-      } catch (err) {
-        // Fallback a localStorage si no hay backend de lista
-        try {
-          const local = JSON.parse(localStorage.getItem("agendas_local_backup") || "[]");
-          const rows = [];
-          local.forEach(entry => {
-            const arr = entry?.data?.items || [];
-            arr.forEach(it => {
-              if ((it.fecha_programada || "").slice(0,10) === fecha) {
-                rows.push({
-                  fecha_reg: it.fecha_registro || entry.saved_at || "",
-                  fecha_prog: it.fecha_programada || "",
-                  credito: it.credito||"", socio: it.socio||"", nombre: it.nombre||"",
-                  sucursal: it.sucursal||"", asesor: it.asesor||"",
-                  producto: it.producto||"", saldo: it.saldo||"",
-                  dias_atraso: it.dias_atraso||"", dias_sin_gestion: it.dias_sin_gestion||"", fase: it.fase||"",
-                  observaciones: it.observaciones||""
-                });
-              }
-            });
-          });
-          cacheAgendas = rows;
-          if (rows.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="14" class="text-center text-muted">No hay resultados y el backend de lista no está disponible.</td></tr>`;
-          } else {
-            renderTablaAgendaDesdeCache();
-          }
-        } catch {
-          tbody.innerHTML = `<tr><td colspan="14" class="text-center text-muted">No se pudo cargar agendas.</td></tr>`;
+        const loaded = [];
+        for (const e of cand) {
+          try {
+            const obj = await leerArchivoViaProxy(e.path, "main");
+            if (obj && obj.data) loaded.push({ data: obj.data, name: obj.name, html_url: "" });
+          } catch (err) { console.warn("No se pudo leer:", e.name, err); }
         }
+        cacheAgendas = loaded;
+        renderTablaAgendaDesdeCache();
+      }catch(err){
+        alert("Error cargando agendas: " + (err.message || err));
       }
     }
 
-    function aplicarFiltrosTablaAgenda(){ renderTablaAgendaDesdeCache(); }
+    function aplicarFiltrosTablaAgenda(){
+      renderTablaAgendaDesdeCache();
+    }
+
     function renderTablaAgendaDesdeCache(){
       const q = (document.getElementById("filtroTextoAgenda").value || "").trim().toUpperCase();
       const fecha = (document.getElementById("filtroFechaAgenda").value || "").trim();
       const tbody = document.getElementById("agendaListaTbody");
       tbody.innerHTML = "";
 
-      const rows = cacheAgendas.filter(r => {
-        const matchFecha = !fecha || (r.fecha_prog || "").slice(0,10) === fecha;
-        const matchTexto = !q || [r.socio, r.nombre, r.asesor, r.sucursal].some(v => (v ?? "").toString().toUpperCase().includes(q));
-        return matchFecha && matchTexto;
-      });
+      const rows = [];
+      for (const file of cacheAgendas) {
+        const items = (file.data?.items)||[];
+        items.forEach(it => {
+          const fprog = (it.fecha_programada || "");
+          const freg  = (it.fecha_registro || file.data?.generado_en || "");
+          const matchFecha = !fecha || fprog === fecha;
+          const matchTexto = !q || [it.socio, it.nombre, it.asesor, it.sucursal].some(v => (v ?? "").toString().toUpperCase().includes(q));
+          if (matchFecha && matchTexto) {
+            rows.push({
+              fecha_reg: freg,
+              fecha_prog: fprog,
+              credito: it.credito||"", socio: it.socio||"", nombre: it.nombre||"",
+              sucursal: it.sucursal||"", asesor: it.asesor||"",
+              producto: it.producto||"", saldo: it.saldo||"",
+              dias_atraso: it.dias_atraso||"", dias_sin_gestion: it.dias_sin_gestion||"", fase: it.fase||"",
+              observaciones: it.observaciones||"",
+           });
+          }
+        });
+      }
 
       if (rows.length === 0) {
         tbody.innerHTML = `<tr><td colspan="14" class="text-center text-muted">No hay resultados con los filtros.</td></tr>`;
@@ -778,30 +860,46 @@
 
       rows.sort((a,b) =>
         (a.fecha_prog||"").localeCompare(b.fecha_prog||"") ||
-        (a.sucursal||"").localeCompare(b.sucursal||"") ||
-        (a.asesor||"").localeCompare(b.asesor||"")
+        a.sucursal.localeCompare(b.sucursal) ||
+        a.asesor.localeCompare(b.asesor)
       );
 
       rows.forEach((r,i) => {
         const tr = document.createElement("tr");
         tr.innerHTML = `
           <td class="text-center">${i+1}</td>
-          <td class="mono">${r.fecha_reg||""}</td>
-          <td class="text-center">${r.fecha_prog||""}</td>
-          <td>${r.credito||""}</td>
-          <td class="mono">${r.socio||""}</td>
-          <td>${r.nombre||""}</td>
-          <td>${r.sucursal||""}</td>
-          <td>${r.asesor||""}</td>
-          <td>${r.producto||""}</td>
-          <td class="tdSaldo">${r.saldo||""}</td>
-          <td class="tdCenter">${r.dias_atraso||""}</td>
-          <td class="tdCenter">${r.dias_sin_gestion||""}</td>
-          <td class="tdCenter">${r.fase||""}</td>
-          <td>${r.observaciones||""}</td>
+          <td class="mono">${r.fecha_reg}</td>
+          <td class="text-center">${r.fecha_prog}</td>
+          <td>${r.credito}</td>
+          <td class="mono">${r.socio}</td>
+          <td>${r.nombre}</td>
+          <td>${r.sucursal}</td>
+          <td>${r.asesor}</td>
+          <td>${r.producto}</td>
+          <td class="tdSaldo">${r.saldo}</td>
+          <td class="tdCenter">${r.dias_atraso}</td>
+          <td class="tdCenter">${r.dias_sin_gestion}</td>
+          <td class="tdCenter">${r.fase}</td>
+          <td>${r.observaciones}</td>
         `;
         tbody.appendChild(tr);
       });
+    }
+
+    /* ===================== Cargar archivos locales (.json) ===================== */
+    async function onCargarArchivosLocales(ev){
+      const files = Array.from(ev.target.files || []);
+      if (!files.length) return;
+      const loaded = [];
+      for (const f of files) {
+        try {
+          const txt = await f.text();
+          const data = JSON.parse(txt);
+          loaded.push({ data, name: f.name, html_url: "" });
+        } catch {}
+      }
+      cacheAgendas = loaded;
+      renderTablaAgendaDesdeCache();
     }
   </script>
 
