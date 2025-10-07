@@ -1,0 +1,39 @@
+{
+  "generado_en": "2025-10-07T00:23:24.113Z",
+  "quien_realiza": "ROBERTO JAVIER PÉREZ SANTIAGO",
+  "sucursal": "LOMA BONITA",
+  "asesor": "JPCRCR",
+  "total": 2,
+  "items": [
+    {
+      "fecha_registro": "2025-10-07T00:23:21.393Z",
+      "credito": "1348539",
+      "socio": "200535816",
+      "nombre": "NIEVES COELLO FORTINO",
+      "sucursal": "LOMA BONITA",
+      "asesor": "JPCRCR",
+      "producto": "ACREIMEX DESARROLLO EMPRESARIAL",
+      "saldo": "$381,107.04",
+      "dias_atraso": "11",
+      "dias_sin_gestion": "2",
+      "fase": "EXTRAJUDICIAL",
+      "fecha_programada": "2025-10-07",
+      "observaciones": ""
+    },
+    {
+      "fecha_registro": "2025-10-07T00:23:21.393Z",
+      "credito": "1349485",
+      "socio": "200962124",
+      "nombre": "FRANCISCO CUEVAS YURIDIA",
+      "sucursal": "LOMA BONITA",
+      "asesor": "JPCRCR",
+      "producto": "ACREIMEX DESARROLLO EMPRESARIAL",
+      "saldo": "$106,332.74",
+      "dias_atraso": "7",
+      "dias_sin_gestion": "2",
+      "fase": "EXTRAJUDICIAL",
+      "fecha_programada": "2025-10-07",
+      "observaciones": ""
+    }
+  ]
+}
