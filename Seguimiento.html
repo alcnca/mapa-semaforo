@@ -12,7 +12,7 @@
     #tablaPreview td:nth-child(1), #tablaPreview td:nth-child(2) { text-align: center; }
     #tablaPreview td:nth-child(3), #tablaPreview td:nth-child(4) { text-align: left; }
     #tablaPreview td:nth-child(5) { text-align: right; }
-    #tablaPreview td:nth-child(6), #tablaPreview td:nth-child(7), #tablaPreview td:nth-child(8) { text-align: center; }
+    #tablaPreview td:nth-child(6), #tablaPreview td:nth-child(7), #tablaPreview td:nth-child(8), #tablaPreview td:nth-child(9) { text-align: center; } /* 9 = Estatus */
     .tdSaldo { text-align: right; }
     .tdCenter { text-align: center; }
     .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 10px; }
@@ -92,6 +92,7 @@
                   <th>Días atraso</th>
                   <th>Días sin gestión</th>
                   <th>Fase</th>
+                  <th>Estatus</th> <!-- NUEVO -->
                 </tr>
               </thead>
               <tbody id="tablaPreview"></tbody>
@@ -237,6 +238,7 @@
     let creditosSeleccionados = [];
     let asesorSeleccionado = "", sucursalSeleccionada = "";
     let carteraSeleccionada = "", mostrarModo = "SIN";
+    let guardandoAgenda = false;  // ← evita doble clic
 
     const nombresCoordinadores = {
       DASADI: "DANIEL SANCHEZ DIAZ",
@@ -292,6 +294,21 @@
     }
     const FASES_MAP={ ADMIN:["ADMINISTRATIVA"], EXTRA:["EXTRAJUDICIAL"] };
     function faseEnGrupo(rec,grupo){ const f=norm(valFase(rec)); if(!f) return false; const lista=FASES_MAP[grupo]||[]; return lista.some(alias=> f.includes(norm(alias))); }
+
+    // Helpers para "AGENDADO"
+    function onlyDigits(s){ return String(s ?? "").replace(/\D/g, ""); }
+    function parseDMYtoDate(dmy){
+      const m = (dmy||"").match(/^(\d{2})-(\d{2})-(\d{4})$/);
+      if(!m) return null;
+      return new Date(Number(m[3]), Number(m[2])-1, Number(m[1]));
+    }
+    function todayLocalISO(){
+      const d = new Date();
+      const y = d.getFullYear();
+      const m = String(d.getMonth()+1).padStart(2,'0');
+      const dd= String(d.getDate()).padStart(2,'0');
+      return `${y}-${m}-${dd}`;
+    }
 
     /* ===================== Textos PDF (resumidos) ===================== */
     const meses=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
@@ -507,6 +524,7 @@
             <td class="text-center">${valDiasAtr(c)}</td>
             <td class="text-center">${dsgDisplay}</td>
             <td class="text-center">${valFase(c)}</td>
+            <td class="text-center estatus-cell"></td>  <!-- Estatus -->
           </tr>`;
       });
       document.getElementById("totalPreview").textContent = `TOTAL: ${total.toLocaleString("es-MX",{style:"currency",currency:"MXN"})}`;
@@ -533,6 +551,9 @@
       };
 
       new bootstrap.Modal(document.getElementById("vistaPreviaModal")).show();
+
+      // Marca "AGENDADO" para créditos con fecha hoy o futura (desde el server)
+      marcarAgendadosEnPreview();
     }
 
     function buildItemsFromPreview(isoRegistro){
@@ -657,12 +678,13 @@
       });
       const j = await res.json();
       if (!res.ok || !j.ok) throw new Error(j.error || `HTTP ${res.status}`);
-      return j; // { ok:true, inserted:n }
+      return j; // { ok:true, inserted:n, skipped:n }
     }
-    async function consultarAgendaEnSheet({fecha=null, q=null}){
+    async function consultarAgendaEnSheet({fecha=null, desde=null, q=null} = {}){
       const u = new URL(GAS_API_URL);
       u.searchParams.set("action","list");
-      if (fecha) u.searchParams.set("fecha", fecha); // yyyy-mm-dd → el backend lo normaliza
+      if (fecha) u.searchParams.set("fecha", fecha); // yyyy-mm-dd; el server normaliza
+      if (desde) u.searchParams.set("desde", desde); // yyyy-mm-dd; el server normaliza
       if (q)     u.searchParams.set("q", q);
       const res = await fetch(u.toString(), { method:"GET", cache:"no-store" });
       const j = await res.json();
@@ -670,73 +692,71 @@
       return j.items || [];
     }
 
-    /* ===================== Guardar agenda (ENVÍA CAMPOS CORRECTOS) ===================== */
+    /* ===================== Guardar agenda (EVITA DOBLE CLIC) ===================== */
     document.getElementById("btnGuardarAgenda").addEventListener("click", async () => {
-      const responsable = getResponsableActual();
-      if (!responsable) {
-        alert("Selecciona primero el 'Coordinador que firma' (o un firmante de Oficina Central).");
-        return;
-      }
-      const filas = document.querySelectorAll("#agendaTbody tr");
-      if (!filas.length) { alert("No hay filas para guardar."); return; }
+      if (guardandoAgenda) return; // ← bloquea segundo click
+      guardandoAgenda = true;
 
-      const items = [];
-      let algunaFecha = null;
-
-      filas.forEach(tr => {
-        const credito = tr.querySelector(".tdCredito")?.innerText.trim() || "";
-        const socio   = tr.querySelector(".tdSocio")?.innerText.trim() || "";
-        const nombre  = tr.querySelector(".tdNombre")?.innerText.trim() || "";
-        const suc     = tr.querySelector(".tdSucursal")?.innerText.trim() || "";
-        const asesor  = tr.querySelector(".tdAsesor")?.innerText.trim() || "";
-        const producto= tr.querySelector(".tdProducto")?.innerText.trim() || "";
-        const saldoTx = tr.querySelector(".tdSaldo")?.innerText.trim() || "";
-        const diasAtr = tr.querySelector(".tdDiasAtr")?.innerText.trim() || "";
-        const diasSG  = tr.querySelector(".tdDiasSinGes")?.innerText.trim() || "";
-        const fase    = tr.querySelector(".tdFase")?.innerText.trim() || "";
-        const fechaProg = tr.querySelector(".fecha-prog")?.value || ""; // yyyy-mm-dd
-        const obs     = tr.querySelector(".obs-prog")?.value || "";
-
-        if (!algunaFecha && fechaProg) algunaFecha = fechaProg;
-
-        items.push({
-          fecha_programada: fechaProg,   // ← lo que espera el backend
-          credito: credito,
-          socio: socio,
-          nombre: nombre,
-          sucursal: suc,
-          asesor: asesor,
-          producto: producto,
-          saldo: saldoTx,
-          dias_atraso: diasAtr,
-          dias_sin_gestion: diasSG,
-          fase: fase,
-          observaciones: obs,
-          responsable: responsable
-        });
-      });
-
-      if (!algunaFecha){
-        alert("Falta la 'Fecha programada' en al menos una fila.");
-        return;
-      }
-
-      const payload = {
-        creado_por: responsable,
-        items
-      };
+      const btn = document.getElementById("btnGuardarAgenda");
+      const oldLabel = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = 'Guardando…';
 
       try {
-        console.log("[DEBUG] payload a GAS:", payload);
+        const responsable = getResponsableActual();
+        if (!responsable) throw new Error("Selecciona el 'Coordinador que firma'.");
+
+        const filas = document.querySelectorAll("#agendaTbody tr");
+        if (!filas.length) throw new Error("No hay filas para guardar.");
+
+        const items = [];
+        let algunaFecha = null;
+
+        filas.forEach(tr => {
+          const credito = tr.querySelector(".tdCredito")?.innerText.trim() || "";
+          const socio   = tr.querySelector(".tdSocio")?.innerText.trim() || "";
+          const nombre  = tr.querySelector(".tdNombre")?.innerText.trim() || "";
+          const suc     = tr.querySelector(".tdSucursal")?.innerText.trim() || "";
+          const asesor  = tr.querySelector(".tdAsesor")?.innerText.trim() || "";
+          const producto= tr.querySelector(".tdProducto")?.innerText.trim() || "";
+          const saldoTx = tr.querySelector(".tdSaldo")?.innerText.trim() || "";
+          const diasAtr = tr.querySelector(".tdDiasAtr")?.innerText.trim() || "";
+          const diasSG  = tr.querySelector(".tdDiasSinGes")?.innerText.trim() || "";
+          const fase    = tr.querySelector(".tdFase")?.innerText.trim() || "";
+          const fechaProg = tr.querySelector(".fecha-prog")?.value || ""; // yyyy-mm-dd
+          const obs     = tr.querySelector(".obs-prog")?.value || "";
+
+          if (!algunaFecha && fechaProg) algunaFecha = fechaProg;
+
+          items.push({
+            fecha_programada: fechaProg,
+            credito, socio, nombre,
+            sucursal: suc, asesor,
+            producto, saldo: saldoTx,
+            dias_atraso: diasAtr,
+            dias_sin_gestion: diasSG,
+            fase, observaciones: obs,
+            responsable
+          });
+        });
+
+        if (!algunaFecha) throw new Error("Falta la 'Fecha programada' al menos en una fila.");
+
+        const payload = { creado_por: getResponsableActual(), items };
         const out = await guardarAgendaEnSheet(payload);
-        alert(`✅ Agenda guardada en Google Sheets (${out.inserted} filas).`);
+        alert(`✅ Guardado. Insertadas: ${out.inserted ?? 0}. Omitidas por duplicado: ${out.skipped ?? 0}.`);
         bootstrap.Modal.getInstance(document.getElementById("agendaModal"))?.hide();
+
       } catch (e) {
         alert("❌ Error al guardar en Sheets: " + (e.message || e));
+      } finally {
+        guardandoAgenda = false;
+        btn.disabled = false;
+        btn.innerHTML = oldLabel;
       }
     });
 
-    /* ===================== Revisar Agenda (LECTURA usando nombres del API) ===================== */
+    /* ===================== Revisar Agenda (LECTURA) ===================== */
     async function cargarAgendasDesdeSheets(){
       try{
         const fecha = document.getElementById("filtroFechaAgenda").value || new Date().toISOString().slice(0,10);
@@ -784,6 +804,57 @@
 
     function aplicarFiltrosTablaAgenda(){
       cargarAgendasDesdeSheets();
+    }
+
+    /* ===================== Marca "AGENDADO" en la vista previa ===================== */
+    async function marcarAgendadosEnPreview() {
+      try {
+        const hoyISO = todayLocalISO(); // yyyy-mm-dd
+
+        // Intento 1: por asesor (desde hoy)
+        let ag = [];
+        if (asesorSeleccionado) {
+          try {
+            ag = await consultarAgendaEnSheet({ desde: hoyISO, q: asesorSeleccionado });
+          } catch(e){ console.warn("AGENDADO por asesor falló:", e); }
+        }
+
+        // Intento 2: por sucursal (desde hoy)
+        if (!ag.length && sucursalSeleccionada) {
+          try {
+            ag = await consultarAgendaEnSheet({ desde: hoyISO, q: sucursalSeleccionada });
+          } catch(e){ console.warn("AGENDADO por sucursal falló:", e); }
+        }
+
+        // Intento 3: sin filtro (desde hoy)
+        if (!ag.length) {
+          try {
+            ag = await consultarAgendaEnSheet({ desde: hoyISO });
+          } catch(e){ console.warn("AGENDADO sin filtro falló:", e); }
+        }
+
+        // Set de créditos agendados (normalizados a sólo dígitos)
+        const setCredAgendados = new Set(
+          (ag || [])
+            .filter(r => r.credito && r.fecha_programada)
+            .map(r => onlyDigits(r.credito))
+            .filter(Boolean)
+        );
+
+        const rows = document.querySelectorAll("#tablaPreview tr");
+        rows.forEach(row => {
+          const credito = onlyDigits(row.children?.[0]?.innerText || ""); // 1a col = Crédito
+          const estTd = row.querySelector(".estatus-cell");
+          if (!estTd) return;
+          if (credito && setCredAgendados.has(credito)) {
+            estTd.innerHTML = '<span class="badge bg-success">AGENDADO</span>';
+          } else {
+            estTd.innerHTML = '';
+          }
+        });
+      } catch (e) {
+        console.warn("No se pudo marcar AGENDADO:", e);
+      }
     }
   </script>
 
