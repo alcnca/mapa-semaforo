@@ -664,67 +664,72 @@
 
     /* ===================== Guardar agenda en Google Sheets (GAS) ===================== */
     document.getElementById("btnGuardarAgenda").addEventListener("click", async () => {
-      const responsable = getResponsableActual();
-      if (!responsable) {
-        alert("Selecciona primero el 'Coordinador que firma' (o un firmante de Oficina Central).");
-        return;
-      }
-      const filas = document.querySelectorAll("#agendaTbody tr");
-      if (!filas.length) { alert("No hay filas para guardar."); return; }
+  const responsable = getResponsableActual();
+  if (!responsable) {
+    alert("Selecciona primero el 'Coordinador que firma' (o un firmante de Oficina Central).");
+    return;
+  }
+  const filas = document.querySelectorAll("#agendaTbody tr");
+  if (!filas.length) { alert("No hay filas para guardar."); return; }
 
-      const items = [];
-      let fechaProgramadaComun = null;
+  const items = [];
+  let fechaProgramadaComun = null;
 
-      filas.forEach(tr => {
-        const credito = tr.querySelector(".tdCredito")?.innerText.trim() || "";
-        const socio   = tr.querySelector(".tdSocio")?.innerText.trim() || "";
-        const nombre  = tr.querySelector(".tdNombre")?.innerText.trim() || "";
-        const suc     = tr.querySelector(".tdSucursal")?.innerText.trim() || "";
-        const asesor  = tr.querySelector(".tdAsesor")?.innerText.trim() || "";
-        const producto= tr.querySelector(".tdProducto")?.innerText.trim() || "";
-        const saldoTx = tr.querySelector(".tdSaldo")?.innerText.trim() || "";
-        const diasAtr = tr.querySelector(".tdDiasAtr")?.innerText.trim() || "";
-        const diasSG  = tr.querySelector(".tdDiasSinGes")?.innerText.trim() || "";
-        const fase    = tr.querySelector(".tdFase")?.innerText.trim() || "";
-        const fechaProg = tr.querySelector(".fecha-prog")?.value || "";
-        const obs     = tr.querySelector(".obs-prog")?.value || "";
+  filas.forEach(tr => {
+    const credito = tr.querySelector(".tdCredito")?.innerText.trim() || "";
+    const socio   = tr.querySelector(".tdSocio")?.innerText.trim() || "";
+    const nombre  = tr.querySelector(".tdNombre")?.innerText.trim() || "";
+    const suc     = tr.querySelector(".tdSucursal")?.innerText.trim() || "";
+    const asesor  = tr.querySelector(".tdAsesor")?.innerText.trim() || "";
+    const producto= tr.querySelector(".tdProducto")?.innerText.trim() || "";
+    const saldoTx = tr.querySelector(".tdSaldo")?.innerText.trim() || "";
+    const diasAtr = tr.querySelector(".tdDiasAtr")?.innerText.trim() || "";
+    const diasSG  = tr.querySelector(".tdDiasSinGes")?.innerText.trim() || "";
+    const fase    = tr.querySelector(".tdFase")?.innerText.trim() || "";
+    const fechaProg = tr.querySelector(".fecha-prog")?.value || ""; // yyyy-mm-dd
+    const obs     = tr.querySelector(".obs-prog")?.value || "";
 
-        if (!fechaProgramadaComun && fechaProg) fechaProgramadaComun = fechaProg;
+    if (!fechaProgramadaComun && fechaProg) fechaProgramadaComun = fechaProg;
 
-        items.push({
-          hora: "",
-          titulo: `${nombre} (${credito})`,
-          responsable: responsable,
-          notas: obs,
-          sucursal: suc,
-          asesor: asesor,
-          producto: producto,
-          saldo: saldoTx,
-          dias_atraso: diasAtr,
-          dias_sin_gestion: diasSG,
-          fase: fase
-        });
-      });
-
-      if (!fechaProgramadaComun){
-        alert("Falta la 'Fecha programada' en al menos una fila.");
-        return;
-      }
-
-      const payload = {
-        fecha: fechaProgramadaComun,
-        creado_por: responsable,
-        items
-      };
-
-      try {
-        const out = await guardarAgendaEnSheet(payload);
-        alert(`✅ Agenda guardada en Google Sheets (${out.inserted} filas).`);
-        bootstrap.Modal.getInstance(document.getElementById("agendaModal"))?.hide();
-      } catch (e) {
-        alert("❌ Error al guardar en Sheets: " + (e.message || e));
-      }
+    // >>>> ENVÍA LOS CAMPOS QUE ESPERA EL BACKEND <<<<
+    items.push({
+      fecha_programada: fechaProg,   // el backend la normaliza a dd-MM-yyyy
+      credito: credito,
+      socio: socio,
+      nombre: nombre,
+      sucursal: suc,
+      asesor: asesor,
+      producto: producto,
+      saldo: saldoTx,
+      dias_atraso: diasAtr,
+      dias_sin_gestion: diasSG,
+      fase: fase,
+      observaciones: obs,
+      responsable: responsable
     });
+  });
+
+  if (!fechaProgramadaComun){
+    alert("Falta la 'Fecha programada' en al menos una fila.");
+    return;
+  }
+
+  // payload simple (no necesitas meter 'fecha' a nivel raíz)
+  const payload = {
+    creado_por: responsable,
+    items
+  };
+
+  try {
+    // útil ver en consola lo que estás mandando
+    console.log("[DEBUG] payload a GAS:", payload);
+    const out = await guardarAgendaEnSheet(payload);
+    alert(`✅ Agenda guardada en Google Sheets (${out.inserted} filas).`);
+    bootstrap.Modal.getInstance(document.getElementById("agendaModal"))?.hide();
+  } catch (e) {
+    alert("❌ Error al guardar en Sheets: " + (e.message || e));
+  }
+});
 
     /* ===================== Revisar Agenda (leer de Google Sheets vía GAS) ===================== */
     async function cargarAgendasDesdeSheets(){
@@ -747,25 +752,27 @@
           (a.asesor||"").localeCompare(b.asesor||"")
         );
 
-        items.forEach((r,i)=>{
-          const tr = document.createElement("tr");
-          tr.innerHTML = `
-            <td class="text-center">${i+1}</td>
-            <td class="mono">${r.fecha_registro || ""}</td>
-            <td class="text-center">${r.fecha || ""}</td>
-            <td>${r.credito || ""}</td>
-            <td class="mono">${r.socio || ""}</td>
-            <td>${r.nombre || r.titulo || ""}</td>
-            <td>${r.sucursal || ""}</td>
-            <td>${r.asesor || ""}</td>
-            <td>${r.producto || ""}</td>
-            <td class="tdSaldo">${r.saldo || ""}</td>
-            <td class="tdCenter">${r.dias_atraso || ""}</td>
-            <td class="tdCenter">${r.dias_sin_gestion || ""}</td>
-            <td class="tdCenter">${r.fase || ""}</td>
-            <td>${r.notas || r.observaciones || ""}</td>
-          `;
-          tbody.appendChild(tr);
+       items.forEach((r, i) => {
+  const tr = document.createElement("tr");
+  tr.innerHTML = `
+    <td class="text-center">${i+1}</td>
+    <td class="mono">${r.fecha_registro || ""}</td>
+    <td class="text-center">${r.fecha_programada || ""}</td>   <!-- antes r.fecha -->
+    <td>${r.credito || ""}</td>
+    <td class="mono">${r.socio || ""}</td>
+    <td>${r.nombre || ""}</td>                                  <!-- antes r.titulo -->
+    <td>${r.sucursal || ""}</td>
+    <td>${r.asesor || ""}</td>
+    <td>${r.producto || ""}</td>
+    <td class="tdSaldo">${r.saldo || ""}</td>
+    <td class="tdCenter">${r.dias_atraso || ""}</td>
+    <td class="tdCenter">${r.dias_sin_gestion || ""}</td>
+    <td class="tdCenter">${r.fase || ""}</td>
+    <td>${r.observaciones || ""}</td>                           <!-- antes r.notas || r.observaciones -->
+  `;
+  tbody.appendChild(tr);
+});
+
         });
       }catch(err){
         alert("Error cargando agenda desde Sheets: " + (err.message || err));
