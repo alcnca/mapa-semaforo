@@ -53,7 +53,7 @@
       <select id="subFirmanteSelect" class="form-select"></select>
     </div>
     <div class="col-md-3" id="diasMinimosDiv" style="display:none;">
-      <label class="form-label">Dias Transcurridos desde la Ultima Gestión:</label>
+      <label class="form-label">Días transcurridos desde la última gestión:</label>
       <input type="number" id="diasMinimos" value="30" class="form-control" />
       <div class="form-text">Aplica sólo si elegiste “Todos”.</div>
     </div>
@@ -173,9 +173,7 @@
     <div class="modal-dialog modal-fullscreen">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">
-            Agenda guardada
-          </h5>
+          <h5 class="modal-title">Agenda guardada</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
 
@@ -225,7 +223,7 @@
   </div>
 
   <script>
-    /* ===================== CONFIGURACIÓN GAS (Apps Script) ===================== */
+    /* ===================== CONFIG GAS (Apps Script) ===================== */
     const GAS_API_URL = "https://script.google.com/macros/s/AKfycbz0_ggNCXpu3iFq1RSaFFZech9wmylwBOpGP7sTis9OlNAbKzagOmZowSVmHQspLA8x/exec";
 
     /* ===================== Origen de datos y constantes ===================== */
@@ -340,9 +338,16 @@
         ]);
         data = await resDatos.json();
         const dirJson = await resDir.json();
-        if(Array.isArray(dirJson)) direcciones=dirJson; else if (dirJson && typeof dirJson==="object"){ const vals=Object.values(dirJson); direcciones=(vals.length && typeof vals[0]==="object")? vals : [dirJson]; } else direcciones=[];
+        if(Array.isArray(dirJson)) direcciones=dirJson;
+        else if (dirJson && typeof dirJson==="object"){
+          const vals=Object.values(dirJson);
+          direcciones=(vals.length && typeof vals[0]==="object")? vals : [dirJson];
+        } else direcciones=[];
         HEADER_DATA=headerData; FOOTER_DATA=footerData;
-      }catch(e){ alert("Error cargando datos: "+e.message); return; }
+      }catch(e){
+        alert("Error cargando datos: "+e.message);
+        return;
+      }
 
       const selCoord=document.getElementById("coordinadorSelect");
       selCoord.innerHTML='<option value="">-- Selecciona --</option>';
@@ -429,7 +434,9 @@
       const h4=document.createElement("h4"); h4.className="mt-3 mb-3"; h4.textContent=`Sucursal: ${sucursal}`; cont.appendChild(h4);
 
       const nombresAsesores=Object.keys(porAsesor).sort((a,b)=>a.localeCompare(b,"es"));
-      if(nombresAsesores.length===0){ const alert=document.createElement("div"); alert.className="alert alert-info"; alert.textContent="Sin registros con los criterios seleccionados en esta sucursal."; cont.appendChild(alert); return; }
+      if(nombresAsesores.length===0){
+        const alert=document.createElement("div"); alert.className="alert alert-info"; alert.textContent="Sin registros con los criterios seleccionados en esta sucursal."; cont.appendChild(alert); return;
+      }
 
       for(const asesor of nombresAsesores){
         const lista=porAsesor[asesor];
@@ -645,7 +652,7 @@
     async function guardarAgendaEnSheet(payload){
       const res = await fetch(GAS_API_URL, {
         method: "POST",
-        headers: { "Content-Type": "text/plain" }, // evita preflight CORS
+        headers: { "Content-Type": "text/plain" }, // simple request (sin preflight)
         body: JSON.stringify(payload)
       });
       const j = await res.json();
@@ -654,84 +661,82 @@
     }
     async function consultarAgendaEnSheet({fecha=null, q=null}){
       const u = new URL(GAS_API_URL);
-      if (fecha) u.searchParams.set("fecha", fecha);
+      u.searchParams.set("action","list");
+      if (fecha) u.searchParams.set("fecha", fecha); // yyyy-mm-dd → el backend lo normaliza
       if (q)     u.searchParams.set("q", q);
-      const res = await fetch(u.toString(), { method:"GET" });
+      const res = await fetch(u.toString(), { method:"GET", cache:"no-store" });
       const j = await res.json();
       if (!res.ok || !j.ok) throw new Error(j.error || `HTTP ${res.status}`);
       return j.items || [];
     }
 
-    /* ===================== Guardar agenda en Google Sheets (GAS) ===================== */
+    /* ===================== Guardar agenda (ENVÍA CAMPOS CORRECTOS) ===================== */
     document.getElementById("btnGuardarAgenda").addEventListener("click", async () => {
-  const responsable = getResponsableActual();
-  if (!responsable) {
-    alert("Selecciona primero el 'Coordinador que firma' (o un firmante de Oficina Central).");
-    return;
-  }
-  const filas = document.querySelectorAll("#agendaTbody tr");
-  if (!filas.length) { alert("No hay filas para guardar."); return; }
+      const responsable = getResponsableActual();
+      if (!responsable) {
+        alert("Selecciona primero el 'Coordinador que firma' (o un firmante de Oficina Central).");
+        return;
+      }
+      const filas = document.querySelectorAll("#agendaTbody tr");
+      if (!filas.length) { alert("No hay filas para guardar."); return; }
 
-  const items = [];
-  let fechaProgramadaComun = null;
+      const items = [];
+      let algunaFecha = null;
 
-  filas.forEach(tr => {
-    const credito = tr.querySelector(".tdCredito")?.innerText.trim() || "";
-    const socio   = tr.querySelector(".tdSocio")?.innerText.trim() || "";
-    const nombre  = tr.querySelector(".tdNombre")?.innerText.trim() || "";
-    const suc     = tr.querySelector(".tdSucursal")?.innerText.trim() || "";
-    const asesor  = tr.querySelector(".tdAsesor")?.innerText.trim() || "";
-    const producto= tr.querySelector(".tdProducto")?.innerText.trim() || "";
-    const saldoTx = tr.querySelector(".tdSaldo")?.innerText.trim() || "";
-    const diasAtr = tr.querySelector(".tdDiasAtr")?.innerText.trim() || "";
-    const diasSG  = tr.querySelector(".tdDiasSinGes")?.innerText.trim() || "";
-    const fase    = tr.querySelector(".tdFase")?.innerText.trim() || "";
-    const fechaProg = tr.querySelector(".fecha-prog")?.value || ""; // yyyy-mm-dd
-    const obs     = tr.querySelector(".obs-prog")?.value || "";
+      filas.forEach(tr => {
+        const credito = tr.querySelector(".tdCredito")?.innerText.trim() || "";
+        const socio   = tr.querySelector(".tdSocio")?.innerText.trim() || "";
+        const nombre  = tr.querySelector(".tdNombre")?.innerText.trim() || "";
+        const suc     = tr.querySelector(".tdSucursal")?.innerText.trim() || "";
+        const asesor  = tr.querySelector(".tdAsesor")?.innerText.trim() || "";
+        const producto= tr.querySelector(".tdProducto")?.innerText.trim() || "";
+        const saldoTx = tr.querySelector(".tdSaldo")?.innerText.trim() || "";
+        const diasAtr = tr.querySelector(".tdDiasAtr")?.innerText.trim() || "";
+        const diasSG  = tr.querySelector(".tdDiasSinGes")?.innerText.trim() || "";
+        const fase    = tr.querySelector(".tdFase")?.innerText.trim() || "";
+        const fechaProg = tr.querySelector(".fecha-prog")?.value || ""; // yyyy-mm-dd
+        const obs     = tr.querySelector(".obs-prog")?.value || "";
 
-    if (!fechaProgramadaComun && fechaProg) fechaProgramadaComun = fechaProg;
+        if (!algunaFecha && fechaProg) algunaFecha = fechaProg;
 
-    // >>>> ENVÍA LOS CAMPOS QUE ESPERA EL BACKEND <<<<
-    items.push({
-      fecha_programada: fechaProg,   // el backend la normaliza a dd-MM-yyyy
-      credito: credito,
-      socio: socio,
-      nombre: nombre,
-      sucursal: suc,
-      asesor: asesor,
-      producto: producto,
-      saldo: saldoTx,
-      dias_atraso: diasAtr,
-      dias_sin_gestion: diasSG,
-      fase: fase,
-      observaciones: obs,
-      responsable: responsable
+        items.push({
+          fecha_programada: fechaProg,   // ← lo que espera el backend
+          credito: credito,
+          socio: socio,
+          nombre: nombre,
+          sucursal: suc,
+          asesor: asesor,
+          producto: producto,
+          saldo: saldoTx,
+          dias_atraso: diasAtr,
+          dias_sin_gestion: diasSG,
+          fase: fase,
+          observaciones: obs,
+          responsable: responsable
+        });
+      });
+
+      if (!algunaFecha){
+        alert("Falta la 'Fecha programada' en al menos una fila.");
+        return;
+      }
+
+      const payload = {
+        creado_por: responsable,
+        items
+      };
+
+      try {
+        console.log("[DEBUG] payload a GAS:", payload);
+        const out = await guardarAgendaEnSheet(payload);
+        alert(`✅ Agenda guardada en Google Sheets (${out.inserted} filas).`);
+        bootstrap.Modal.getInstance(document.getElementById("agendaModal"))?.hide();
+      } catch (e) {
+        alert("❌ Error al guardar en Sheets: " + (e.message || e));
+      }
     });
-  });
 
-  if (!fechaProgramadaComun){
-    alert("Falta la 'Fecha programada' en al menos una fila.");
-    return;
-  }
-
-  // payload simple (no necesitas meter 'fecha' a nivel raíz)
-  const payload = {
-    creado_por: responsable,
-    items
-  };
-
-  try {
-    // útil ver en consola lo que estás mandando
-    console.log("[DEBUG] payload a GAS:", payload);
-    const out = await guardarAgendaEnSheet(payload);
-    alert(`✅ Agenda guardada en Google Sheets (${out.inserted} filas).`);
-    bootstrap.Modal.getInstance(document.getElementById("agendaModal"))?.hide();
-  } catch (e) {
-    alert("❌ Error al guardar en Sheets: " + (e.message || e));
-  }
-});
-
-    /* ===================== Revisar Agenda (leer de Google Sheets vía GAS) ===================== */
+    /* ===================== Revisar Agenda (LECTURA usando nombres del API) ===================== */
     async function cargarAgendasDesdeSheets(){
       try{
         const fecha = document.getElementById("filtroFechaAgenda").value || new Date().toISOString().slice(0,10);
@@ -747,32 +752,30 @@
         }
 
         items.sort((a,b) =>
-          (a.fecha||"").localeCompare(b.fecha||"") ||
+          (a.fecha_programada||"").localeCompare(b.fecha_programada||"") ||
           (a.sucursal||"").localeCompare(b.sucursal||"") ||
           (a.asesor||"").localeCompare(b.asesor||"")
         );
 
-       items.forEach((r, i) => {
-  const tr = document.createElement("tr");
-  tr.innerHTML = `
-    <td class="text-center">${i+1}</td>
-    <td class="mono">${r.fecha_registro || ""}</td>
-    <td class="text-center">${r.fecha_programada || ""}</td>   <!-- antes r.fecha -->
-    <td>${r.credito || ""}</td>
-    <td class="mono">${r.socio || ""}</td>
-    <td>${r.nombre || ""}</td>                                  <!-- antes r.titulo -->
-    <td>${r.sucursal || ""}</td>
-    <td>${r.asesor || ""}</td>
-    <td>${r.producto || ""}</td>
-    <td class="tdSaldo">${r.saldo || ""}</td>
-    <td class="tdCenter">${r.dias_atraso || ""}</td>
-    <td class="tdCenter">${r.dias_sin_gestion || ""}</td>
-    <td class="tdCenter">${r.fase || ""}</td>
-    <td>${r.observaciones || ""}</td>                           <!-- antes r.notas || r.observaciones -->
-  `;
-  tbody.appendChild(tr);
-});
-
+        items.forEach((r,i)=>{
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td class="text-center">${i+1}</td>
+            <td class="mono">${r.fecha_registro || ""}</td>
+            <td class="text-center">${r.fecha_programada || ""}</td>
+            <td>${r.credito || ""}</td>
+            <td class="mono">${r.socio || ""}</td>
+            <td>${r.nombre || ""}</td>
+            <td>${r.sucursal || ""}</td>
+            <td>${r.asesor || ""}</td>
+            <td>${r.producto || ""}</td>
+            <td class="tdSaldo">${r.saldo || ""}</td>
+            <td class="tdCenter">${r.dias_atraso || ""}</td>
+            <td class="tdCenter">${r.dias_sin_gestion || ""}</td>
+            <td class="tdCenter">${r.fase || ""}</td>
+            <td>${r.observaciones || ""}</td>
+          `;
+          tbody.appendChild(tr);
         });
       }catch(err){
         alert("Error cargando agenda desde Sheets: " + (err.message || err));
