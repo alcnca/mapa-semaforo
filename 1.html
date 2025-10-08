@@ -12,10 +12,10 @@
     #tablaPreview td:nth-child(1), #tablaPreview td:nth-child(2) { text-align: center; }
     #tablaPreview td:nth-child(3), #tablaPreview td:nth-child(4) { text-align: left; }
     #tablaPreview td:nth-child(5) { text-align: right; }
-    #tablaPreview td:nth-child(6), #tablaPreview td:nth-child(7), #tablaPreview td:nth-child(8), #tablaPreview td:nth-child(9) { text-align: center; } /* 9 = Estatus */
+    #tablaPreview td:nth-child(6), #tablaPreview td:nth-child(7), #tablaPreview td:nth-child(8), #tablaPreview td:nth-child(9) { text-align: center; }
     .tdSaldo { text-align: right; }
     .tdCenter { text-align: center; }
-    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 10px; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Courier New", monospace; font-size: 10px; }
   </style>
 </head>
 <body class="container py-4">
@@ -128,29 +128,31 @@
 
           <div class="row g-2 mb-3">
             <div class="col-md-4">
-              <label class="form-label">Quién realiza la agenda (automático) <span class="text-danger">*</span></label>
-              <input id="agendaRealizaRO" class="form-control" readonly />
-            </div>
-            <div class="col-md-4">
-              <label class="form-label">Usuario que crea la agenda</label>
-              <input id="agendaCreador" class="form-control" placeholder="Nombre del usuario que captura" />
+              <label class="form-label">Usuario (código) que crea <span class="text-danger">*</span></label>
+              <input id="agendaUsuarioCodigo" class="form-control" list="dlUsuarios" placeholder="Ej. DASADI" />
+              <datalist id="dlUsuarios"></datalist>
+              <div class="form-text">Se guardará como nombre completo.</div>
             </div>
             <div class="col-md-4">
               <label class="form-label">Rol del usuario</label>
-              <select id="agendaRol" class="form-select">
-                <option value="">-- Selecciona --</option>
+              <select id="agendaRolUsuario" class="form-select">
+                <option value="">—</option>
                 <option>COORDINADOR</option>
                 <option>ASISTENTE</option>
                 <option>GESTOR</option>
                 <option>GERENTE</option>
               </select>
             </div>
+            <div class="col-md-4">
+              <label class="form-label">Fecha de registro (automática)</label>
+              <input id="agendaFechaRegistroRO" class="form-control mono" readonly />
+            </div>
           </div>
 
           <div class="row g-2 mb-3">
             <div class="col-md-6">
-              <label class="form-label">Fecha de registro (automática)</label>
-              <input id="agendaFechaRegistroRO" class="form-control mono" readonly />
+              <label class="form-label">Quién firma (automático)</label>
+              <input id="agendaRealizaRO" class="form-control" readonly />
             </div>
           </div>
 
@@ -203,12 +205,10 @@
             <div class="col-md-3">
               <input id="filtroFechaAgenda" class="form-control" type="date" />
             </div>
-            <div class="col-md-6">
-              <!-- NUEVO: filtro por USUARIO (código) que mapea a NOMBRE y filtra por creado_por -->
-              <input id="filtroUsuarioCodigo" class="form-control" list="usuariosList" placeholder="Usuario (código) ej. ALCNCA">
-              <datalist id="usuariosList"></datalist>
+            <div class="col-md-3">
+              <input id="filtroUsuarioAgenda" class="form-control" list="dlUsuarios" placeholder="Usuario (código ej. DASADI)">
               <div class="form-text">
-                <span id="filtroUsuarioNombre" class="fw-semibold"></span>
+                Filtrando por: <strong id="usuarioNombreEtiqueta">—</strong>
               </div>
             </div>
           </div>
@@ -246,10 +246,10 @@
   </div>
 
   <script>
-    /* ===================== CONFIG GAS (Apps Script) ===================== */
+    /* ===================== CONFIG GAS ===================== */
     const GAS_API_URL = "https://script.google.com/macros/s/AKfycbz0_ggNCXpu3iFq1RSaFFZech9wmylwBOpGP7sTis9OlNAbKzagOmZowSVmHQspLA8x/exec";
 
-    /* ===================== Origen de datos y constantes ===================== */
+    /* ===================== Datos & Constantes ===================== */
     const URL_DATOS = "https://raw.githubusercontent.com/alcnca/mapa-semaforo/refs/heads/main/datos.json";
     const URL_DIRECCION = "https://raw.githubusercontent.com/alcnca/mapa-semaforo/refs/heads/main/Direccion.json";
     const HEADER_URL = "https://alcnca.github.io/mapa-semaforo/encabezado.png";
@@ -260,29 +260,29 @@
     let creditosSeleccionados = [];
     let asesorSeleccionado = "", sucursalSeleccionada = "";
     let carteraSeleccionada = "", mostrarModo = "SIN";
-    let guardandoAgenda = false;  // ← evita doble clic
+    let guardandoAgenda = false;
 
-    /* ====== LISTA USUARIO->NOMBRE (para filtrar creado_por por NOMBRE exacto) ====== */
-    const USERS_MAP = {
-      "EPMUMU":"EPIFANIO MUÑOZ MUÑOZ",
-      "AEJIGA":"ABEL EDUARDO JIMENEZ GASPAR",
-      "GUESDE":"GUSTAVO ESTUDILLO DE LA CRUZ",
-      "MCRAVI":"MARLEN CECILIA RAMIREZ VILLANUEVA",
-      "IVLAAR":"IVANI LAINES ARCOS",
-      "GADZCA":"GASPAR DZIB CAMARA",
-      "CAMEPE":"CAMERINO MENDOZA PEREZ",
-      "INANME":"INES ANDRADE MENDEZ",
-      "RJPESA":"ROBERTO JAVIER PEREZ SANTIAGO",
-      "AAMODA":"ANDREA ACELA MORGA DAVILA",
-      "ADGUHE":"ADAN GUTIERREZ HERNANDEZ",
-      "ZYSOIB":"ZOIBETH YANELI SORIANO IBAÑEZ",
-      "ROVAHU":"ROLANDO VALERIANO HURTADO",
-      "FAPERO":"FRANCISCO ANTONIO PEREZ RODRIGUEZ",
-      "DASADI":"DANIEL SANCHEZ DIAZ",
-      "ALCNCA":"ALONSO CANCHE CASTILLO",
-      "MISADA":"MARIO ISRAEL SALINAS DAMIAN",
-      "ALJEHE":"ALFONSO JERONIMO HERNANDEZ",
-      "SLPARO":"SANDRA LORENA PACHECO ROBLES"
+    /* Mapa para UI (mostrar nombre desde código) */
+    const USER_CODE_TO_NAME = {
+      EPMUMU:"EPIFANIO MUÑOZ MUÑOZ",
+      AEJIGA:"ABEL EDUARDO JIMENEZ GASPAR",
+      GUESDE:"GUSTAVO ESTUDILLO DE LA CRUZ",
+      MCRAVI:"MARLEN CECILIA RAMIREZ VILLANUEVA",
+      IVLAAR:"IVANI LAINES ARCOS",
+      GADZCA:"GASPAR DZIB CAMARA",
+      CAMEPE:"CAMERINO MENDOZA PEREZ",
+      INANME:"INES ANDRADE MENDEZ",
+      RJPESA:"ROBERTO JAVIER PEREZ SANTIAGO",
+      AAMODA:"ANDREA ACELA MORGA DAVILA",
+      ADGUHE:"ADAN GUTIERREZ HERNANDEZ",
+      ZYSOIB:"ZOIBETH YANELI SORIANO IBAÑEZ",
+      ROVAHU:"ROLANDO VALERIANO HURTADO",
+      FAPERO:"FRANCISCO ANTONIO PEREZ RODRIGUEZ",
+      DASADI:"DANIEL SANCHEZ DIAZ",
+      ALCNCA:"ALONSO CANCHE CASTILLO",
+      MISADA:"MARIO ISRAEL SALINAS DAMIAN",
+      ALJEHE:"ALFONSO JERONIMO HERNANDEZ",
+      SLPARO:"SANDRA LORENA PACHECO ROBLES"
     };
 
     const nombresCoordinadores = {
@@ -305,76 +305,37 @@
       { nombre: "ABEL EDUARDO JIMENEZ GASPAR", puesto: "ASISTENTE DE RECUPERACIÓN PREVENTIVA Y ADMINISTRATIVA" }
     ];
 
-    /* ===================== Utils (Zona Horaria CDMX) ===================== */
-    function mxNow(){
-      return new Date(new Date().toLocaleString("en-US",{ timeZone:"America/Mexico_City" }));
-    }
+    /* ===================== Utils (CDMX) ===================== */
+    function mxNow(){ return new Date(new Date().toLocaleString("en-US",{ timeZone:"America/Mexico_City" })); }
     function pad2(n){ return String(n).padStart(2,'0'); }
-    function mxISODate(){
-      const d=mxNow(); return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
-    }
-    function mxISODateTime(){
-      const d=mxNow(); return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}T${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
-    }
-    function fmtCDMX(iso){
-      if(!iso) return "";
-      const d = new Date(iso);
-      return d.toLocaleString("es-MX", {
-        timeZone: "America/Mexico_City",
-        year:"numeric", month:"2-digit", day:"2-digit",
-        hour:"2-digit", minute:"2-digit", second:"2-digit",
-        hour12: false
-      }).replace(",", "");
-    }
+    function mxISODate(){ const d=mxNow(); return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; }
+    function mxISODateTime(){ const d=mxNow(); return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}T${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`; }
 
-    async function blobToDataURL(blob){ return await new Promise(res => { const r=new FileReader(); r.onload=()=>res(r.result); r.readAsDataURL(blob); }); }
-    async function fetchAsDataURL(url){
-      try{ const r = await fetch(url, { cache: "force-cache" }); if (!r.ok) throw 0; const b = await r.blob(); return await blobToDataURL(b); }
-      catch{ return null; }
-    }
-    const norm = (s) => (s ?? "").toString().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ").trim().toUpperCase();
-    function toNumberSafe(val){ if (val == null) return 0; if (typeof val === "number") return isFinite(val) ? val : 0; const n = parseFloat(String(val).replace(/[^0-9.-]/g, "")); return isNaN(n) ? 0 : n; }
-    function parseDiasSinGestion(raw){
-      if (raw == null) return null;
-      const s = String(raw).toLowerCase().trim();
-      const marcadores = new Set(["","sin gestion","sin gestión","s/g","sg","sen gestion","sin-gestion","sin_gestion"]);
-      if (marcadores.has(s)) return null;
-      const soloNum = s.replace(/[^0-9-]/g,"");
-      if (!soloNum || soloNum === "-" || soloNum === "--") return null;
-      const n = parseInt(soloNum,10);
-      return isNaN(n) ? null : n;
-    }
-    const estaSinGestion = (raw) => parseDiasSinGestion(raw) === null;
-    function esPagoUnico(modalidad){ if (!modalidad) return false; const m=norm(modalidad); return (/\bPAGO(S)?\s*UNICO(S)?\b/.test(m)) || (m.includes("PAGO") && m.includes("UNICO")); }
-    const valProducto = (r) => r.producto ?? r.Producto ?? r.product ?? r.Product ?? "";
-    const valSocio    = (r) => r.socio ?? r.Socio ?? r["Num Socio"] ?? r["Numero Socio"] ?? r["Número de Socio"] ?? "";
-    const valFase     = (r) => r.fase ?? r.Fase ?? r.FASE ?? r["Fase del crédito"] ?? r["Fase del credito"] ?? "";
-    const valDiasAtr  = (r) => r["Dias de Atraso"] ?? r["Días de atraso"] ?? r["Dias atraso"] ?? r["Días atraso"] ?? "";
-    const valSaldo    = (r) => toNumberSafe(r["Saldo Total"]);
+    async function blobToDataURL(blob){ return await new Promise(res=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.readAsDataURL(blob); }); }
+    async function fetchAsDataURL(url){ try{ const r=await fetch(url,{cache:"force-cache"}); if(!r.ok) throw 0; const b=await r.blob(); return await blobToDataURL(b);}catch{ return null; } }
+    const norm = s => (s ?? "").toString().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/\s+/g," ").trim().toUpperCase();
+    function toNumberSafe(val){ if(val==null) return 0; if(typeof val==="number") return isFinite(val)?val:0; const n=parseFloat(String(val).replace(/[^0-9.-]/g,"")); return isNaN(n)?0:n; }
+    function parseDiasSinGestion(raw){ if(raw==null) return null; const s=String(raw).toLowerCase().trim(); const mk=new Set(["","sin gestion","sin gestión","s/g","sg","sen gestion","sin-gestion","sin_gestion"]); if(mk.has(s)) return null; const n=parseInt(s.replace(/[^0-9-]/g,""),10); return isNaN(n)?null:n; }
+    const estaSinGestion = raw => parseDiasSinGestion(raw)===null;
+    function esPagoUnico(m){ if(!m) return false; const t=norm(m); return (/\bPAGO(S)?\s*UNICO(S)?\b/.test(t)) || (t.includes("PAGO") && t.includes("UNICO")); }
+    const valProducto = r => r.producto ?? r.Producto ?? r.product ?? r.Product ?? "";
+    const valSocio    = r => r.socio ?? r.Socio ?? r["Num Socio"] ?? r["Numero Socio"] ?? r["Número de Socio"] ?? "";
+    const valFase     = r => r.fase ?? r.Fase ?? r.FASE ?? r["Fase del crédito"] ?? r["Fase del credito"] ?? "";
+    const valDiasAtr  = r => r["Dias de Atraso"] ?? r["Días de atraso"] ?? r["Dias atraso"] ?? r["Días atraso"] ?? "";
+    const valSaldo    = r => toNumberSafe(r["Saldo Total"]);
     function parseCuotas(raw){ if(raw==null) return NaN; const s=String(raw).trim().toLowerCase(); const m=s.match(/^\s*(\d+)\s*(?:\/|\s*de\s*)?\s*(\d+)?\s*$/i); if(m) return parseInt(m[1],10); const n=parseInt(s.replace(/[^\d-]/g,""),10); return isNaN(n)?NaN:n; }
-    function cumplePagosUnicos(r){
-      const coord=(r.Coordinacion ?? r.coordinacion ?? r["Coordinación"] ?? r["COORDINACION"] ?? r["COORDINACIÓN"] ?? "").toString();
-      const coordNorm=norm(coord);
-      const cuotas=parseCuotas(r.Cuotas ?? r.cuotas ?? r["Cuotas"] ?? r["CUOTAS"] ?? r["Numero de Cuotas"] ?? r["Número de Cuotas"] ?? r["Num Cuotas"] ?? r["NumCuotas"] ?? r["Cuota"] ?? r["Pagos"]);
-      return coordNorm==="AGRONEGOCIOS" && cuotas===1;
-    }
+    function cumplePagosUnicos(r){ const coord=(r.Coordinacion ?? r.coordinacion ?? r["Coordinación"] ?? r["COORDINACION"] ?? r["COORDINACIÓN"] ?? "").toString(); const coordNorm=norm(coord); const cuotas=parseCuotas(r.Cuotas ?? r.cuotas ?? r["Cuotas"] ?? r["CUOTAS"] ?? r["Numero de Cuotas"] ?? r["Número de Cuotas"] ?? r["Num Cuotas"] ?? r["NumCuotas"] ?? r["Cuota"] ?? r["Pagos"]); return coordNorm==="AGRONEGOCIOS" && cuotas===1; }
     const FASES_MAP={ ADMIN:["ADMINISTRATIVA"], EXTRA:["EXTRAJUDICIAL"] };
     function faseEnGrupo(rec,grupo){ const f=norm(valFase(rec)); if(!f) return false; const lista=FASES_MAP[grupo]||[]; return lista.some(alias=> f.includes(norm(alias))); }
 
-    // Helpers para "AGENDADO"
-    function onlyDigits(s){ return String(s ?? "").replace(/\D/g, ""); }
-    function parseDMYtoDate(dmy){
-      const m = (dmy||"").match(/^(\d{2})-(\d{2})-(\d{4})$/);
-      if(!m) return null;
-      return new Date(Number(m[3]), Number(m[2])-1, Number(m[1]));
-    }
+    function onlyDigits(s){ return String(s ?? "").replace(/\D/g,""); }
 
     /* ===================== Textos PDF (resumidos) ===================== */
     const meses=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
     function numEnEsp(n){ const u=["cero","uno","dos","tres","cuatro","cinco","seis","siete","ocho","nueve","diez","once","doce","trece","catorce","quince","dieciséis","diecisiete","dieciocho","diecinueve","veinte","veintiuno","veintidós","veintitrés","veinticuatro","veinticinco","veintiséis","veintisiete","veintiocho","veintinueve"]; if(n<30)return u[n]; const d=["","","","treinta","cuarenta","cincuenta"]; const dec=Math.floor(n/10),uni=n%10; return uni===0? d[dec]:`${d[dec]} y ${u[uni]}`; }
     function anioEnLetras(y){ const map={2023:"dos mil veintitrés",2024:"dos mil veinticuatro",2025:"dos mil veinticinco",2026:"dos mil veintiséis"}; return map[y]||y.toString(); }
     function ahoraCDMX(){ return mxNow(); }
-    function fechaEnLetrasFrom(dateObj){ const h=dateObj.getHours(), m=dateObj.getMinutes(), d=dateObj.getDate(), mm=dateObj.getMonth(), y=dateObj.getFullYear(); return `${numEnEsp(h)} horas con ${m===0?"cero":numEnEsp(m)} minutos del ${numEnEsp(d)} de ${meses[mm]} de ${anioEnLetras(y)}`; }
+    function fechaEnLetrasFrom(d){ const h=d.getHours(), m=d.getMinutes(), dd=d.getDate(), mm=d.getMonth(), y=d.getFullYear(); return `${numEnEsp(h)} horas con ${m===0?"cero":numEnEsp(m)} minutos del ${numEnEsp(dd)} de ${meses[mm]} de ${anioEnLetras(y)}`; }
     function getDireccionPorSucursal(sucursal){
       const sNorm=norm(sucursal);
       let found=direcciones.find(d=>norm(d.Nombre_Sucursal)===sNorm);
@@ -392,7 +353,7 @@
         const NOMBRE_SUCURSAL=(dir.Nombre_Sucursal||sucursal||"________________").toString().trim();
         const DIRECCION=(dir.DIRECCION||"________________").toString().trim();
         const inicioLocal=ahoraCDMX(), cierreLocal=new Date(inicioLocal.getTime()+30*60000);
-        const intro=`En el Municipio de ${MUNICIPIO}, ${ESTADO}, en la sucursal de ${NOMBRE_SUCURSAL}, siendo las ${fechaEnLetrasFrom(inicioLocal)}, ... con domicilio en ${DIRECCION} ...`;
+        const intro=`En el Municipio de ${MUNICIPIO}, ${ESTADO}, ... con domicilio en ${DIRECCION} ...`;
         const hechos=`Hechos:\nSe hace constar que el C. ${asesor} ...`;
         const faltas=`Faltas y omisiones detectadas:\n1.4 ...\n1.5 ...\n2. ...\n3.14 ...`;
         const determinacion=`Determinación:\nPor lo anterior, ...`;
@@ -407,6 +368,15 @@
 
     /* ===================== Inicio ===================== */
     window.addEventListener("DOMContentLoaded", async () => {
+      // Poblar datalist de usuarios (estático con el mapa)
+      const dl = document.getElementById("dlUsuarios");
+      Object.keys(USER_CODE_TO_NAME).sort().forEach(code=>{
+        const opt=document.createElement("option");
+        opt.value = code;
+        opt.label = USER_CODE_TO_NAME[code];
+        dl.appendChild(opt);
+      });
+
       try{
         const [resDatos, resDir, headerData, footerData] = await Promise.all([
           fetch(URL_DATOS,{cache:"no-store"}), fetch(URL_DIRECCION,{cache:"no-store"}),
@@ -416,23 +386,12 @@
         const dirJson = await resDir.json();
         if(Array.isArray(dirJson)) direcciones=dirJson;
         else if (dirJson && typeof dirJson==="object"){
-          const vals=Object.values(dirJson);
-          direcciones=(vals.length && typeof vals[0]==="object")? vals : [dirJson];
+          const vals=Object.values(dirJson); direcciones=(vals.length && typeof vals[0]==="object")? vals : [dirJson];
         } else direcciones=[];
         HEADER_DATA=headerData; FOOTER_DATA=footerData;
       }catch(e){
-        alert("Error cargando datos: "+e.message);
-        return;
+        alert("Error cargando datos: "+e.message); return;
       }
-
-      // poblar datalist de USUARIOS (códigos) para autocompletar
-      const dl = document.getElementById("usuariosList");
-      Object.entries(USERS_MAP).forEach(([code, name])=>{
-        const opt=document.createElement("option");
-        opt.value = code;
-        opt.textContent = name;
-        dl.appendChild(opt);
-      });
 
       const selCoord=document.getElementById("coordinadorSelect");
       selCoord.innerHTML='<option value="">-- Selecciona --</option>';
@@ -471,15 +430,17 @@
       document.getElementById("btnAplicar").addEventListener("click", cargarDatos);
 
       // Abrir modal "Revisar Agenda"
-      document.getElementById("btnAbrirAgenda").addEventListener("click", async () => {
-        document.getElementById("filtroFechaAgenda").value = mxISODate(); // ← hoy CDMX
+      document.getElementById("btnAbrirAgenda").addEventListener("click", () => {
+        document.getElementById("filtroFechaAgenda").value = mxISODate();
+        document.getElementById("usuarioNombreEtiqueta").textContent = "—";
+        document.getElementById("filtroUsuarioAgenda").value = "";
         document.getElementById("agendaListaTbody").innerHTML = `<tr><td colspan="14" class="text-center text-muted">Clic en "CARGAR AGENDA".</td></tr>`;
         new bootstrap.Modal(document.getElementById("agendaListaModal")).show();
       });
 
       document.getElementById("btnCargarHoy").addEventListener("click", cargarAgendasDesdeSheets);
-      document.getElementById("filtroFechaAgenda").addEventListener("change", aplicarFiltrosTablaAgenda);
-      document.getElementById("filtroUsuarioCodigo").addEventListener("input", aplicarFiltrosTablaAgenda);
+      document.getElementById("filtroFechaAgenda").addEventListener("change", cargarAgendasDesdeSheets);
+      document.getElementById("filtroUsuarioAgenda").addEventListener("input", cargarAgendasDesdeSheets);
     });
 
     /* ===================== Render principal ===================== */
@@ -603,30 +564,20 @@
 
       document.getElementById("btnAgendaPreview").onclick = () => {
         const responsable = getResponsableActual();
-        if (!responsable) {
-          alert("Selecciona primero el 'Coordinador que firma' (o un firmante de Oficina Central).");
-          return;
-        }
+        if (!responsable) { alert("Selecciona el 'Coordinador que firma' (o un firmante de Oficina Central)."); return; }
         document.getElementById("agendaTitulo").textContent = `${sucursalSeleccionada} — ${asesorSeleccionado}`;
         document.getElementById("agendaRealizaRO").value = responsable;
-
-        const isoNow = mxISODateTime(); // ← hora local CDMX
-        document.getElementById("agendaFechaRegistroRO").value = isoNow;
-
-        // valores por defecto
-        document.getElementById("agendaCreador").value = responsable;
-        document.getElementById("agendaRol").value = "";
-
-        buildItemsFromPreview(isoNow);
+        document.getElementById("agendaFechaRegistroRO").value = mxISODateTime();
         new bootstrap.Modal(document.getElementById("agendaModal")).show();
+        buildItemsFromPreview();
       };
 
       new bootstrap.Modal(document.getElementById("vistaPreviaModal")).show();
       marcarAgendadosEnPreview();
     }
 
-    function buildItemsFromPreview(isoRegistro){
-      const hoy = mxISODate(); // ← hoy CDMX
+    function buildItemsFromPreview(){
+      const hoy = mxISODate();
       const tbody = document.getElementById("agendaTbody");
       tbody.innerHTML = "";
       if (!Array.isArray(creditosSeleccionados) || creditosSeleccionados.length===0){
@@ -653,7 +604,6 @@
           <td><input type="date" class="form-control form-control-sm fecha-prog" value="${hoy}"></td>
           <td><input type="text" class="form-control form-control-sm obs-prog" maxlength="320" placeholder="Observación (máx. 320)"></td>
         `;
-        tr.dataset.fechaRegistro = isoRegistro;
         tbody.appendChild(tr);
       });
     }
@@ -733,99 +683,86 @@
         doc.text("Coordinación de Recuperación", pageWidth/2, y, {align:"center"});
       }
       const pageCount=doc.getNumberOfPages();
-      for(let i=1;i<=pageCount;i++){
-        doc.setPage(i);
-        const pageW=doc.internal.pageSize.getWidth(), pageH=doc.internal.pageSize.getHeight();
-        const footerWidth=500, footerHeight=50, footerX=(pageW-footerWidth)/2, footerY=pageH-footerHeight-20;
-        if(FOOTER_DATA){ try{ doc.addImage(FOOTER_DATA,"PNG",footerX,footerY,footerWidth,footerHeight);}catch{} }
-        doc.setFontSize(9);
-        doc.text(`Página ${i} de ${pageCount}`, pageW-60, footerY-6, {align:"right"});
-      }
+      for(let i=1;i<=pageCount;i++){ doc.setPage(i); const pageW=doc.internal.pageSize.getWidth(), pageH=doc.internal.pageSize.getHeight(); const footerWidth=500, footerHeight=50, footerX=(pageW-footerWidth)/2, footerY=pageH-footerHeight-20; if(FOOTER_DATA){ try{ doc.addImage(FOOTER_DATA,"PNG",footerX,footerY,footerWidth,footerHeight);}catch{} } doc.setFontSize(9); doc.text(`Página ${i} de ${pageCount}`, pageW-60, footerY-6, {align:"right"}); }
       const nombreArchivo=(tipo==="acta"?"ACTA_ADMINISTRATIVA":"EXHORTO");
       doc.save(`${nombreArchivo}_${asesor.replace(/ /g,"_")}_${norm(sucursal).replace(/[^A-Z0-9_]/g,"")}.pdf`);
     }
 
-    /* ===================== Google Apps Script API ===================== */
+    /* ===================== GAS API ===================== */
     async function guardarAgendaEnSheet(payload){
       const res = await fetch(GAS_API_URL, {
         method: "POST",
-        headers: { "Content-Type": "text/plain" }, // simple request
+        headers: { "Content-Type": "text/plain" },
         body: JSON.stringify(payload)
       });
       const j = await res.json();
       if (!res.ok || !j.ok) throw new Error(j.error || `HTTP ${res.status}`);
       return j; // { ok:true, inserted:n, skipped:n }
     }
-
-    async function consultarAgendaEnSheet({fecha=null, desde=null, q=null, usuario=null} = {}){
+    async function consultarAgendaEnSheet({fecha=null, desde=null, usuario=null, q=null} = {}){
       const u = new URL(GAS_API_URL);
       u.searchParams.set("action","list");
-      if (fecha)   u.searchParams.set("fecha",  fecha); // yyyy-mm-dd
-      if (desde)   u.searchParams.set("desde",  desde); // yyyy-mm-dd
-      if (q)       u.searchParams.set("q",      q);
+      if (fecha)   u.searchParams.set("fecha", fecha);
+      if (desde)   u.searchParams.set("desde", desde);
       if (usuario) u.searchParams.set("usuario", usuario);
+      if (q)       u.searchParams.set("q", q);
       const res = await fetch(u.toString(), { method:"GET", cache:"no-store" });
       const j = await res.json();
       if (!res.ok || !j.ok) throw new Error(j.error || `HTTP ${res.status}`);
       return j.items || [];
     }
 
-    /* ===================== Guardar agenda (EVITA DOBLE CLIC) ===================== */
+    /* ===================== Guardar agenda (evita doble clic) ===================== */
     document.getElementById("btnGuardarAgenda").addEventListener("click", async () => {
-      if (guardandoAgenda) return; // ← bloquea segundo click
+      if (guardandoAgenda) return;
       guardandoAgenda = true;
 
       const btn = document.getElementById("btnGuardarAgenda");
       const oldLabel = btn.innerHTML;
-      btn.disabled = true;
-      btn.innerHTML = 'Guardando…';
+      btn.disabled = true; btn.innerHTML = 'Guardando…';
 
       try {
         const responsable = getResponsableActual();
         if (!responsable) throw new Error("Selecciona el 'Coordinador que firma'.");
 
+        const usuarioCodigo = (document.getElementById("agendaUsuarioCodigo").value || "").trim().toUpperCase();
+        if (!usuarioCodigo) throw new Error("Indica el usuario (código) que crea la agenda.");
+        const rolUsuario = (document.getElementById("agendaRolUsuario").value || "").trim();
+
         const filas = document.querySelectorAll("#agendaTbody tr");
         if (!filas.length) throw new Error("No hay filas para guardar.");
-
-        const creador = (document.getElementById("agendaCreador").value || "").trim();
-        const rolUser = (document.getElementById("agendaRol").value || "").trim();
-        if (!creador) throw new Error("Indica el 'Usuario que crea la agenda'.");
-        if (!rolUser) throw new Error("Selecciona el 'Rol del usuario'.");
 
         const items = [];
         let algunaFecha = null;
 
         filas.forEach(tr => {
-          const credito = tr.querySelector(".tdCredito")?.innerText.trim() || "";
-          const socio   = tr.querySelector(".tdSocio")?.innerText.trim() || "";
-          const nombre  = tr.querySelector(".tdNombre")?.innerText.trim() || "";
-          const suc     = tr.querySelector(".tdSucursal")?.innerText.trim() || "";
-          const asesor  = tr.querySelector(".tdAsesor")?.innerText.trim() || "";
-          const producto= tr.querySelector(".tdProducto")?.innerText.trim() || "";
-          const saldoTx = tr.querySelector(".tdSaldo")?.innerText.trim() || "";
-          const diasAtr = tr.querySelector(".tdDiasAtr")?.innerText.trim() || "";
-          const diasSG  = tr.querySelector(".tdDiasSinGes")?.innerText.trim() || "";
-          const fase    = tr.querySelector(".tdFase")?.innerText.trim() || "";
-          const fechaProg = tr.querySelector(".fecha-prog")?.value || ""; // yyyy-mm-dd
-          const obs     = tr.querySelector(".obs-prog")?.value || "";
-
-          if (!algunaFecha && fechaProg) algunaFecha = fechaProg;
-
-          items.push({
-            fecha_programada: fechaProg,
-            credito, socio, nombre,
-            sucursal: suc, asesor,
-            producto, saldo: saldoTx,
-            dias_atraso: diasAtr,
-            dias_sin_gestion: diasSG,
-            fase, observaciones: obs,
+          const obj = {
+            fecha_programada: tr.querySelector(".fecha-prog")?.value || "",
+            credito: tr.querySelector(".tdCredito")?.innerText.trim() || "",
+            socio:   tr.querySelector(".tdSocio")?.innerText.trim() || "",
+            nombre:  tr.querySelector(".tdNombre")?.innerText.trim() || "",
+            sucursal: tr.querySelector(".tdSucursal")?.innerText.trim() || "",
+            asesor:   tr.querySelector(".tdAsesor")?.innerText.trim() || "",
+            producto: tr.querySelector(".tdProducto")?.innerText.trim() || "",
+            saldo:    tr.querySelector(".tdSaldo")?.innerText.trim() || "",
+            dias_atraso: tr.querySelector(".tdDiasAtr")?.innerText.trim() || "",
+            dias_sin_gestion: tr.querySelector(".tdDiasSinGes")?.innerText.trim() || "",
+            fase: tr.querySelector(".tdFase")?.innerText.trim() || "",
+            observaciones: tr.querySelector(".obs-prog")?.value || "",
             responsable
-          });
+          };
+          if (!algunaFecha && obj.fecha_programada) algunaFecha = obj.fecha_programada;
+          items.push(obj);
         });
 
-        if (!algunaFecha) throw new Error("Falta la 'Fecha programada' al menos en una fila.");
+        if (!algunaFecha) throw new Error("Falta la 'Fecha programada' en al menos una fila.");
 
-        const payload = { creado_por: creador, rol_usuario: rolUser, items };
+        const payload = {
+          creado_por: usuarioCodigo,  // backend lo convierte a NOMBRE
+          rol_usuario: rolUsuario,
+          items
+        };
+
         const out = await guardarAgendaEnSheet(payload);
         alert(`✅ Guardado. Insertadas: ${out.inserted ?? 0}. Omitidas por duplicado: ${out.skipped ?? 0}.`);
         bootstrap.Modal.getInstance(document.getElementById("agendaModal"))?.hide();
@@ -834,8 +771,7 @@
         alert("❌ Error al guardar en Sheets: " + (e.message || e));
       } finally {
         guardandoAgenda = false;
-        btn.disabled = false;
-        btn.innerHTML = oldLabel;
+        btn.disabled = false; btn.innerHTML = oldLabel;
       }
     });
 
@@ -843,13 +779,16 @@
     async function cargarAgendasDesdeSheets(){
       try{
         const fecha   = document.getElementById("filtroFechaAgenda").value || mxISODate();
+        const usuario = (document.getElementById("filtroUsuarioAgenda").value || "").trim();
+        const etiqueta = document.getElementById("usuarioNombreEtiqueta");
+        if (usuario) {
+          const nombre = USER_CODE_TO_NAME[usuario.toUpperCase()] || usuario;
+          etiqueta.textContent = nombre;
+        } else {
+          etiqueta.textContent = "—";
+        }
 
-        // traducir código a NOMBRE para filtrar por creado_por (igualdad exacta en backend)
-        const code    = (document.getElementById("filtroUsuarioCodigo").value || "").toUpperCase().trim();
-        const nombre  = USERS_MAP[code] || "";
-        document.getElementById("filtroUsuarioNombre").textContent = nombre ? `Filtrando por: ${nombre}` : "Sin filtro por usuario";
-
-        const items = await consultarAgendaEnSheet({ fecha, usuario: nombre });
+        const items = await consultarAgendaEnSheet({ fecha, usuario: usuario || null });
 
         const tbody = document.getElementById("agendaListaTbody");
         tbody.innerHTML = "";
@@ -869,7 +808,7 @@
           const tr = document.createElement("tr");
           tr.innerHTML = `
             <td class="text-center">${i+1}</td>
-            <td class="mono">${fmtCDMX(r.fecha_registro || "")}</td>
+            <td class="mono">${r.fecha_registro || ""}</td>
             <td class="text-center">${r.fecha_programada || ""}</td>
             <td>${r.credito || ""}</td>
             <td class="mono">${r.socio || ""}</td>
@@ -890,35 +829,13 @@
       }
     }
 
-    function aplicarFiltrosTablaAgenda(){ cargarAgendasDesdeSheets(); }
-
     /* ===================== Marca "AGENDADO" en la vista previa ===================== */
     async function marcarAgendadosEnPreview() {
       try {
-        const hoyISO = mxISODate(); // yyyy-mm-dd (CDMX)
-
-        // 1) por asesor (desde hoy)
+        const hoyISO = mxISODate();
         let ag = [];
-        if (asesorSeleccionado) {
-          try {
-            ag = await consultarAgendaEnSheet({ desde: hoyISO, q: asesorSeleccionado });
-          } catch(e){ console.warn("AGENDADO por asesor falló:", e); }
-        }
-
-        // 2) por sucursal (desde hoy)
-        if (!ag.length && sucursalSeleccionada) {
-          try {
-            ag = await consultarAgendaEnSheet({ desde: hoyISO, q: sucursalSeleccionada });
-          } catch(e){ console.warn("AGENDADO por sucursal falló:", e); }
-        }
-
-        // 3) sin filtro (desde hoy)
-        if (!ag.length) {
-          try {
-            ag = await consultarAgendaEnSheet({ desde: hoyISO });
-          } catch(e){ console.warn("AGENDADO sin filtro falló:", e); }
-        }
-
+        // Desde hoy, sin filtrar usuario: buscamos coincidencias de créditos
+        ag = await consultarAgendaEnSheet({ desde: hoyISO });
         const setCredAgendados = new Set(
           (ag || [])
             .filter(r => r.credito && r.fecha_programada)
@@ -928,7 +845,7 @@
 
         const rows = document.querySelectorAll("#tablaPreview tr");
         rows.forEach(row => {
-          const credito = onlyDigits(row.children?.[0]?.innerText || ""); // 1a col = Crédito
+          const credito = onlyDigits(row.children?.[0]?.innerText || "");
           const estTd = row.querySelector(".estatus-cell");
           if (!estTd) return;
           if (credito && setCredAgendados.has(credito)) {
