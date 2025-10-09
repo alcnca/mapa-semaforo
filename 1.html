@@ -736,6 +736,7 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
         y=env.ensureSpace(y,120); doc.setFontSize(11);
         doc.text("Atentamente,", pageWidth/2, y, {align:"center"}); y+=30;
         doc.text("_______________________________", pageWidth/2, y, {align:"center"}); y+=14;
+        doc.text("${firmanteCoord}", pageWidth/2, y, {align:"center"}); y+=14;
         doc.text("Coordinación de Recuperación", pageWidth/2, y, {align:"center"});
       }
       const pageCount=doc.getNumberOfPages();
