@@ -9,7 +9,6 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
   <style>
     .table.table-sm th, .table.table-sm td { font-size: 10px; line-height: 1.10; }
-    /* Evitamos dependencias por índice de columna; usamos clases utilitarias */
     .text-right { text-align: right; }
     .text-center { text-align: center; }
     .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 10px; }
@@ -153,6 +152,8 @@
                   <th>Días atraso</th>
                   <th>Días sin gestión</th>
                   <th>Fase</th>
+                  <th>Realizó última gestión</th><!-- NUEVO -->
+                  <th>Tipo de gestión</th><!-- NUEVO -->
                   <th>Fecha programada</th>
                   <th>Observaciones</th>
                 </tr>
@@ -211,6 +212,8 @@
                   <th>Días atraso</th>
                   <th>Días sin gestión</th>
                   <th>Fase</th>
+                  <th>Realizó última gestión</th><!-- NUEVO -->
+                  <th>Tipo de gestión</th><!-- NUEVO -->
                   <th>Observaciones</th>
                 </tr>
               </thead>
@@ -242,14 +245,20 @@
     function toNumberSafe(val){ if(val==null) return 0; if(typeof val==="number") return isFinite(val)?val:0; const n=parseFloat(String(val).replace(/[^0-9.-]/g,"")); return isNaN(n)?0:n; }
     function onlyDigits(s){ return String(s ?? "").replace(/\D/g,""); }
 
-    // Normaliza fechas a YYYY-MM-DD
+    // Normaliza fechas a YYYY-MM-DD (acepta DD/MM/YYYY y DD-MM-YYYY)
     function normDateYYYYMMDD(s){
       if(!s) return "";
-      const t=String(s).trim();
-      let m = t.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      const t = String(s).trim();
+      // YYYY-MM-DD
+      let m = t.match(/^(\d{4})-(\d{2})-(\d{2})$/);
       if(m) return `${m[1]}-${m[2]}-${m[3]}`;
+      // DD-MM-YYYY
       m = t.match(/^(\d{2})-(\d{2})-(\d{4})$/);
       if(m) return `${m[3]}-${m[2]}-${m[1]}`;
+      // DD/MM/YYYY
+      m = t.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+      if(m) return `${m[3]}-${m[2]}-${m[1]}`;
+      // fallback (primeros 10 chars)
       return t.slice(0,10);
     }
 
@@ -316,12 +325,11 @@
     function parseDiasSinGestion(raw){ if(raw==null) return null; const s=String(raw).toLowerCase().trim(); const mk=new Set(["","sin gestion","sin gestión","s/g","sg","sen gestion","sin-gestion","sin_gestion"]); if(mk.has(s)) return null; const n=parseInt(s.replace(/[^0-9-]/g,""),10); return isNaN(n)?null:n; }
     const estaSinGestion = raw => parseDiasSinGestion(raw)===null;
 
-    // Pago único: Coord = AGRONEGOCIOS y Cuotas = 1
-    function esPagoUnico(m){ if(!m) return false; const t=norm(m); return (/\bPAGO(S)?\s*UNICO(S)?\b/.test(t)) || (t.includes("PAGO") && t.includes("UNICO")); }
+    // Pago único (coordinación Agronegocios + una sola cuota)
     const valProducto = r => r.producto ?? r.Producto ?? r.product ?? r.Product ?? "";
-    const valSocio    = r => r.socio ?? r.Socio ?? r["Num Socio"] ?? r["Numero Socio"] ?? r["Número de Socio"] ?? "";
-    const valFase     = r => r.fase ?? r.Fase ?? r.FASE ?? r["Fase del crédito"] ?? r["Fase del credito"] ?? "";
-    const valDiasAtr  = r => r["Dias de Atraso"] ?? r["Días de atraso"] ?? r["Dias atraso"] ?? r["Días atraso"] ?? "";
+    const valSocio    = r => r.socio ?? r.Socio ?? r["Num Socio"] ?? r["Numero Socio"] ?? r["Número de Socio"] ?? r.Socio ?? "";
+    const valFase     = r => r.fase ?? r.Fase ?? r.FASE ?? r["Fase del crédito"] ?? r["Fase del credito"] ?? r.Fase ?? "";
+    const valDiasAtr  = r => r["Dias de Atraso"] ?? r["Días de atraso"] ?? r["Dias atraso"] ?? r["Días atraso"] ?? r["Dias de atraso"] ?? "";
     const valSaldo    = r => toNumberSafe(r["Saldo Total"]);
     function parseCuotas(raw){ if(raw==null) return NaN; const s=String(raw).trim().toLowerCase(); const m=s.match(/^\s*(\d+)\s*(?:\/|\s*de\s*)?\s*(\d+)?\s*$/i); if(m) return parseInt(m[1],10); const n=parseInt(s.replace(/[^\d-]/g,""),10); return isNaN(n)?NaN:n; }
     function cumplePagosUnicos(r){
@@ -338,21 +346,21 @@
     function ahoraCDMX(){ return mxNow(); }
     function fechaEnLetrasFrom(d){ const h=d.getHours(), m=d.getMinutes(), dd=d.getDate(), mm=d.getMonth(), y=d.getFullYear(); return `${numEnEsp(h)} horas con ${m===0?"cero":numEnEsp(m)} minutos del ${numEnEsp(dd)} de ${meses[mm]} de ${anioEnLetras(y)}`; }
 
-    // --- Lectura/validación de Fecha_Vencimiento ---
+    // --- Fecha_Vencimiento flexible ---
     function getFechaVencimientoRaw(r){
       return r.Fecha_Vencimiento ?? r["Fecha_Vencimiento"] ?? r["Fecha de Vencimiento"] ??
-             r["Fecha Vencimiento"] ?? r["Vencimiento"] ?? r["fecha_vencimiento"] ?? "";
+             r["Fecha Vencimiento"] ?? r["Vencimiento"] ?? r["fecha_vencimiento"] ?? r["Fecha Vencimiento"] ?? "";
     }
     function parseVencimientoToDate(r){
-      const iso = normDateYYYYMMDD(getFechaVencimientoRaw(r));
+      const iso = normDateYYYYMMDD(getFechaVencimientoRaw(r)); // puede venir de DD/MM/YYYY
       if(!iso || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return null;
       const [Y,M,D] = iso.split("-").map(n=>parseInt(n,10));
-      const d = new Date(`${Y}-${String(M).padStart(2,"0")}-${String(D).padStart(2,"0")}T00:00:00`);
+      const d = new Date(Date.UTC(Y, M-1, D)); // UTC para evitar TZ
       return isNaN(d.getTime()) ? null : d;
     }
     function isWithinNextNDays(dateObj, n=30){
       if(!dateObj) return false;
-      const hoy = new Date(mxISODate()+"T00:00:00");
+      const hoy = new Date(mxISODate()+"T00:00:00Z");
       const limite = new Date(hoy.getTime() + (n*24*60*60*1000));
       return (dateObj.getTime() >= hoy.getTime()) && (dateObj.getTime() <= limite.getTime());
     }
@@ -362,7 +370,7 @@
       return isWithinNextNDays(fv, dias);
     }
 
-    // --- NUEVOS getters: Realizó última gestión / Tipo de gestión ---
+    // --- Getters: Realizó última gestión / Tipo de gestión ---
     function getRealizoUltimaGestion(r){
       return r["Realizo Ultima Gestion"]
           ?? r["Realizó Última Gestión"]
@@ -470,7 +478,6 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
 
     /* ===================== Inicio ===================== */
     window.addEventListener("DOMContentLoaded", async () => {
-      // Carga de catálogos/recursos externos (si falla, no detenemos la app)
       try{
         const [resDatos, resDir, headerData, footerData] = await Promise.all([
           fetch(URL_DATOS,{cache:"no-store"}), fetch(URL_DIRECCION,{cache:"no-store"}),
@@ -529,7 +536,7 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
         document.getElementById("filtroFechaAgenda").value = mxISODate();
         const defaultUser = getUsuarioCreadorCode();
         document.getElementById("filtroUsuarioAgendaInput").value = defaultUser || "";
-        document.getElementById("agendaListaTbody").innerHTML = `<tr><td colspan="14" class="text-center text-muted">Ingresa un usuario y pulsa "CARGAR AGENDA".</td></tr>`;
+        document.getElementById("agendaListaTbody").innerHTML = `<tr><td colspan="16" class="text-center text-muted">Ingresa un usuario y pulsa "CARGAR AGENDA".</td></tr>`;
         new bootstrap.Modal(document.getElementById("agendaListaModal")).show();
       });
 
@@ -657,9 +664,9 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
         tbody.innerHTML += `
           <tr>
             <td class="text-center">${c.Linea ?? ""}</td>
-            <td class="">${valProducto(c)}</td>
-            <td class="">${valSocio(c)}</td>
-            <td class="">${c.Nombre ?? ""}</td>
+            <td>${valProducto(c)}</td>
+            <td>${valSocio(c)}</td>
+            <td>${c.Nombre ?? ""}</td>
             <td class="text-right">${saldo.toLocaleString("es-MX",{style:"currency",currency:"MXN"})}</td>
             <td class="text-center">${valDiasAtr(c)}</td>
             <td class="text-center">${dsgDisplay}</td>
@@ -696,13 +703,16 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
       const tbody = document.getElementById("agendaTbody");
       tbody.innerHTML = "";
       if (!Array.isArray(creditosSeleccionados) || creditosSeleccionados.length===0){
-        tbody.innerHTML = `<tr><td colspan="13" class="text-center text-muted">No hay filas en la vista previa.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="15" class="text-center text-muted">No hay filas en la vista previa.</td></tr>`;
         return;
       }
       creditosSeleccionados.forEach((c, idx) => {
         const saldo = valSaldo(c);
         const dsgParsed = parseDiasSinGestion(c["Dias sin Gestion"]);
         const dsgDisplay = (dsgParsed===null) ? "SIN GESTIÓN" : dsgParsed;
+        const realizo = getRealizoUltimaGestion(c);
+        const tipoG   = getTipoGestion(c);
+
         const tr = document.createElement("tr");
         tr.innerHTML = `
           <td class="text-center">${idx+1}</td>
@@ -716,6 +726,8 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
           <td class="tdDiasAtr text-center">${valDiasAtr(c)}</td>
           <td class="tdDiasSinGes text-center">${dsgDisplay}</td>
           <td class="tdFase text-center">${valFase(c)}</td>
+          <td class="tdRealizo text-center">${realizo || ""}</td>
+          <td class="tdTipo text-center">${tipoG || ""}</td>
           <td><input type="date" class="form-control form-control-sm fecha-prog" value="${hoy}"></td>
           <td><input type="text" class="form-control form-control-sm obs-prog" maxlength="320" placeholder="Observación (máx. 320)"></td>
         `;
@@ -767,16 +779,22 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
         const dsgParsed=parseDiasSinGestion(c["Dias sin Gestion"]);
         const dsgDisplay=(dsgParsed===null)?"SIN GESTIÓN":dsgParsed;
         const fvISO = normDateYYYYMMDD(getFechaVencimientoRaw(c)) || "";
-        return [ c.Linea??"", valProducto(c), valSocio(c), c.Nombre??"", toNumberSafe(c["Saldo Total"]).toLocaleString("es-MX",{style:"currency",currency:"MXN"}), valDiasAtr(c), dsgDisplay, valFase(c), fvISO ];
+        const realizo = getRealizoUltimaGestion(c) || "";
+        const tipoG = getTipoGestion(c) || "";
+        return [ c.Linea??"", valProducto(c), valSocio(c), c.Nombre??"", toNumberSafe(c["Saldo Total"]).toLocaleString("es-MX",{style:"currency",currency:"MXN"}), valDiasAtr(c), dsgDisplay, valFase(c), fvISO, realizo, tipoG ];
       });
 
       doc.autoTable({
         startY:y,
-        head:[["Crédito","Producto","Socio","Nombre del Socio","Saldo","Días atraso","Días sin gestión","Fase","Venc."]],
+        head:[["Crédito","Producto","Socio","Nombre del Socio","Saldo","Días atraso","Días sin gestión","Fase","Venc.","Realizó última gestión","Tipo de gestión"]],
         body:rows,
         styles:{ fontSize:8, cellPadding:1.3, lineWidth:.1, valign:"middle" },
         headStyles:{ fillColor:[0,0,0], textColor:[255,255,255], halign:"center", fontSize:8 },
-        columnStyles:{ 0:{halign:"center"},1:{halign:"center"},2:{halign:"left"},3:{halign:"left"},4:{halign:"right"},5:{halign:"center"},6:{halign:"center"},7:{halign:"center"},8:{halign:"center"} },
+        columnStyles:{
+          0:{halign:"center"},1:{halign:"center"},2:{halign:"left"},3:{halign:"left"},
+          4:{halign:"right"},5:{halign:"center"},6:{halign:"center"},7:{halign:"center"},
+          8:{halign:"center"},9:{halign:"center"},10:{halign:"center"}
+        },
         margin:env.marginFor(40,40),
         didDrawPage:env.didDrawPage
       });
@@ -857,6 +875,8 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
             dias_atraso: tr.querySelector(".tdDiasAtr")?.innerText.trim() || "",
             dias_sin_gestion: tr.querySelector(".tdDiasSinGes")?.innerText.trim() || "",
             fase: tr.querySelector(".tdFase")?.innerText.trim() || "",
+            realizo_ultima_gestion: tr.querySelector(".tdRealizo")?.innerText.trim() || "",   // NUEVO
+            tipo_gestion: tr.querySelector(".tdTipo")?.innerText.trim() || "",                 // NUEVO
             observaciones: tr.querySelector(".obs-prog")?.value || "",
             responsable
           };
@@ -883,11 +903,10 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
 
         if(!usuario){
           alert("Ingresa el usuario (código) creador, ej. ALCNCA.");
-          document.getElementById("agendaListaTbody").innerHTML = `<tr><td colspan="14" class="text-center text-muted">Ingresa un usuario.</td></tr>`;
+          document.getElementById("agendaListaTbody").innerHTML = `<tr><td colspan="16" class="text-center text-muted">Ingresa un usuario.</td></tr>`;
           return;
         }
 
-        // Llamada al backend con filtros
         let items = await consultarAgendaEnSheet({ fecha, usuario });
 
         // Filtros defensivos en el frontend (por si el backend no los aplica)
@@ -900,7 +919,7 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
         tbody.innerHTML = "";
 
         if (!items.length){
-          tbody.innerHTML = `<tr><td colspan="14" class="text-center text-muted">Sin resultados.</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="16" class="text-center text-muted">Sin resultados.</td></tr>`;
           return;
         }
 
@@ -926,6 +945,8 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
             <td class="text-center">${r.dias_atraso || ""}</td>
             <td class="text-center">${r.dias_sin_gestion || ""}</td>
             <td class="text-center">${r.fase || ""}</td>
+            <td class="text-center">${r.realizo_ultima_gestion || ""}</td> <!-- NUEVO -->
+            <td class="text-center">${r.tipo_gestion || ""}</td>           <!-- NUEVO -->
             <td>${r.observaciones || ""}</td>
           `;
           tbody.appendChild(tr);
