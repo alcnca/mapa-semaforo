@@ -9,12 +9,9 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
   <style>
     .table.table-sm th, .table.table-sm td { font-size: 10px; line-height: 1.10; }
-    #tablaPreview td:nth-child(1), #tablaPreview td:nth-child(2) { text-align: center; }
-    #tablaPreview td:nth-child(3), #tablaPreview td:nth-child(4) { text-align: left; }
-    #tablaPreview td:nth-child(5) { text-align: right; }
-    #tablaPreview td:nth-child(6), #tablaPreview td:nth-child(7), #tablaPreview td:nth-child(8), #tablaPreview td:nth-child(9), #tablaPreview td:nth-child(10) { text-align: center; }
-    .tdSaldo { text-align: right; }
-    .tdCenter { text-align: center; }
+    /* Evitamos dependencias por índice de columna; usamos clases utilitarias */
+    .text-right { text-align: right; }
+    .text-center { text-align: center; }
     .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 10px; }
   </style>
 </head>
@@ -92,10 +89,10 @@
                   <th>Saldo</th>
                   <th>Días atraso</th>
                   <th>Días sin gestión</th>
-                  <th>Realizó última gestión</th><!-- NUEVA -->
-                  <th>Tipo de gestión</th>       <!-- NUEVA -->
                   <th>Fase</th>
                   <th>Venc.</th>
+                  <th>Realizó última gestión</th>
+                  <th>Tipo de gestión</th>
                   <th>Estatus</th>
                 </tr>
               </thead>
@@ -341,33 +338,11 @@
     function ahoraCDMX(){ return mxNow(); }
     function fechaEnLetrasFrom(d){ const h=d.getHours(), m=d.getMinutes(), dd=d.getDate(), mm=d.getMonth(), y=d.getFullYear(); return `${numEnEsp(h)} horas con ${m===0?"cero":numEnEsp(m)} minutos del ${numEnEsp(dd)} de ${meses[mm]} de ${anioEnLetras(y)}`; }
 
-    // --- NUEVO: Lectura/validación de Fecha_Vencimiento ---
+    // --- Lectura/validación de Fecha_Vencimiento ---
     function getFechaVencimientoRaw(r){
       return r.Fecha_Vencimiento ?? r["Fecha_Vencimiento"] ?? r["Fecha de Vencimiento"] ??
              r["Fecha Vencimiento"] ?? r["Vencimiento"] ?? r["fecha_vencimiento"] ?? "";
     }
-    function getRealizoUltimaGestion(r){
-  return r["Realizo Ultima Gestion"]
-      ?? r["Realizó Última Gestión"]
-      ?? r["Realizo_Ultima_Gestion"]
-      ?? r["REALIZO_ULTIMA_GESTION"]
-      ?? r["RealizoUltimaGestion"]
-      ?? r["Realizo última gestión"]
-      ?? r["Realizó ultima gestion"]
-      ?? r["Ultima Gestion Realizo"]
-      ?? r["Ultima_Gestion_Realizo"]
-      ?? "";
-}
-function getTipoGestion(r){
-  return r["Tipo de Gestion"]
-      ?? r["Tipo_de_Gestion"]
-      ?? r["TIPO_DE_GESTION"]
-      ?? r["TipoGestion"]
-      ?? r["Tipo gestión"]
-      ?? r["Tipo de gestión"]
-      ?? r["GestionTipo"]
-      ?? "";
-}
     function parseVencimientoToDate(r){
       const iso = normDateYYYYMMDD(getFechaVencimientoRaw(r));
       if(!iso || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return null;
@@ -385,6 +360,30 @@ function getTipoGestion(r){
       if(!cumplePagosUnicos(r)) return false;
       const fv = parseVencimientoToDate(r);
       return isWithinNextNDays(fv, dias);
+    }
+
+    // --- NUEVOS getters: Realizó última gestión / Tipo de gestión ---
+    function getRealizoUltimaGestion(r){
+      return r["Realizo Ultima Gestion"]
+          ?? r["Realizó Última Gestión"]
+          ?? r["Realizo_Ultima_Gestion"]
+          ?? r["REALIZO_ULTIMA_GESTION"]
+          ?? r["RealizoUltimaGestion"]
+          ?? r["Realizo última gestión"]
+          ?? r["Realizó ultima gestion"]
+          ?? r["Ultima Gestion Realizo"]
+          ?? r["Ultima_Gestion_Realizo"]
+          ?? "";
+    }
+    function getTipoGestion(r){
+      return r["Tipo de Gestion"]
+          ?? r["Tipo_de_Gestion"]
+          ?? r["TIPO_DE_GESTION"]
+          ?? r["TipoGestion"]
+          ?? r["Tipo gestión"]
+          ?? r["Tipo de gestión"]
+          ?? r["GestionTipo"]
+          ?? "";
     }
 
     function getDireccionPorSucursal(sucursal){
@@ -651,20 +650,23 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
       creditos.forEach(c=>{
         const saldo=valSaldo(c); total+=saldo;
         const dsgParsed=parseDiasSinGestion(c["Dias sin Gestion"]); const dsgDisplay=(dsgParsed===null)?"SIN GESTIÓN":dsgParsed;
-        const fvISO = normDateYYYYMMDD(getFechaVencimientoRaw(c)) || "";
+        const fvISO   = normDateYYYYMMDD(getFechaVencimientoRaw(c)) || "";
+        const realizo = getRealizoUltimaGestion(c);
+        const tipoG   = getTipoGestion(c);
+
         tbody.innerHTML += `
           <tr>
-            <td>${c.Linea ?? ""}</td>
-            <td>${valProducto(c)}</td>
-            <td>${valSocio(c)}</td>
-            <td>${c.Nombre ?? ""}</td>
-            <td class="text-end">${saldo.toLocaleString("es-MX",{style:"currency",currency:"MXN"})}</td>
+            <td class="text-center">${c.Linea ?? ""}</td>
+            <td class="">${valProducto(c)}</td>
+            <td class="">${valSocio(c)}</td>
+            <td class="">${c.Nombre ?? ""}</td>
+            <td class="text-right">${saldo.toLocaleString("es-MX",{style:"currency",currency:"MXN"})}</td>
             <td class="text-center">${valDiasAtr(c)}</td>
             <td class="text-center">${dsgDisplay}</td>
-            <td class="text-center">${realizo || ""}</td>       <!-- NUEVA -->
-            <td class="text-center">${tipoG || ""}</td>         <!-- NUEVA -->
             <td class="text-center">${valFase(c)}</td>
             <td class="text-center">${fvISO}</td>
+            <td class="text-center">${realizo || ""}</td>
+            <td class="text-center">${tipoG || ""}</td>
             <td class="text-center estatus-cell"></td>
           </tr>`;
       });
@@ -703,17 +705,17 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
         const dsgDisplay = (dsgParsed===null) ? "SIN GESTIÓN" : dsgParsed;
         const tr = document.createElement("tr");
         tr.innerHTML = `
-          <td class="tdCenter">${idx+1}</td>
+          <td class="text-center">${idx+1}</td>
           <td class="tdCredito mono">${c.Linea ?? ""}</td>
           <td class="tdSocio mono">${valSocio(c)}</td>
           <td class="tdNombre">${c.Nombre ?? ""}</td>
           <td class="tdSucursal">${sucursalSeleccionada || (c.Sucursal ?? "")}</td>
           <td class="tdAsesor">${asesorSeleccionado || (c.Ejecutivo ?? "")}</td>
           <td class="tdProducto">${valProducto(c)}</td>
-          <td class="tdSaldo">${saldo.toLocaleString("es-MX",{style:"currency",currency:"MXN"})}</td>
-          <td class="tdDiasAtr tdCenter">${valDiasAtr(c)}</td>
-          <td class="tdDiasSinGes tdCenter">${dsgDisplay}</td>
-          <td class="tdFase tdCenter">${valFase(c)}</td>
+          <td class="tdSaldo text-right">${saldo.toLocaleString("es-MX",{style:"currency",currency:"MXN"})}</td>
+          <td class="tdDiasAtr text-center">${valDiasAtr(c)}</td>
+          <td class="tdDiasSinGes text-center">${dsgDisplay}</td>
+          <td class="tdFase text-center">${valFase(c)}</td>
           <td><input type="date" class="form-control form-control-sm fecha-prog" value="${hoy}"></td>
           <td><input type="text" class="form-control form-control-sm obs-prog" maxlength="320" placeholder="Observación (máx. 320)"></td>
         `;
@@ -920,10 +922,10 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
             <td>${r.sucursal || ""}</td>
             <td>${r.asesor || ""}</td>
             <td>${r.producto || ""}</td>
-            <td class="tdSaldo">${r.saldo || ""}</td>
-            <td class="tdCenter">${r.dias_atraso || ""}</td>
-            <td class="tdCenter">${r.dias_sin_gestion || ""}</td>
-            <td class="tdCenter">${r.fase || ""}</td>
+            <td class="text-right">${r.saldo || ""}</td>
+            <td class="text-center">${r.dias_atraso || ""}</td>
+            <td class="text-center">${r.dias_sin_gestion || ""}</td>
+            <td class="text-center">${r.fase || ""}</td>
             <td>${r.observaciones || ""}</td>
           `;
           tbody.appendChild(tr);
