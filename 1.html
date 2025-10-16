@@ -16,6 +16,7 @@
     .tdSaldo { text-align: right; }
     .tdCenter { text-align: center; }
     .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 10px; }
+    .badge + .badge { margin-left: 4px; }
   </style>
 </head>
 <body class="container py-4">
@@ -243,14 +244,23 @@
     function toNumberSafe(val){ if(val==null) return 0; if(typeof val==="number") return isFinite(val)?val:0; const n=parseFloat(String(val).replace(/[^0-9.-]/g,"")); return isNaN(n)?0:n; }
     function onlyDigits(s){ return String(s ?? "").replace(/\D/g,""); }
 
-    // Normaliza fechas a YYYY-MM-DD
+    // Normaliza fechas a YYYY-MM-DD (acepta YYYY-MM-DD, DD-MM-YYYY y **DD/MM/YYYY**)
     function normDateYYYYMMDD(s){
       if(!s) return "";
-      const t=String(s).trim();
-      let m = t.match(/^(\d{4})-(\d{2})-(\d{2})/);
-      if(m) return `${m[1]}-${m[2]}-${m[3]}`;
+      const t = String(s).trim();
+
+      // YYYY-MM-DD o YYYY/MM/DD
+      let m = t.match(/^(\d{4})[-/](\d{2})[-/](\d{2})$/);
+      if (m) return `${m[1]}-${m[2]}-${m[3]}`;
+
+      // DD-MM-YYYY
       m = t.match(/^(\d{2})-(\d{2})-(\d{4})$/);
-      if(m) return `${m[3]}-${m[2]}-${m[1]}`;
+      if (m) return `${m[3]}-${m[2]}-${m[1]}`;
+
+      // **DD/MM/YYYY**
+      m = t.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+      if (m) return `${m[3]}-${m[2]}-${m[1]}`;
+
       return t.slice(0,10);
     }
 
@@ -317,29 +327,24 @@
     function parseDiasSinGestion(raw){ if(raw==null) return null; const s=String(raw).toLowerCase().trim(); const mk=new Set(["","sin gestion","sin gestión","s/g","sg","sen gestion","sin-gestion","sin_gestion"]); if(mk.has(s)) return null; const n=parseInt(s.replace(/[^0-9-]/g,""),10); return isNaN(n)?null:n; }
     const estaSinGestion = raw => parseDiasSinGestion(raw)===null;
 
-    // Pago único: Coord = AGRONEGOCIOS y Cuotas = 1
-    function esPagoUnico(m){ if(!m) return false; const t=norm(m); return (/\bPAGO(S)?\s*UNICO(S)?\b/.test(t)) || (t.includes("PAGO") && t.includes("UNICO")); }
+    // Helpers de campos
     const valProducto = r => r.producto ?? r.Producto ?? r.product ?? r.Product ?? "";
     const valSocio    = r => r.socio ?? r.Socio ?? r["Num Socio"] ?? r["Numero Socio"] ?? r["Número de Socio"] ?? "";
     const valFase     = r => r.fase ?? r.Fase ?? r.FASE ?? r["Fase del crédito"] ?? r["Fase del credito"] ?? "";
     const valDiasAtr  = r => r["Dias de Atraso"] ?? r["Días de atraso"] ?? r["Dias atraso"] ?? r["Días atraso"] ?? "";
     const valSaldo    = r => toNumberSafe(r["Saldo Total"]);
-    function parseCuotas(raw){ if(raw==null) return NaN; const s=String(raw).trim().toLowerCase(); const m=s.match(/^\s*(\d+)\s*(?:\/|\s*de\s*)?\s*(\d+)?\s*$/i); if(m) return parseInt(m[1],10); const n=parseInt(s.replace(/[^\d-]/g,""),10); return isNaN(n)?NaN:n; }
-    function cumplePagosUnicos(r){
-      const coord=(r.Coordinacion ?? r.coordinacion ?? r["Coordinación"] ?? r["COORDINACION"] ?? r["COORDINACIÓN"] ?? "").toString();
-      const coordNorm=norm(coord);
-      const cuotas=parseCuotas(r.Cuotas ?? r.cuotas ?? r["Cuotas"] ?? r["CUOTAS"] ?? r["Numero de Cuotas"] ?? r["Número de Cuotas"] ?? r["Num Cuotas"] ?? r["NumCuotas"] ?? r["Cuota"] ?? r["Pagos"]);
-      return coordNorm==="AGRONEGOCIOS" && cuotas===1;
+
+    // Parseo de cuotas
+    function parseCuotas(raw){
+      if(raw==null) return NaN;
+      const s=String(raw).trim().toLowerCase();
+      const m=s.match(/^\s*(\d+)\s*(?:\/|\s*de\s*)?\s*(\d+)?\s*$/i);
+      if(m) return parseInt(m[1],10);
+      const n=parseInt(s.replace(/[^\d-]/g,""),10);
+      return isNaN(n)?NaN:n;
     }
 
-    /* ===== Fecha/Hora en letras — CDMX ===== */
-    const meses=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
-    function numEnEsp(n){ const u=["cero","uno","dos","tres","cuatro","cinco","seis","siete","ocho","nueve","diez","once","doce","trece","catorce","quince","dieciséis","diecisiete","dieciocho","diecinueve","veinte","veintiuno","veintidós","veintitrés","veinticuatro","veinticinco","veintiséis","veintisiete","veintiocho","veintinueve"]; if(n<30)return u[n]; const d=["","","","treinta","cuarenta","cincuenta"]; const dec=Math.floor(n/10),uni=n%10; return uni===0? d[dec]:`${d[dec]} y ${u[uni]}`; }
-    function anioEnLetras(y){ const map={2023:"dos mil veintitrés",2024:"dos mil veinticuatro",2025:"dos mil veinticinco",2026:"dos mil veintiséis"}; return map[y]||y.toString(); }
-    function ahoraCDMX(){ return mxNow(); }
-    function fechaEnLetrasFrom(d){ const h=d.getHours(), m=d.getMinutes(), dd=d.getDate(), mm=d.getMonth(), y=d.getFullYear(); return `${numEnEsp(h)} horas con ${m===0?"cero":numEnEsp(m)} minutos del ${numEnEsp(dd)} de ${meses[mm]} de ${anioEnLetras(y)}`; }
-
-    // --- NUEVO: Lectura/validación de Fecha_Vencimiento ---
+    // Fecha de vencimiento (varios alias en el JSON)
     function getFechaVencimientoRaw(r){
       return r.Fecha_Vencimiento ?? r["Fecha_Vencimiento"] ?? r["Fecha de Vencimiento"] ??
              r["Fecha Vencimiento"] ?? r["Vencimiento"] ?? r["fecha_vencimiento"] ?? "";
@@ -351,17 +356,47 @@
       const d = new Date(`${Y}-${String(M).padStart(2,"0")}-${String(D).padStart(2,"0")}T00:00:00`);
       return isNaN(d.getTime()) ? null : d;
     }
-    function isWithinNextNDays(dateObj, n=30){
+
+    // ¿Fecha dentro del mes siguiente (TZ CDMX)?
+    function isInNextMonth(dateObj){
       if(!dateObj) return false;
-      const hoy = new Date(mxISODate()+"T00:00:00");
-      const limite = new Date(hoy.getTime() + (n*24*60*60*1000));
-      return (dateObj.getTime() >= hoy.getTime()) && (dateObj.getTime() <= limite.getTime());
+      const now = mxNow();
+      const y = now.getFullYear();
+      const m = now.getMonth(); // 0-11
+      const startNext = (m === 11) ? new Date(y+1, 0, 1) : new Date(y, m+1, 1);
+      const endNext   = (m === 11) ? new Date(y+1, 1, 0, 23, 59, 59, 999) : new Date(y, m+2, 0, 23, 59, 59, 999);
+      const t = dateObj.getTime();
+      return t >= startNext.getTime() && t <= endNext.getTime();
     }
-    function cumplePagosUnicosPorVencer(r, dias=30){
+
+    // *** NUEVAS REGLAS DE FILTRO ***
+    // Pagos únicos: AGRONEGOCIOS + cuotas=1 + dias_atraso >= 1
+    function cumplePagosUnicos(r){
+      if(!r) return false;
+      const coord = (r.Coordinacion ?? r.coordinacion ?? r["Coordinación"] ?? r["COORDINACION"] ?? r["COORDINACIÓN"] ?? "").toString();
+      const coordNorm = norm(coord);
+      if (coordNorm !== "AGRONEGOCIOS") return false;
+
+      const cuotas = parseCuotas(r.Cuotas ?? r.cuotas ?? r["Cuotas"] ?? r["CUOTAS"] ?? r["Num Cuotas"] ?? r["Cuota"] ?? r["Pagos"]);
+      if (cuotas !== 1) return false;
+
+      const diasAtr = toNumberSafe(valDiasAtr(r));
+      return diasAtr >= 1;
+    }
+
+    // Pago único por vencer: AGRONEGOCIOS + cuotas=1 + vencimiento dentro del mes siguiente
+    function cumplePagosUnicosPorVencer(r){
       if(!cumplePagosUnicos(r)) return false;
       const fv = parseVencimientoToDate(r);
-      return isWithinNextNDays(fv, dias);
+      return isInNextMonth(fv);
     }
+
+    /* ===== Fecha/Hora en letras — CDMX ===== */
+    const meses=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+    function numEnEsp(n){ const u=["cero","uno","dos","tres","cuatro","cinco","seis","siete","ocho","nueve","diez","once","doce","trece","catorce","quince","dieciséis","diecisiete","dieciocho","diecinueve","veinte","veintiuno","veintidós","veintitrés","veinticuatro","veinticinco","veintiséis","veintisiete","veintiocho","veintinueve"]; if(n<30)return u[n]; const d=["","","","treinta","cuarenta","cincuenta"]; const dec=Math.floor(n/10),uni=n%10; return uni===0? d[dec]:`${d[dec]} y ${u[uni]}`; }
+    function anioEnLetras(y){ const map={2023:"dos mil veintitrés",2024:"dos mil veinticuatro",2025:"dos mil veinticinco",2026:"dos mil veintiséis"}; return map[y]||y.toString(); }
+    function ahoraCDMX(){ return mxNow(); }
+    function fechaEnLetrasFrom(d){ const h=d.getHours(), m=d.getMinutes(), dd=d.getDate(), mm=d.getMonth(), y=d.getFullYear(); return `${numEnEsp(h)} horas con ${m===0?"cero":numEnEsp(m)} minutos del ${numEnEsp(dd)} de ${meses[mm]} de ${anioEnLetras(y)}`; }
 
     function getDireccionPorSucursal(sucursal){
       const sNorm=norm(sucursal);
@@ -541,7 +576,7 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
       if(coordSel && coordSel!=="OFICINA_CENTRAL"){ const target=norm(coordSel); base=base.filter(d=> norm(d.Coordinador)===target ); }
       if(mostrarModo==="SIN"){ base=base.filter(d=> estaSinGestion(d["Dias sin Gestion"])); }
       else if(mostrarModo==="PAGOS_UNICOS"){ base=base.filter(cumplePagosUnicos); }
-      else if(mostrarModo==="PAGOS_UNICOS_POR_VENCER"){ base=base.filter(r => cumplePagosUnicosPorVencer(r, 30)); }
+      else if(mostrarModo==="PAGOS_UNICOS_POR_VENCER"){ base=base.filter(r => cumplePagosUnicosPorVencer(r)); }
       const sucursales=[...new Set(base.map(d=>d.Sucursal))].filter(Boolean).sort((a,b)=>a.localeCompare(b,'es'));
       llenarSucursales(sucursales);
     }
@@ -586,7 +621,7 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
       if(coordSel && coordSel!=="OFICINA_CENTRAL"){ const target=norm(coordSel); base=base.filter(d=> norm(d.Coordinador)===target ); }
       if(mostrarModo==="SIN"){ base=base.filter(d=> estaSinGestion(d["Dias sin Gestion"])); }
       else if(mostrarModo==="PAGOS_UNICOS"){ base=base.filter(cumplePagosUnicos); }
-      else if(mostrarModo==="PAGOS_UNICOS_POR_VENCER"){ base=base.filter(r => cumplePagosUnicosPorVencer(r, 30)); }
+      else if(mostrarModo==="PAGOS_UNICOS_POR_VENCER"){ base=base.filter(r => cumplePagosUnicosPorVencer(r)); }
       else{ base=base.filter(d=>{ const dias=parseDiasSinGestion(d["Dias sin Gestion"]); return (dias===null) || (typeof dias==="number" && dias>=diasFiltro); }); }
 
       const cont=document.getElementById("contenido"); cont.innerHTML="";
@@ -628,6 +663,12 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
         const saldo=valSaldo(c); total+=saldo;
         const dsgParsed=parseDiasSinGestion(c["Dias sin Gestion"]); const dsgDisplay=(dsgParsed===null)?"SIN GESTIÓN":dsgParsed;
         const fvISO = normDateYYYYMMDD(getFechaVencimientoRaw(c)) || "";
+
+        // ESTATUS badges
+        const badges = [];
+        if (cumplePagosUnicos(c))               badges.push('<span class="badge bg-info">PAGO ÚNICO</span>');
+        if (cumplePagosUnicosPorVencer(c))      badges.push('<span class="badge bg-danger">VENCE MES SIGUIENTE</span>');
+
         tbody.innerHTML += `
           <tr>
             <td>${c.Linea ?? ""}</td>
@@ -639,7 +680,7 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
             <td class="text-center">${dsgDisplay}</td>
             <td class="text-center">${valFase(c)}</td>
             <td class="text-center">${fvISO}</td>
-            <td class="text-center estatus-cell"></td>
+            <td class="text-center estatus-cell">${badges.join(" ")}</td>
           </tr>`;
       });
       document.getElementById("totalPreview").textContent = `TOTAL: ${total.toLocaleString("es-MX",{style:"currency",currency:"MXN"})}`;
@@ -924,8 +965,9 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
           const credito = onlyDigits(row.children?.[0]?.innerText || "");
           const estTd = row.querySelector(".estatus-cell");
           if (!estTd) return;
-          estTd.innerHTML = (credito && setCredAgendados.has(credito))
-            ? '<span class="badge bg-success">AGENDADO</span>' : '';
+          if (credito && setCredAgendados.has(credito)) {
+            estTd.innerHTML += (estTd.innerHTML ? " " : "") + '<span class="badge bg-success">AGENDADO</span>';
+          }
         });
       } catch (e) {
         console.warn("No se pudo marcar AGENDADO:", e);
