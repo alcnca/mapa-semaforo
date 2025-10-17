@@ -344,7 +344,7 @@
       return isNaN(n)?NaN:n;
     }
 
-    // Fecha de vencimiento (varios alias en el JSON)
+    // Fecha de vencimiento (varios alias en el JSON, incluido "Fecha Vencimiento": "dd/mm/yyyy")
     function getFechaVencimientoRaw(r){
       return r.Fecha_Vencimiento ?? r["Fecha_Vencimiento"] ?? r["Fecha de Vencimiento"] ??
              r["Fecha Vencimiento"] ?? r["Vencimiento"] ?? r["fecha_vencimiento"] ?? "";
@@ -357,43 +357,41 @@
       return isNaN(d.getTime()) ? null : d;
     }
 
-    // ¿Fecha dentro del mes siguiente (TZ CDMX)?
-    function isInNextMonth(dateObj){
+    /* ======= NUEVO: ventana de próximos 30 días ======= */
+    function venceEnProximos30Dias(dateObj){
       if(!dateObj) return false;
-      const now = mxNow();
-      const y = now.getFullYear();
-      const m = now.getMonth(); // 0-11
-      const startNext = (m === 11) ? new Date(y+1, 0, 1) : new Date(y, m+1, 1);
-      const endNext   = (m === 11) ? new Date(y+1, 1, 0, 23, 59, 59, 999) : new Date(y, m+2, 0, 23, 59, 59, 999);
-      const t = dateObj.getTime();
-      return t >= startNext.getTime() && t <= endNext.getTime();
+      const hoy = mxNow();
+      const hoy00 = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate()); // normalizamos a 00:00
+      const en30 = new Date(hoy00); en30.setDate(en30.getDate() + 30);
+      return dateObj.getTime() >= hoy00.getTime() && dateObj.getTime() <= en30.getTime();
     }
 
-    // *** NUEVAS REGLAS DE FILTRO ***
     // Pagos únicos: AGRONEGOCIOS + cuotas=1 + dias_atraso >= 1
     function cumplePagosUnicos(r){
       if(!r) return false;
       const coord = (r.Coordinacion ?? r.coordinacion ?? r["Coordinación"] ?? r["COORDINACION"] ?? r["COORDINACIÓN"] ?? "").toString();
-      const coordNorm = norm(coord);
-      if (coordNorm !== "AGRONEGOCIOS") return false;
+      if (norm(coord) !== "AGRONEGOCIOS") return false;
 
       const cuotas = parseCuotas(r.Cuotas ?? r.cuotas ?? r["Cuotas"] ?? r["CUOTAS"] ?? r["Num Cuotas"] ?? r["Cuota"] ?? r["Pagos"]);
-      if (cuotas !== 1) return false;
+      if (isNaN(cuotas) || cuotas !== 1) return false;
 
       const diasAtr = toNumberSafe(valDiasAtr(r));
       return diasAtr >= 1;
     }
 
-    // Pago único por vencer: AGRONEGOCIOS + cuotas=1 + vencimiento dentro del mes siguiente
+    // Pago único por vencer:
+    // AGRONEGOCIOS + (sin requerir cuota=1) + fecha de vencimiento en los próximos 30 días (incluyente)
     function cumplePagosUnicosPorVencer(r){
-      if(!cumplePagosUnicos(r)) return false;
+      if(!r) return false;
+      const coord = (r.Coordinacion ?? r.coordinacion ?? r["Coordinación"] ?? r["COORDINACION"] ?? r["COORDINACIÓN"] ?? "").toString();
+      if (norm(coord) !== "AGRONEGOCIOS") return false;
       const fv = parseVencimientoToDate(r);
-      return isInNextMonth(fv);
+      return venceEnProximos30Dias(fv);
     }
 
     /* ===== Fecha/Hora en letras — CDMX ===== */
     const meses=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
-    function numEnEsp(n){ const u=["cero","uno","dos","tres","cuatro","cinco","seis","siete","ocho","nueve","diez","once","doce","trece","catorce","quince","dieciséis","diecisiete","dieciocho","diecinueve","veinte","veintiuno","veintidós","veintitrés","veinticuatro","veinticinco","veintiséis","veintisiete","veintiocho","veintinueve"]; if(n<30)return u[n]; const d=["","","","treinta","cuarenta","cincuenta"]; const dec=Math.floor(n/10),uni=n%10; return uni===0? d[dec]:`${d[dec]} y ${u[uni]}`; }
+    function numEnEsp(n){ const u=["cero","uno","dos","tres","cuatro","cinco","seis","ocho","nueve","diez","once","doce","trece","catorce","quince","dieciséis","diecisiete","dieciocho","diecinueve","veinte","veintiuno","veintidós","veintitrés","veinticuatro","veinticinco","veintiséis","veintisiete","veintiocho","veintinueve"]; if(n<30)return u[n]||String(n); const d=["","","","treinta","cuarenta","cincuenta"]; const dec=Math.floor(n/10),uni=n%10; return uni===0? d[dec]:(d[dec]||String(dec*10)) + " y " + (u[uni]||String(uni)); }
     function anioEnLetras(y){ const map={2023:"dos mil veintitrés",2024:"dos mil veinticuatro",2025:"dos mil veinticinco",2026:"dos mil veintiséis"}; return map[y]||y.toString(); }
     function ahoraCDMX(){ return mxNow(); }
     function fechaEnLetrasFrom(d){ const h=d.getHours(), m=d.getMinutes(), dd=d.getDate(), mm=d.getMonth(), y=d.getFullYear(); return `${numEnEsp(h)} horas con ${m===0?"cero":numEnEsp(m)} minutos del ${numEnEsp(dd)} de ${meses[mm]} de ${anioEnLetras(y)}`; }
@@ -574,9 +572,11 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
       let base=data.slice();
       if(carteraSeleccionada){ base=creditosBaseFiltradosPorCartera(); } else { llenarSucursales([]); return; }
       if(coordSel && coordSel!=="OFICINA_CENTRAL"){ const target=norm(coordSel); base=base.filter(d=> norm(d.Coordinador)===target ); }
+
       if(mostrarModo==="SIN"){ base=base.filter(d=> estaSinGestion(d["Dias sin Gestion"])); }
       else if(mostrarModo==="PAGOS_UNICOS"){ base=base.filter(cumplePagosUnicos); }
-      else if(mostrarModo==="PAGOS_UNICOS_POR_VENCER"){ base=base.filter(r => cumplePagosUnicosPorVencer(r)); }
+      else if(mostrarModo==="PAGOS_UNICOS_POR_VENCER"){ base=base.filter(cumplePagosUnicosPorVencer); }
+
       const sucursales=[...new Set(base.map(d=>d.Sucursal))].filter(Boolean).sort((a,b)=>a.localeCompare(b,'es'));
       llenarSucursales(sucursales);
     }
@@ -619,9 +619,10 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
       let base=creditosBaseFiltradosPorCartera();
       const coordSel=document.getElementById("coordinadorSelect").value;
       if(coordSel && coordSel!=="OFICINA_CENTRAL"){ const target=norm(coordSel); base=base.filter(d=> norm(d.Coordinador)===target ); }
+
       if(mostrarModo==="SIN"){ base=base.filter(d=> estaSinGestion(d["Dias sin Gestion"])); }
       else if(mostrarModo==="PAGOS_UNICOS"){ base=base.filter(cumplePagosUnicos); }
-      else if(mostrarModo==="PAGOS_UNICOS_POR_VENCER"){ base=base.filter(r => cumplePagosUnicosPorVencer(r)); }
+      else if(mostrarModo==="PAGOS_UNICOS_POR_VENCER"){ base=base.filter(cumplePagosUnicosPorVencer); }
       else{ base=base.filter(d=>{ const dias=parseDiasSinGestion(d["Dias sin Gestion"]); return (dias===null) || (typeof dias==="number" && dias>=diasFiltro); }); }
 
       const cont=document.getElementById("contenido"); cont.innerHTML="";
@@ -667,7 +668,7 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
         // ESTATUS badges
         const badges = [];
         if (cumplePagosUnicos(c))               badges.push('<span class="badge bg-info">PAGO ÚNICO</span>');
-        if (cumplePagosUnicosPorVencer(c))      badges.push('<span class="badge bg-danger">VENCE MES SIGUIENTE</span>');
+        if (cumplePagosUnicosPorVencer(c))      badges.push('<span class="badge bg-danger">VENCE ≤ 30 DÍAS</span>');
 
         tbody.innerHTML += `
           <tr>
