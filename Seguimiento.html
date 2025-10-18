@@ -377,14 +377,14 @@
     function toNumberSafe(val){ if(val==null) return 0; if(typeof val==="number") return isFinite(val)?val:0; const n=parseFloat(String(val).replace(/[^0-9.-]/g,"")); return isNaN(n)?0:n; }
     function onlyDigits(s){ return String(s ?? "").replace(/\D/g,""); }
 
-   function normDateYYYYMMDD(s){
-  if(!s) return "";
-  const t = String(s).trim();
-  let m = t.match(/^(\d{4})[-/](\d{2})[-/](\d{2})$/); if (m) return `${m[1]}-${m[2]}-${m[3]}`;
-  m = t.match(/^(\d{2})-(\d{2})-(\d{4})$/);           if (m) return `${m[3]}-${m[2]}-${m[1]}`;
-  m = t.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);         if (m) return `${m[3]}-${m[2]}-${m[1]}`;
-  return t.slice(0,10);
-}
+    function normDateYYYYMMDD(s){
+      if(!s) return "";
+      const t = String(s).trim();
+      let m = t.match(/^(\d{4})[-/](\d{2})[-/](\d{2})$/); if (m) return `${m[1]}-${m[2]}-${m[3]}`;
+      m = t.match(/^(\d{2})-(\d{2})-(\d{4})$/);           if (m) return `${m[3]}-${m[2]}-${m[1]}`;
+      m = t.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);         if (m) return `${m[3]}}-${m[2]}-${m[1]}`;
+      return t.slice(0,10);
+    }
 
     /* ===================== Datos & Constantes ===================== */
     const URL_DATOS = "https://raw.githubusercontent.com/alcnca/mapa-semaforo/refs/heads/main/datos.json";
@@ -508,13 +508,14 @@
       return diasAtr >= 1;
     }
 
+    // Si quieres “solo por fecha” sin coord, elimina la línea del if (norm(coord)!=="AGRONEGOCIOS")
     function cumplePagosUnicosPorVencer(r){
-  if(!r) return false;
-  const coord = (r.Coordinacion ?? r.coordinacion ?? r["Coordinación"] ?? r["COORDINACION"] ?? r["COORDINACIÓN"] ?? "").toString();
-  if (norm(coord) !== "AGRONEGOCIOS") return false; // <- si quieres “solo por fecha” sin coord, quita esta línea
-  const fv = parseVencimientoToDate(r);
-  return venceEnProximos30Dias(fv);
-}
+      if(!r) return false;
+      const coord = (r.Coordinacion ?? r.coordinacion ?? r["Coordinación"] ?? r["COORDINACION"] ?? r["COORDINACIÓN"] ?? "").toString();
+      if (norm(coord) !== "AGRONEGOCIOS") return false; // <- opcional
+      const fv = parseVencimientoToDate(r);
+      return venceEnProximos30Dias(fv);
+    }
 
     const meses=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
     function numEnEsp(n){ const u=["cero","uno","dos","tres","cuatro","cinco","seis","siete","ocho","nueve","diez","once","doce","trece","catorce","quince","dieciséis","diecisiete","dieciocho","diecinueve","veinte","veintiuno","veintidós","veintitrés","veinticuatro","veinticinco","veintiséis","veintisiete","veintiocho","veintinueve"]; if(n<30)return u[n]; const d=["","","","treinta","cuarenta","cincuenta"]; const dec=Math.floor(n/10),uni=n%10; return uni===0? d[dec]:`${d[dec]} y ${u[uni]}`; }
@@ -716,7 +717,7 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
       return { admin, extra };
     }
 
-    // Sumas por fase para un asesor dentro de una sucursal (subset base)
+    // (opcional) ya no la usamos para evitar “desalineación” con filtros
     function sumarPorFaseAsesor(base, sucursal, asesor){
       let admin = 0, extra = 0;
       base.forEach(r=>{
@@ -731,8 +732,9 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
       return { admin, extra };
     }
 
-    // Render: encabezado por sucursal con sumas (colores modificados)
+    // Render: encabezado por sucursal con sumas y tarjetas por asesor
     function renderTarjetasPorSucursal(base, sucursal){
+      // Totales de la sucursal: ya salen del subset filtrado "base"
       const { admin, extra } = sumarPorFaseSucursal(base, sucursal);
       const totalSucursal = admin + extra;
 
@@ -765,20 +767,21 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
         return;
       }
 
-      const lista = porAsesor[asesor];
+      for(const asesor of nombresAsesores){
+        const lista=porAsesor[asesor];
 
-// Sumar SOLO lo que está en 'lista' (ya filtrado)
-const faseSums = lista.reduce((acc, r) => {
-  const fase = norm(valFase(r));
-  const saldo = toNumberSafe(r["Saldo Total"]);
-  if (fase.includes("ADMINISTRATIVA")) acc.admin += saldo;
-  if (fase.includes("EXTRAJUDICIAL"))  acc.extra += saldo;
-  return acc;
-}, { admin: 0, extra: 0 });
+        // >>>>>>> CAMBIO CLAVE: sumar SOLO lo que está en 'lista' (ya filtrado) <<<<<<<
+        const faseSums = lista.reduce((acc, r) => {
+          const fase = norm(valFase(r));
+          const saldo = toNumberSafe(r["Saldo Total"]);
+          if (fase.includes("ADMINISTRATIVA")) acc.admin += saldo;
+          if (fase.includes("EXTRAJUDICIAL"))  acc.extra += saldo;
+          return acc;
+        }, { admin: 0, extra: 0 });
 
-const aAdmin = faseSums.admin;
-const aExtra = faseSums.extra;
-const aTotal = aAdmin + aExtra;
+        const aAdmin = faseSums.admin;
+        const aExtra = faseSums.extra;
+        const aTotal = aAdmin + aExtra;
 
         const card=document.createElement("div"); card.className="card mb-3";
         card.innerHTML=`
