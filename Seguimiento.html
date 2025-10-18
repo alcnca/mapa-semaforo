@@ -765,10 +765,20 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
         return;
       }
 
-      for(const asesor of nombresAsesores){
-        const lista=porAsesor[asesor];
-        const { admin: aAdmin, extra: aExtra } = sumarPorFaseAsesor(base, sucursal, asesor);
-        const aTotal = aAdmin + aExtra;
+      const lista = porAsesor[asesor];
+
+// Sumar SOLO lo que está en 'lista' (ya filtrado)
+const faseSums = lista.reduce((acc, r) => {
+  const fase = norm(valFase(r));
+  const saldo = toNumberSafe(r["Saldo Total"]);
+  if (fase.includes("ADMINISTRATIVA")) acc.admin += saldo;
+  if (fase.includes("EXTRAJUDICIAL"))  acc.extra += saldo;
+  return acc;
+}, { admin: 0, extra: 0 });
+
+const aAdmin = faseSums.admin;
+const aExtra = faseSums.extra;
+const aTotal = aAdmin + aExtra;
 
         const card=document.createElement("div"); card.className="card mb-3";
         card.innerHTML=`
