@@ -377,14 +377,14 @@
     function toNumberSafe(val){ if(val==null) return 0; if(typeof val==="number") return isFinite(val)?val:0; const n=parseFloat(String(val).replace(/[^0-9.-]/g,"")); return isNaN(n)?0:n; }
     function onlyDigits(s){ return String(s ?? "").replace(/\D/g,""); }
 
-    function normDateYYYYMMDD(s){
-      if(!s) return "";
-      const t = String(s).trim();
-      let m = t.match(/^(\d{4})[-/](\d{2})[-/](\d{2})$/); if (m) return `${m[1]}-${m[2]}-${m[3]}`;
-      m = t.match(/^(\d{2})-(\d{2})-(\d{4})$/);           if (m) return `${m[3]}-${m[2]}-${m[1]}`;
-      m = t.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);         if (m) return `${m[3]}}-${m[2]}-${m[1]}`;
-      return t.slice(0,10);
-    }
+   function normDateYYYYMMDD(s){
+  if(!s) return "";
+  const t = String(s).trim();
+  let m = t.match(/^(\d{4})[-/](\d{2})[-/](\d{2})$/); if (m) return `${m[1]}-${m[2]}-${m[3]}`;
+  m = t.match(/^(\d{2})-(\d{2})-(\d{4})$/);           if (m) return `${m[3]}-${m[2]}-${m[1]}`;
+  m = t.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);         if (m) return `${m[3]}-${m[2]}-${m[1]}`;
+  return t.slice(0,10);
+}
 
     /* ===================== Datos & Constantes ===================== */
     const URL_DATOS = "https://raw.githubusercontent.com/alcnca/mapa-semaforo/refs/heads/main/datos.json";
@@ -509,12 +509,12 @@
     }
 
     function cumplePagosUnicosPorVencer(r){
-      if(!r) return false;
-      const coord = (r.Coordinacion ?? r.coordinacion ?? r["Coordinación"] ?? r["COORDINACION"] ?? r["COORDINACIÓN"] ?? "").toString();
-      if (norm(coord) !== "AGRONEGOCIOS") return false;
-      const fv = parseVencimientoToDate(r);
-      return venceEnProximos30Dias(fv);
-    }
+  if(!r) return false;
+  const coord = (r.Coordinacion ?? r.coordinacion ?? r["Coordinación"] ?? r["COORDINACION"] ?? r["COORDINACIÓN"] ?? "").toString();
+  if (norm(coord) !== "AGRONEGOCIOS") return false; // <- si quieres “solo por fecha” sin coord, quita esta línea
+  const fv = parseVencimientoToDate(r);
+  return venceEnProximos30Dias(fv);
+}
 
     const meses=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
     function numEnEsp(n){ const u=["cero","uno","dos","tres","cuatro","cinco","seis","siete","ocho","nueve","diez","once","doce","trece","catorce","quince","dieciséis","diecisiete","dieciocho","diecinueve","veinte","veintiuno","veintidós","veintitrés","veinticuatro","veinticinco","veintiséis","veintisiete","veintiocho","veintinueve"]; if(n<30)return u[n]; const d=["","","","treinta","cuarenta","cincuenta"]; const dec=Math.floor(n/10),uni=n%10; return uni===0? d[dec]:`${d[dec]} y ${u[uni]}`; }
