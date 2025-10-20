@@ -378,13 +378,13 @@
     function onlyDigits(s){ return String(s ?? "").replace(/\D/g,""); }
 
     function normDateYYYYMMDD(s){
-      if(!s) return "";
-      const t = String(s).trim();
-      let m = t.match(/^(\d{4})[-/](\d{2})[-/](\d{2})$/); if (m) return `${m[1]}-${m[2]}-${m[3]}`;
-      m = t.match(/^(\d{2})-(\d{2})-(\d{4})$/);           if (m) return `${m[3]}-${m[2]}-${m[1]}`;
-      m = t.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);         if (m) return `${m[3]}}-${m[2]}-${m[1]}`;
-      return t.slice(0,10);
-    }
+  if(!s) return "";
+  const t = String(s).trim();
+  let m = t.match(/^(\d{4})[-/](\d{2})[-/](\d{2})$/); if (m) return `${m[1]}-${m[2]}-${m[3]}`;
+  m = t.match(/^(\d{2})-(\d{2})-(\d{4})$/);           if (m) return `${m[3]}-${m[2]}-${m[1]}`;
+  m = t.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);         if (m) return `${m[3]}-${m[2]}-${m[1]}`;
+  return t.slice(0,10);
+}
 
     /* ===================== Datos & Constantes ===================== */
     const URL_DATOS = "https://raw.githubusercontent.com/alcnca/mapa-semaforo/refs/heads/main/datos.json";
