@@ -516,22 +516,38 @@
       return dateObj.getTime() >= hoy00.getTime() && dateObj.getTime() <= en30.getTime();
     }
 
-    function cumplePagosUnicos(r){
-      if(!r) return false;
+    /* === NUEVOS HELPERS para el filtro solicitado === */
+    function esAgronegocios(r){
       const coord = (r.Coordinacion ?? r.coordinacion ?? r["Coordinación"] ?? r["COORDINACION"] ?? r["COORDINACIÓN"] ?? "").toString();
-      if (norm(coord) !== "AGRONEGOCIOS") return false;
+      return norm(coord) === "AGRONEGOCIOS";
+    }
+    function esPagoUnicTexto(r){
+      // Busca la cadena "pago unic" (tolerante a acentos/mayúsculas) en el Producto
+      return norm(String(valProducto(r))).includes("PAGO UNIC");
+    }
+    function esUnaCuotaAgronegocios(r){
+      const q = parseCuotas(r.Cuotas ?? r.cuotas ?? r["Cuotas"] ?? r["CUOTAS"] ?? r["Num Cuotas"] ?? r["Cuota"] ?? r["Pagos"]);
+      return esAgronegocios(r) && q === 1;
+    }
+
+    function cumplePagosUnicos(r){
+      // (Se mantiene si lo usas en otros lados; no afecta el nuevo filtro)
+      if(!r) return false;
+      if (!esAgronegocios(r)) return false;
       const cuotas = parseCuotas(r.Cuotas ?? r.cuotas ?? r["Cuotas"] ?? r["CUOTAS"] ?? r["Num Cuotas"] ?? r["Cuota"] ?? r["Pagos"]);
       if (isNaN(cuotas) || cuotas !== 1) return false;
       const diasAtr = toNumberSafe(valDiasAtr(r));
       return diasAtr >= 1;
     }
 
+    // >>> NUEVA LÓGICA: Pagos únicos por vencer
+    // Solo AGRONEGOCIOS y (tenga texto "pago unic" en producto  OR sea de 1 cuota AGRONEGOCIOS),
+    // y que la fecha de vencimiento esté dentro de 30 días.
     function cumplePagosUnicosPorVencer(r){
-      if(!r) return false;
-      const coord = (r.Coordinacion ?? r.coordinacion ?? r["Coordinación"] ?? r["COORDINACION"] ?? r["COORDINACIÓN"] ?? "").toString();
-      if (norm(coord) !== "AGRONEGOCIOS") return false;
+      if (!r || !esAgronegocios(r)) return false;
       const fv = parseVencimientoToDate(r);
-      return venceEnProximos30Dias(fv);
+      if (!venceEnProximos30Dias(fv)) return false;
+      return esPagoUnicTexto(r) || esUnaCuotaAgronegocios(r);
     }
 
     const meses=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
@@ -873,7 +889,7 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
         (creditos.find(c=>c.Telefono_Ejecutivo)?.Telefono_Ejecutivo) ??
         (creditos.find(c=>c.TelefonoEjecutivo)?.TelefonoEjecutivo) ?? "";
 
-      // Cabecera sin PU
+      // Cabecera sin totales PU
       document.getElementById("asesorTitulo").innerHTML =
         `Asesor: <strong>${asesor}</strong> | Tel: ${telEjecutivo || "s/n"} | Sucursal: ${sucursalSeleccionada}`;
 
@@ -888,10 +904,11 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
         const fechaUG   = valFechaUltimaGestion(c);
         const tipoUG    = valTipoGestion(c);
 
+        // === BADGES VISUALES SEGÚN LO SOLICITADO ===
         const badges = [];
-        // Si de verdad quieres quitar también estos, comenta las dos líneas siguientes:
-        // if (cumplePagosUnicos(c))               badges.push('<span class="badge bg-info">PAGO ÚNICO</span>');
-        // if (cumplePagosUnicosPorVencer(c))      badges.push('<span class="badge bg-danger">VENCE ≤ 30 DÍAS</span>');
+        if (cumplePagosUnicosPorVencer(c))       badges.push('<span class="badge bg-danger">PU POR VENCER ≤30d</span>');
+        if (esUnaCuotaAgronegocios(c))           badges.push('<span class="badge bg-info text-dark">1 CUOTA (AGRONEGOCIOS)</span>');
+        if (esAgronegocios(c) && esPagoUnicTexto(c)) badges.push('<span class="badge bg-warning text-dark">PAGO UNIC*</span>');
 
         tbody.innerHTML += `
           <tr>
@@ -954,6 +971,10 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
 
       const rows = creditosSeleccionados.map(c=>{
         const badges = [];
+        if (cumplePagosUnicosPorVencer(c))       badges.push("PU POR VENCER ≤30d");
+        if (esUnaCuotaAgronegocios(c))           badges.push("1 CUOTA (AGRONEGOCIOS)");
+        if (esAgronegocios(c) && esPagoUnicTexto(c)) badges.push("PAGO UNIC*");
+
         return [
           c.Linea ?? "",
           valProducto(c),
@@ -1181,7 +1202,6 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
 
       const textos=getTextosDocumento(tipo, diasMinimos, asesor, sucursal, firmanteCoord);
 
-      // Helpers
       const p = (text, opts={}) => new Paragraph({ children:[ new TextRun({ text }) ], ...opts });
       const pBold = (text, opts={}) => new Paragraph({ children:[ new TextRun({ text, bold:true }) ], ...opts });
 
@@ -1194,12 +1214,9 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
       body.push(p(`Sucursal: ${sucursal}`));
       body.push(p(" "));
 
-      // Intro
       textos.intro.split("\n\n").forEach(b => body.push(p(b)));
-
       body.push(p(" "));
 
-      // Tabla
       const headerRow = new TableRow({
         children: ["Crédito","Producto","Socio","Nombre del Socio","Saldo","Días atraso","Días sin gestión","Fase","Venc.","Realizó Últ. Gestión","Fecha Últ. Gestión","Tipo de Gestión"]
           .map(h => new TableCell({ children:[pBold(h)], width:{ size: 1, type: WidthType.AUTO } }))
