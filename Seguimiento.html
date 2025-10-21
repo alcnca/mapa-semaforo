@@ -4,11 +4,20 @@
   <meta charset="UTF-8" />
   <title>Exhortos / Actas + Agenda (GAS + Google Sheets)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Bootstrap -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <!-- PDF -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
-  <!-- Exportar a Excel -->
+
+  <!-- Excel -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <!-- DOCX -->
+  <script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.min.js"></script>
+
   <style>
     .table.table-sm th, .table.table-sm td { font-size: 10px; line-height: 1.10; }
     #tablaPreview td:nth-child(1), #tablaPreview td:nth-child(2) { text-align: center; }
@@ -80,6 +89,13 @@
       word-break: break-word;
       vertical-align: top;
     }
+
+    /* ===== Tamaño badge reducido para Admin/Extra ===== */
+    .badge-phase-sm{
+      font-size: .65rem;
+      padding: .20rem .35rem;
+      line-height: 1;
+    }
   </style>
 </head>
 <body class="container py-4">
@@ -133,6 +149,9 @@
     <button class="btn btn-outline-dark w-100" id="btnAbrirAgenda">Revisar Agenda Guardada</button>
   </div>
 
+  <!-- (Se deja el contenedor, pero no se usa ya para PU) -->
+  <div id="resumenFiltro" class="alert alert-secondary d-none"></div>
+
   <div id="contenido"></div>
 
   <!-- Modal de Vista Previa -->
@@ -148,21 +167,20 @@
 
           <div class="table-responsive">
             <table class="table table-sm table-bordered align-middle">
-              <!-- Colgroup para vista previa -->
               <colgroup>
-                <col style="width:7%"><!-- Crédito -->
-                <col style="width:8%"><!-- Producto -->
-                <col style="width:7%"><!-- Socio -->
-                <col style="width:16%"><!-- Nombre -->
-                <col style="width:9%"><!-- Saldo -->
-                <col style="width:6%"><!-- Días atraso -->
-                <col style="width:6%"><!-- Días sin gestión -->
-                <col style="width:7%"><!-- Fase -->
-                <col style="width:7%"><!-- Venc. -->
-                <col style="width:9%"><!-- Realizó Últ. Gestión -->
-                <col style="width:7%"><!-- Fecha Últ. Gestión -->
-                <col style="width:9%"><!-- Tipo de Gestión -->
-                <col style="width:6%"><!-- Estatus -->
+                <col style="width:7%">
+                <col style="width:8%">
+                <col style="width:7%">
+                <col style="width:16%">
+                <col style="width:9%">
+                <col style="width:6%">
+                <col style="width:6%">
+                <col style="width:7%">
+                <col style="width:7%">
+                <col style="width:9%">
+                <col style="width:7%">
+                <col style="width:9%">
+                <col style="width:6%">
               </colgroup>
 
               <thead class="table-dark text-center">
@@ -190,8 +208,10 @@
         </div>
         <div class="modal-footer gap-2">
           <button class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-          <button class="btn btn-success" id="btnGenerarExhorto">Generar Exhorto</button>
-          <button class="btn btn-outline-success" id="btnGenerarActa">Generar Acta Administrativa</button>
+          <button class="btn btn-success" id="btnGenerarExhorto">PDF Exhorto</button>
+          <button class="btn btn-outline-success" id="btnGenerarActa">PDF Acta</button>
+          <button class="btn btn-success" id="btnDocxExhorto">DOCX Exhorto</button>
+          <button class="btn btn-outline-success" id="btnDocxActa">DOCX Acta</button>
           <button class="btn btn-outline-primary" id="btnAgendaPreview">Crear agenda de estos socios</button>
           <button class="btn btn-outline-dark" id="btnExportExcel">Exportar a Excel</button>
         </div>
@@ -228,24 +248,23 @@
 
           <div class="table-responsive">
             <table class="table table-sm table-bordered align-middle">
-              <!-- Colgroup para CREAR AGENDA -->
               <colgroup>
-                <col style="width:3%"><!-- # -->
-                <col style="width:9%"><!-- Crédito -->
-                <col style="width:8%"><!-- Socio -->
-                <col style="width:15%"><!-- Nombre (ancho) -->
-                <col style="width:11%"><!-- Sucursal -->
-                <col style="width:13%"><!-- Asesor (ancho) -->
-                <col style="width:10%"><!-- Producto -->
-                <col style="width:9%"><!-- Saldo -->
-                <col style="width:6%"><!-- Días atraso -->
-                <col style="width:6%"><!-- Días sin gestión -->
-                <col style="width:7%"><!-- Fase -->
-                <col style="width:14%"><!-- Realizó Últ. Gestión (ancho) -->
-                <col style="width:9%"><!-- Fecha Últ. Gestión -->
-                <col style="width:12%"><!-- Tipo de Gestión (ancho) -->
-                <col style="width:10%"><!-- Fecha programada -->
-                <col style="width:16%"><!-- Observaciones (ancho) -->
+                <col style="width:3%">
+                <col style="width:9%">
+                <col style="width:8%">
+                <col style="width:15%">
+                <col style="width:11%">
+                <col style="width:13%">
+                <col style="width:10%">
+                <col style="width:9%">
+                <col style="width:6%">
+                <col style="width:6%">
+                <col style="width:7%">
+                <col style="width:14%">
+                <col style="width:9%">
+                <col style="width:12%">
+                <col style="width:10%">
+                <col style="width:16%">
               </colgroup>
 
               <thead class="table-dark text-center">
@@ -307,25 +326,24 @@
 
           <div class="table-responsive">
             <table class="table table-sm table-bordered align-middle">
-              <!-- Colgroup para AGENDA GUARDADA -->
               <colgroup>
-                <col style="width:3%"><!-- # -->
-                <col style="width:10%"><!-- Fecha registro -->
-                <col style="width:8%"><!-- Fecha prog. -->
-                <col style="width:8%"><!-- Crédito -->
-                <col style="width:8%"><!-- Socio -->
-                <col style="width:14%"><!-- Nombre (ancho) -->
-                <col style="width:10%"><!-- Sucursal -->
-                <col style="width:12%"><!-- Asesor (ancho) -->
-                <col style="width:9%"><!-- Producto -->
-                <col style="width:8%"><!-- Saldo -->
-                <col style="width:6%"><!-- Días atraso -->
-                <col style="width:7%"><!-- Días sin gestión -->
-                <col style="width:7%"><!-- Fase -->
-                <col style="width:14%"><!-- Realizó Últ. Gestión (ancho) -->
-                <col style="width:10%"><!-- Fecha Últ. Gestión -->
-                <col style="width:12%"><!-- Tipo de Gestión (ancho) -->
-                <col style="width:16%"><!-- Observaciones (ancho) -->
+                <col style="width:3%">
+                <col style="width:10%">
+                <col style="width:8%">
+                <col style="width:8%">
+                <col style="width:8%">
+                <col style="width:14%">
+                <col style="width:10%">
+                <col style="width:12%">
+                <col style="width:9%">
+                <col style="width:8%">
+                <col style="width:6%">
+                <col style="width:7%">
+                <col style="width:7%">
+                <col style="width:14%">
+                <col style="width:10%">
+                <col style="width:12%">
+                <col style="width:16%">
               </colgroup>
 
               <thead class="table-dark text-center">
@@ -378,13 +396,13 @@
     function onlyDigits(s){ return String(s ?? "").replace(/\D/g,""); }
 
     function normDateYYYYMMDD(s){
-  if(!s) return "";
-  const t = String(s).trim();
-  let m = t.match(/^(\d{4})[-/](\d{2})[-/](\d{2})$/); if (m) return `${m[1]}-${m[2]}-${m[3]}`;
-  m = t.match(/^(\d{2})-(\d{2})-(\d{4})$/);           if (m) return `${m[3]}-${m[2]}-${m[1]}`;
-  m = t.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);         if (m) return `${m[3]}-${m[2]}-${m[1]}`;
-  return t.slice(0,10);
-}
+      if(!s) return "";
+      const t = String(s).trim();
+      let m = t.match(/^(\d{4})[-/](\d{2})[-/](\d{2})$/); if (m) return `${m[1]}-${m[2]}-${m[3]}`;
+      m = t.match(/^(\d{2})-(\d{2})-(\d{4})$/);           if (m) return `${m[3]}-${m[2]}-${m[1]}`;
+      m = t.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);         if (m) return `${m[3]}-${m[2]}-${m[1]}`;
+      return t.slice(0,10);
+    }
 
     /* ===================== Datos & Constantes ===================== */
     const URL_DATOS = "https://raw.githubusercontent.com/alcnca/mapa-semaforo/refs/heads/main/datos.json";
@@ -508,11 +526,10 @@
       return diasAtr >= 1;
     }
 
-    // Si quieres “solo por fecha” sin coord, elimina la línea del if (norm(coord)!=="AGRONEGOCIOS")
     function cumplePagosUnicosPorVencer(r){
       if(!r) return false;
       const coord = (r.Coordinacion ?? r.coordinacion ?? r["Coordinación"] ?? r["COORDINACION"] ?? r["COORDINACIÓN"] ?? "").toString();
-      if (norm(coord) !== "AGRONEGOCIOS") return false; // <- opcional
+      if (norm(coord) !== "AGRONEGOCIOS") return false;
       const fv = parseVencimientoToDate(r);
       return venceEnProximos30Dias(fv);
     }
@@ -694,7 +711,13 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
       const coordSel=document.getElementById("coordinadorSelect").value;
       let base=data.slice();
       if(carteraSeleccionada){ base=creditosBaseFiltradosPorCartera(); } else { llenarSucursales([]); return; }
-      if(coordSel && coordSel!=="OFICINA_CENTRAL"){ const target=norm(coordSel); base=base.filter(d=> norm(d.Coordinador)===target ); }
+
+      if(coordSel && coordSel!=="OFICINA_CENTRAL"){
+        base = base.filter(d => {
+          const code = NAME_TO_CODE[norm(d.Coordinador || "")] || "";
+          return code === coordSel;
+        });
+      }
 
       if(mostrarModo==="SIN"){ base=base.filter(d=> estaSinGestion(d["Dias sin Gestion"])); }
       else if(mostrarModo==="PAGOS_UNICOS"){ base=base.filter(cumplePagosUnicos); }
@@ -704,41 +727,26 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
       llenarSucursales(sucursales);
     }
 
-    // Sumas por fase usando el SUBSET FILTRADO (base)
+    // Sumas por fase usando el SUBSET FILTRADO (base) — ahora con Preventiva
     function sumarPorFaseSucursal(base, sucursal){
-      let admin = 0, extra = 0;
+      let admin = 0, extra = 0, preventiva = 0;
       base.forEach(r=>{
         if ((r.Sucursal||"") !== sucursal) return;
         const fase = norm(valFase(r));
         const saldo = toNumberSafe(r["Saldo Total"]);
         if (fase.includes("ADMINISTRATIVA")) admin += saldo;
         if (fase.includes("EXTRAJUDICIAL"))  extra += saldo;
+        if (fase.includes("PREVENTIVA"))     preventiva += saldo;
       });
-      return { admin, extra };
-    }
-
-    // (opcional) ya no la usamos para evitar “desalineación” con filtros
-    function sumarPorFaseAsesor(base, sucursal, asesor){
-      let admin = 0, extra = 0;
-      base.forEach(r=>{
-        if ((r.Sucursal||"") !== sucursal) return;
-        const ejecutivo = r.Ejecutivo || "SIN ASESOR";
-        if (ejecutivo !== asesor) return;
-        const fase = norm(valFase(r));
-        const saldo = toNumberSafe(r["Saldo Total"]);
-        if (fase.includes("ADMINISTRATIVA")) admin += saldo;
-        if (fase.includes("EXTRAJUDICIAL"))  extra += saldo;
-      });
-      return { admin, extra };
+      return { admin, extra, preventiva };
     }
 
     // Render: encabezado por sucursal con sumas y tarjetas por asesor
     function renderTarjetasPorSucursal(base, sucursal){
-      // Totales de la sucursal: ya salen del subset filtrado "base"
-      const { admin, extra } = sumarPorFaseSucursal(base, sucursal);
-      const totalSucursal = admin + extra;
+      const { admin, extra, preventiva } = sumarPorFaseSucursal(base, sucursal);
+      const totalSucursal = base.filter(r=> r.Sucursal===sucursal)
+                                .reduce((acc,r)=> acc + toNumberSafe(r["Saldo Total"]), 0);
 
-      // Agrupar por asesor SOLO dentro del subset base
       const porAsesor = {};
       base.filter(r=> r.Sucursal===sucursal).forEach(r=>{
         const ejecutivo = r.Ejecutivo || "SIN ASESOR";
@@ -751,11 +759,13 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
       h4.innerHTML = `
         Sucursal: <strong>${sucursal}</strong>
         &nbsp;&nbsp;|&nbsp;&nbsp;
-        <span class="badge bg-primary">Administrativa: ${admin.toLocaleString("es-MX",{style:"currency",currency:"MXN"})}</span>
+        <span class="badge bg-primary badge-phase-sm">Administrativa: ${admin.toLocaleString("es-MX",{style:"currency",currency:"MXN"})}</span>
         &nbsp;&nbsp;
-        <span class="badge bg-primary">Extrajudicial: ${extra.toLocaleString("es-MX",{style:"currency",currency:"MXN"})}</span>
+        <span class="badge bg-primary badge-phase-sm">Extrajudicial: ${extra.toLocaleString("es-MX",{style:"currency",currency:"MXN"})}</span>
         &nbsp;&nbsp;
-        <span class="badge bg-dark">Total: ${totalSucursal.toLocaleString("es-MX",{style:"currency",currency:"MXN"})}</span>
+        <span class="badge bg-primary badge-phase-sm">Preventiva: ${preventiva.toLocaleString("es-MX",{style:"currency",currency:"MXN"})}</span>
+        &nbsp;&nbsp;
+        <span class="badge bg-dark badge-phase-sm">Total: ${totalSucursal.toLocaleString("es-MX",{style:"currency",currency:"MXN"})}</span>
       `;
       cont.appendChild(h4);
 
@@ -770,26 +780,25 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
       for(const asesor of nombresAsesores){
         const lista=porAsesor[asesor];
 
-        // >>>>>>> CAMBIO CLAVE: sumar SOLO lo que está en 'lista' (ya filtrado) <<<<<<<
         const faseSums = lista.reduce((acc, r) => {
           const fase = norm(valFase(r));
           const saldo = toNumberSafe(r["Saldo Total"]);
           if (fase.includes("ADMINISTRATIVA")) acc.admin += saldo;
           if (fase.includes("EXTRAJUDICIAL"))  acc.extra += saldo;
+          if (fase.includes("PREVENTIVA"))     acc.preventiva += saldo;
           return acc;
-        }, { admin: 0, extra: 0 });
+        }, { admin: 0, extra: 0, preventiva: 0 });
 
-        const aAdmin = faseSums.admin;
-        const aExtra = faseSums.extra;
-        const aTotal = aAdmin + aExtra;
+        const aTotal = lista.reduce((acc,r)=> acc + toNumberSafe(r["Saldo Total"]), 0);
 
         const card=document.createElement("div"); card.className="card mb-3";
         card.innerHTML=`
           <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
             <span>${asesor}</span>
             <span>
-              <span class="badge bg-primary me-1">Admin: ${aAdmin.toLocaleString("es-MX",{style:"currency",currency:"MXN"})}</span>
-              <span class="badge bg-primary me-1">Extra: ${aExtra.toLocaleString("es-MX",{style:"currency",currency:"MXN"})}</span>
+              <span class="badge bg-light text-dark badge-phase-sm me-1">Admin: ${faseSums.admin.toLocaleString("es-MX",{style:"currency",currency:"MXN"})}</span>
+              <span class="badge bg-light text-dark badge-phase-sm me-1">Extra: ${faseSums.extra.toLocaleString("es-MX",{style:"currency",currency:"MXN"})}</span>
+              <span class="badge bg-light text-dark badge-phase-sm me-1">Preventiva: ${faseSums.preventiva.toLocaleString("es-MX",{style:"currency",currency:"MXN"})}</span>
               <span class="badge bg-dark">Total: ${aTotal.toLocaleString("es-MX",{style:"currency",currency:"MXN"})}</span>
             </span>
           </div>
@@ -812,12 +821,22 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
 
       let base=creditosBaseFiltradosPorCartera();
       const coordSel=document.getElementById("coordinadorSelect").value;
-      if(coordSel && coordSel!=="OFICINA_CENTRAL"){ const target=norm(coordSel); base=base.filter(d=> norm(d.Coordinador)===target ); }
+
+      if(coordSel && coordSel!=="OFICINA_CENTRAL"){
+        base = base.filter(d => {
+          const code = NAME_TO_CODE[norm(d.Coordinador || "")] || "";
+          return code === coordSel;
+        });
+      }
 
       if(mostrarModo==="SIN"){ base=base.filter(d=> estaSinGestion(d["Dias sin Gestion"])); }
       else if(mostrarModo==="PAGOS_UNICOS"){ base=base.filter(cumplePagosUnicos); }
       else if(mostrarModo==="PAGOS_UNICOS_POR_VENCER"){ base=base.filter(cumplePagosUnicosPorVencer); }
       else{ base=base.filter(d=>{ const dias=parseDiasSinGestion(d["Dias sin Gestion"]); return (dias===null) || (typeof dias==="number" && dias>=diasFiltro); }); }
+
+      // Ocultar cualquier resumen de PU
+      const resumen = document.getElementById("resumenFiltro");
+      resumen.classList.add("d-none"); resumen.innerHTML = "";
 
       const cont=document.getElementById("contenido"); cont.innerHTML="";
       if(sucSel!=="TODAS"){ renderTarjetasPorSucursal(base, sucSel); }
@@ -849,8 +868,14 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
 
     function mostrarVistaPrevia(asesor, creditos){
       asesorSeleccionado=asesor; creditosSeleccionados=creditos;
-      const telEjecutivo = (creditos.find(c=>c["Telefono Ejecutivo"])?.["Telefono Ejecutivo"]) ?? (creditos.find(c=>c.Telefono_Ejecutivo)?.Telefono_Ejecutivo) ?? (creditos.find(c=>c.TelefonoEjecutivo)?.TelefonoEjecutivo) ?? "";
-      document.getElementById("asesorTitulo").textContent = `Asesor: ${asesor} | Tel: ${telEjecutivo || "s/n"} | Sucursal: ${sucursalSeleccionada}`;
+      const telEjecutivo =
+        (creditos.find(c=>c["Telefono Ejecutivo"])?.["Telefono Ejecutivo"]) ??
+        (creditos.find(c=>c.Telefono_Ejecutivo)?.Telefono_Ejecutivo) ??
+        (creditos.find(c=>c.TelefonoEjecutivo)?.TelefonoEjecutivo) ?? "";
+
+      // Cabecera sin PU
+      document.getElementById("asesorTitulo").innerHTML =
+        `Asesor: <strong>${asesor}</strong> | Tel: ${telEjecutivo || "s/n"} | Sucursal: ${sucursalSeleccionada}`;
 
       const tbody=document.getElementById("tablaPreview"); tbody.innerHTML="";
       let total=0;
@@ -864,8 +889,9 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
         const tipoUG    = valTipoGestion(c);
 
         const badges = [];
-        if (cumplePagosUnicos(c))               badges.push('<span class="badge bg-info">PAGO ÚNICO</span>');
-        if (cumplePagosUnicosPorVencer(c))      badges.push('<span class="badge bg-danger">VENCE ≤ 30 DÍAS</span>');
+        // Si de verdad quieres quitar también estos, comenta las dos líneas siguientes:
+        // if (cumplePagosUnicos(c))               badges.push('<span class="badge bg-info">PAGO ÚNICO</span>');
+        // if (cumplePagosUnicosPorVencer(c))      badges.push('<span class="badge bg-danger">VENCE ≤ 30 DÍAS</span>');
 
         tbody.innerHTML += `
           <tr>
@@ -888,8 +914,14 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
 
       const btnExhorto=document.getElementById("btnGenerarExhorto");
       const btnActa=document.getElementById("btnGenerarActa");
+      const btnDocxExhorto=document.getElementById("btnDocxExhorto");
+      const btnDocxActa=document.getElementById("btnDocxActa");
+
       btnExhorto.onclick=async()=>{ btnExhorto.disabled=true; try{ await generarPDF(asesorSeleccionado, sucursalSeleccionada, creditosSeleccionados, "exhorto"); } finally{ btnExhorto.disabled=false; } };
       btnActa.onclick=async()=>{ btnActa.disabled=true; try{ await generarPDF(asesorSeleccionado, sucursalSeleccionada, creditosSeleccionados, "acta"); } finally{ btnActa.disabled=false; } };
+
+      btnDocxExhorto.onclick=async()=>{ btnDocxExhorto.disabled=true; try{ await generarDOCX(asesorSeleccionado, sucursalSeleccionada, creditosSeleccionados, "exhorto"); } finally{ btnDocxExhorto.disabled=false; } };
+      btnDocxActa.onclick=async()=>{ btnDocxActa.disabled=true; try{ await generarDOCX(asesorSeleccionado, sucursalSeleccionada, creditosSeleccionados, "acta"); } finally{ btnDocxActa.disabled=false; } };
 
       document.getElementById("btnAgendaPreview").onclick = () => {
         const responsable = getResponsableActual();
@@ -901,7 +933,6 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
         buildItemsFromPreview();
       };
 
-      // Exportar a Excel lo que se ve en la vista previa
       document.getElementById("btnExportExcel").onclick = exportarPreviewAExcel;
 
       new bootstrap.Modal(document.getElementById("vistaPreviaModal")).show();
@@ -923,9 +954,6 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
 
       const rows = creditosSeleccionados.map(c=>{
         const badges = [];
-        if (cumplePagosUnicos(c))          badges.push("PAGO ÚNICO");
-        if (cumplePagosUnicosPorVencer(c)) badges.push("VENCE ≤ 30 DÍAS");
-
         return [
           c.Linea ?? "",
           valProducto(c),
@@ -1137,6 +1165,108 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
       }
       const nombreArchivo=(tipo==="acta"?"ACTA_ADMINISTRATIVA":"EXHORTO");
       doc.save(`${nombreArchivo}_${asesor.replace(/ /g,"_")}_${norm(sucursal).replace(/[^A-Z0-9_]/g,"")}.pdf`);
+    }
+
+    /* ===================== DOCX ===================== */
+    async function generarDOCX(asesor, sucursal, creditos, tipo){
+      const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, Table, TableRow, TableCell, WidthType } = docx;
+
+      const diasMinimos=parseInt(document.getElementById("diasMinimos").value)||30;
+      const inicial=document.getElementById("coordinadorSelect").value;
+      const subFirmanteVal=document.getElementById("subFirmanteSelect").value || inicial;
+      let firmanteCoord;
+      if(inicial==="OFICINA_CENTRAL"){ firmanteCoord=subFirmanteVal||"__________________________"; }
+      else if(subFirmanteVal && nombresCoordinadores[subFirmanteVal]){ firmanteCoord=nombresCoordinadores[subFirmanteVal]; }
+      else { firmanteCoord=nombresCoordinadores[inicial]||"__________________________"; }
+
+      const textos=getTextosDocumento(tipo, diasMinimos, asesor, sucursal, firmanteCoord);
+
+      // Helpers
+      const p = (text, opts={}) => new Paragraph({ children:[ new TextRun({ text }) ], ...opts });
+      const pBold = (text, opts={}) => new Paragraph({ children:[ new TextRun({ text, bold:true }) ], ...opts });
+
+      const body = [];
+
+      body.push(new Paragraph({ text: textos.titulo, heading: HeadingLevel.HEADING_2, alignment: AlignmentType.CENTER }));
+      if(textos.subtitulo) body.push(p(textos.subtitulo, { alignment: AlignmentType.CENTER }));
+
+      body.push(p(`Para: ${asesor}`));
+      body.push(p(`Sucursal: ${sucursal}`));
+      body.push(p(" "));
+
+      // Intro
+      textos.intro.split("\n\n").forEach(b => body.push(p(b)));
+
+      body.push(p(" "));
+
+      // Tabla
+      const headerRow = new TableRow({
+        children: ["Crédito","Producto","Socio","Nombre del Socio","Saldo","Días atraso","Días sin gestión","Fase","Venc.","Realizó Últ. Gestión","Fecha Últ. Gestión","Tipo de Gestión"]
+          .map(h => new TableCell({ children:[pBold(h)], width:{ size: 1, type: WidthType.AUTO } }))
+      });
+
+      const rows = creditos.map(c=>{
+        const dsgParsed = parseDiasSinGestion(c["Dias sin Gestion"]);
+        const dsgDisplay = (dsgParsed===null) ? "SIN GESTIÓN" : dsgParsed;
+        const fvISO = normDateYYYYMMDD(getFechaVencimientoRaw(c)) || "";
+        const realizoUG = valRealizoUltimaGestion(c);
+        const fechaUG   = valFechaUltimaGestion(c);
+        const tipoUG    = valTipoGestion(c);
+        const cells = [
+          c.Linea ?? "",
+          valProducto(c),
+          valSocio(c),
+          c.Nombre ?? "",
+          toNumberSafe(c["Saldo Total"]).toLocaleString("es-MX",{style:"currency",currency:"MXN"}),
+          String(valDiasAtr(c) ?? ""),
+          String(dsgDisplay),
+          valFase(c),
+          fvISO,
+          realizoUG || "",
+          fechaUG || "",
+          tipoUG || ""
+        ].map(t => new TableCell({ children:[p(String(t))] }));
+        return new TableRow({ children: cells });
+      });
+
+      const table = new Table({
+        rows: [headerRow, ...rows],
+        width: { size: 100, type: WidthType.PERCENTAGE }
+      });
+      body.push(table);
+
+      const totalImporte=creditos.reduce((acc,c)=> acc + toNumberSafe(c["Saldo Total"]), 0);
+      body.push(p(" "));
+      body.push(pBold(`TOTAL: ${totalImporte.toLocaleString("es-MX",{style:"currency",currency:"MXN"})}`, { alignment: AlignmentType.CENTER }));
+      body.push(p(" "));
+
+      if(tipo==="acta"){
+        ;["hechos","faltas","determinacion","cierre"].forEach(k=>{
+          if(textos[k]){
+            textos[k].split("\n\n").forEach(b => body.push(p(b)));
+            body.push(p(" "));
+          }
+        });
+      }else{
+        if(textos.postTabla){
+          textos.postTabla.split("\n\n").forEach(b => body.push(p(b)));
+          body.push(p(" "));
+          body.push(pBold("Atentamente", { alignment: AlignmentType.CENTER }));
+          body.push(p("_______________________________", { alignment: AlignmentType.CENTER }));
+          body.push(p("Coordinación de Recuperación", { alignment: AlignmentType.CENTER }));
+        }
+      }
+
+      const doc = new Document({ sections: [{ children: body }] });
+      const blob = await Packer.toBlob(doc);
+
+      const nombreArchivo=(tipo==="acta"?"ACTA_ADMINISTRATIVA":"EXHORTO");
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `${nombreArchivo}_${asesor.replace(/ /g,"_")}_${norm(sucursal).replace(/[^A-Z0-9_]/g,"")}.docx`;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 500);
     }
 
     /* ===================== GAS API ===================== */
