@@ -374,7 +374,7 @@
     };
 
     const oficinaCentral = [
-	  { nombre:"ADAN GUTIERREZ HERNANDEZ", puesto:"GERENTE DE RECUPERACIÓN EXTRAJUDICIAL" },
+      { nombre:"ADAN GUTIERREZ HERNANDEZ", puesto:"GERENTE DE RECUPERACIÓN EXTRAJUDICIAL" },
       { nombre:"ROBERTO JAVIER PÉREZ SANTIAGO", puesto:"COORDINADOR DE RECUPERACIÓN EXTRAJUDICIAL" },
       { nombre:"SANDRA LORENA PACHECO ROBLES", puesto:"ASISTENTE DE RECUPERACIÓN EXTRAJUDICIAL" },
       { nombre:"ROLANDO VALERIANO HURTADO", puesto:"ASISTENTE DE RECUPERACIÓN EXTRAJUDICIAL" },
@@ -1062,48 +1062,72 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
       const totalImporte=creditos.reduce((acc,c)=> acc + toNumberSafe(c["Saldo Total"]), 0);
       doc.setFontSize(11);
       doc.text(`TOTAL: ${totalImporte.toLocaleString("es-MX",{style:"currency",currency:"MXN"})}`, pageWidth/2, y, {align:"center"}); y+=12;
+if (tipo === "acta") {
+  // 1) Párrafos del acta
+  y = addParagraph(doc, textos.hechos,        y, env, 50, 50); y = (doc.lastAutoTable?.finalY || y) + 6;
+  y = addParagraph(doc, textos.faltas,        y, env, 50, 50); y = (doc.lastAutoTable?.finalY || y) + 6;
+  y = addParagraph(doc, textos.determinacion, y, env, 50, 50); y = (doc.lastAutoTable?.finalY || y) + 180;
 
-      if(tipo==="acta"){
-        y=addParagraph(doc,textos.hechos,y,env,50,50); y=(doc.lastAutoTable?.finalY||y)+6;
-        y=addParagraph(doc,textos.faltas,y,env,50,50); y=(doc.lastAutoTable?.finalY||y)+6;
-        y=addParagraph(doc,textos.determinacion,y,env,50,50); y=(doc.lastAutoTable?.finalY||y)+16;
+  // 2) Cierre (último párrafo ANTES de firmas)
+  y = addParagraph(doc, textos.cierre, y, env, 50, 50);
+  y = (doc.lastAutoTable?.finalY || y) + 36;
 
-        // ===== Firmas (PDF): 2x2 =====
-        const lineY = 40, colW = (pageWidth-100)/2;
-        const drawSignature = (cx, name, title)=>{
-          doc.setLineWidth(0.5);
-          doc.line(50+cx, y+lineY, 50+cx+colW-20, y+lineY);
-          doc.setFontSize(10);
-          doc.text(name, 50+cx + (colW-20)/2, y+lineY+14, {align:"center"});
-          doc.setFontSize(9);
-          doc.text(title, 50+cx + (colW-20)/2, y+lineY+28, {align:"center"});
-        };
-        const N = s => (s||"").toString().toUpperCase();
-        const firm1Name = N(firmanteCoord),  firm1Title = "COORDINADOR DE RECUPERACIÓN";
-        const firm2Name = N(asesor),         firm2Title = "ASESOR DE CRÉDITOS Y RECUPERACIÓN INDIVIDUAL";
-        const gerente = getDireccionPorSucursal(sucursal)?.GERENTE
-                      || getDireccionPorSucursal(sucursal)?.Gerente
-                      || textos.gerenteSucursal || "__________________________";
-        const firm3Name = N(gerente),        firm3Title = "GERENTE DE SUCURSAL";
-        const firm4Name = "LIC. ADÁN GUTIÉRREZ HERNÁNDEZ",
-              firm4Title = "GERENTE DE RECUPERACIÓN EXTRAJUDICIAL";
+  // 3) Antes de dibujar firmas, asegurar espacio; si no, nueva página
+  //    Altura aproximada del bloque de firmas (2 filas + títulos) ~ 160–180pt
+  const neededForSignatures = 190;
+  const usableBottom = doc.internal.pageSize.getHeight() - env.FOOTER_RESERVE;
+  if (y + neededForSignatures > usableBottom) {
+    doc.addPage();
+    // Reponer header en nueva página
+    env.didDrawPage();
+    y = env.CONTENT_TOP;
+  }
 
-        drawSignature(0, firm1Name, firm1Title);
-        drawSignature(colW, firm2Name, firm2Title);
-        y += lineY + 40;
-        doc.setFontSize(10); doc.text("TESTIGOS", pageWidth/2, y, {align:"center"}); y += 6;
-        drawSignature(0, firm3Name, firm3Title);
-        drawSignature(colW, firm4Name, firm4Title);
-        y += 60;
+  // 4) Firmas (2x2) después del último párrafo
+  const colW = (pageWidth - 100) / 2;
+  const drawSignature = (x, baseY, name, title) => {
+    const lineY = baseY + 18;
+    doc.setLineWidth(0.5);
+    // línea de firma
+    doc.line(50 + x, lineY, 50 + x + colW - 20, lineY);
+    // nombre
+    doc.setFontSize(10);
+    doc.text(name, 50 + x + (colW - 20) / 2, lineY + 14, { align: "center" });
+    // título
+    doc.setFontSize(9);
+    doc.text(title, 50 + x + (colW - 20) / 2, lineY + 28, { align: "center" });
+  };
 
-        y=addParagraph(doc,textos.cierre,y,env,50,50);
-      } else {
-        y=addParagraph(doc,textos.postTabla,y,env,50,50); y=(doc.lastAutoTable?.finalY||y)+18;
-        doc.text("Atentamente,", pageWidth/2, y, {align:"center"}); y+=30;
-        doc.text("_______________________________", pageWidth/2, y, {align:"center"}); y+=14;
-        doc.text("Coordinación de Recuperación", pageWidth/2, y, {align:"center"});
-      }
+  const N = s => (s || "").toString().toUpperCase();
+  const firm1Name  = N(firmanteCoord),  firm1Title  = "COORDINADOR DE RECUPERACIÓN";
+  const firm2Name  = N(asesor),         firm2Title  = "ASESOR DE CRÉDITOS Y RECUPERACIÓN INDIVIDUAL";
+  const gerente    = getDireccionPorSucursal(sucursal)?.GERENTE
+                  || getDireccionPorSucursal(sucursal)?.Gerente
+                  || textos.gerenteSucursal || "__________________________";
+  const firm3Name  = N(gerente),        firm3Title  = "GERENTE DE SUCURSAL";
+  const firm4Name  = "LIC. ADÁN GUTIÉRREZ HERNÁNDEZ";
+  const firm4Title = "GERENTE DE RECUPERACIÓN EXTRAJUDICIAL";
 
+  // Fila 1
+  drawSignature(0,        y, firm1Name, firm1Title);
+  drawSignature(colW,     y, firm2Name, firm2Title);
+  y += 120;
+
+  // Título “TESTIGOS”
+  doc.setFontSize(10);
+  doc.text("TESTIGOS", pageWidth / 2, y, { align: "center" });
+  y += 60;
+
+  // Fila 2
+  drawSignature(0,        y, firm3Name, firm3Title);
+  drawSignature(colW,     y, firm4Name, firm4Title);
+  y += 70;
+
+} else {
+  // (EXHORTO)… tu código actual
+}
+
+      
       // Footer imagen + numeración
       const pageCount=doc.getNumberOfPages();
       for(let i=1;i<=pageCount;i++){
