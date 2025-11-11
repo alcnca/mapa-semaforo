@@ -22,6 +22,23 @@
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js" defer></script>
 
   <style>
+#asesorTitulo 
+{
+  font-size: 9px;         /* 👈 antes era 13px, lo reducimos */
+  margin-bottom: 4px;      /* 👈 menos espacio debajo */
+  margin-top: 1px;         /* 👈 menos espacio arriba */
+  line-height: 1.0;        /* 👈 texto más compacto */
+  text-align: center;      /* 👈 opcional: centrado */
+  color: #333;             /* 👈 tono más suave, opcional */
+}
+
+#vistaPreviaModal .modal-body {
+  padding-top: 0.5rem !important;
+}
+
+#tablaPreviewWrap {
+  margin-top: 0.25rem;
+}
     .table.table-sm th, .table.table-sm td { font-size: 10px; line-height: 1.10; }
     #tablaPreview td:nth-child(1), #tablaPreview td:nth-child(2) { text-align: center; }
     #tablaPreview td:nth-child(3), #tablaPreview td:nth-child(4) { text-align: left; }
@@ -88,23 +105,174 @@
       padding: .20rem .35rem;
       line-height: 1;
     }
+/* ===== Tarjetas ultra compactas ===== */
+.card-compact {
+  border: 1px solid #e6e9ef;
+  border-radius: .6rem;
+  margin-bottom: .35rem;
+}
+
+.card-compact .card-header {
+  background: #0d6efd;
+  color: #fff;
+  padding: .25rem .5rem;              /* antes .35rem .6rem */
+  border-radius: .6rem .6rem 0 0;
+  min-height: 1.8rem;                 /* más baja */
+}
+
+.card-compact .header-line {
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+  flex-wrap: wrap;
+}
+
+.card-compact .asesor {
+  font-weight: 600;
+  font-size: .9rem;                  /* antes 1rem aprox */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.card-compact .meta {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: .25rem;
+  flex-wrap: wrap;
+}
+
+.card-compact .chip {
+  background: #f1f5f9;
+  color: #0f172a;
+  padding: .1rem .35rem;
+  border-radius: 999px;
+  font-size: .7rem;
+  line-height: 1;
+}
+
+.card-compact .chip.dark {
+  background: #111827;
+  color: #fff;
+}
+
+.card-compact .chip.blue {
+  background: #e7f1ff;
+  color: #084298;
+}
+
+.card-compact .card-body {
+  padding: .35rem .5rem;             /* antes .45rem .6rem */
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  min-height: 2rem;
+}
+
+.card-compact .kpi {
+  display: flex;
+  align-items: center;
+  gap: .25rem;
+  font-size: .8rem;
+  color: #334155;
+}
+
+.card-compact .kpi strong {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.card-compact .btn {
+  padding: .15rem .45rem;            /* botón más chico */
+  font-size: .8rem;
+  border-radius: .4rem;
+}
+
+.card-compact:hover {
+  box-shadow: 0 1px 4px rgba(2,6,23,.08);
+}
+/* ===== Compactar banda de filtros ===== */
+.filters-compact .form-label{
+  margin-bottom: .15rem;         /* menos espacio debajo del label */
+  font-size: .875rem;            /* ~14px */
+  line-height: 1.1;
+}
+
+.filters-compact .form-select.form-select-sm,
+.filters-compact .form-control.form-control-sm{
+  height: calc(1.6rem + 2px);    /* más bajito que el sm por defecto */
+  padding: .2rem .5rem;
+  font-size: .875rem;
+}
+
+.filters-compact .col-md-3,
+.filters-compact .col-md-6{
+  margin-bottom: .25rem;         /* menos separación vertical entre columnas */
+}
+
+.filters-compact .form-text{
+  margin-top: .15rem;
+  font-size: .75rem;
+}
+
+.filters-compact + .d-grid .btn{ /* botón Aplicar justo debajo del bloque */
+  padding: .35rem .75rem;
+  font-size: .95rem;
+}
+
+/* Ajustar paddings generales de la página para ganar alto útil */
+body.container{
+  padding-top: 1rem !important;   /* antes py-4 → ahora ~py-2 */
+  padding-bottom: 1rem !important;
+}
+
+/* Encabezados más pegados */
+h1.mb-3{ margin-bottom: .5rem !important; }
+
+/* ===== Resumen compacto del filtro ===== */
+.summary-card{
+  border: 1px solid #e6e9ef;
+  border-radius: .6rem;
+  background: #ffffff;
+  padding: .6rem .75rem;
+}
+.summary-card .stat-label{
+  font-size: .75rem;
+  color: #64748b;
+  margin-bottom: .1rem;
+}
+.summary-card .stat-value{
+  font-weight: 800;
+  font-size: 1.05rem;
+  color: #0f172a;
+}
+.summary-card .chip{
+  display: inline-block;
+  padding: .15rem .45rem;
+  border-radius: 999px;
+  font-size: .75rem;
+  background: #e7f1ff;
+  color: #084298;
+}
+.summary-card .chip.blue{ background:#e7f1ff; color:#084298; }
   </style>
 </head>
 <body class="container py-4">
   <h1 class="mb-3">Seguimiento SemiAutomático</h1>
 
   <!-- Filtros -->
-  <div class="mb-4 row g-3">
+  <div class="mb-2 row g-1 filters-compact">   <!-- antes: mb-4 row g-3 -->
     <!-- Coordinador -->
     <div class="col-md-3">
       <label class="form-label">Coordinador que firma:</label>
-      <select id="coordinadorSelect" class="form-select"></select>
+      <select id="coordinadorSelect" class="form-select form-select-sm"></select>
     </div>
 
     <!-- Sucursal -->
     <div class="col-md-3">
       <label class="form-label">Sucursal:</label>
-      <select id="sucursalSelect" class="form-select" disabled>
+      <select id="sucursalSelect" class="form-select form-select-sm" disabled>
         <option value="">-- Selecciona coordinador --</option>
       </select>
     </div>
@@ -112,7 +280,7 @@
     <!-- Cartera -->
     <div class="col-md-3">
       <label class="form-label">Cartera a revisar:</label>
-      <select id="carteraSelect" class="form-select" disabled>
+      <select id="carteraSelect" class="form-select form-select-sm" disabled>
         <option value="">-- Selecciona --</option>
         <option value="TODAS">Todas</option>
         <option value="ADMIN">Cartera Administrativa (Fase: Administrativa)</option>
@@ -123,35 +291,76 @@
     <!-- ¿Qué mostrar? -->
     <div class="col-md-3" id="mostrarDiv">
       <label class="form-label">¿Qué mostrar?</label>
-      <select id="mostrarSelect" class="form-select" disabled>
+      <select id="mostrarSelect" class="form-select form-select-sm" disabled>
         <option value="SIN">Solo créditos sin gestión</option>
         <option value="TODOS">Todos</option>
         <option value="PAGOS_UNICOS">Pagos únicos</option>
         <option value="PAGOS_UNICOS_POR_VENCER">Pago único por vencer (fecha de pago)</option>
+ 	<option value="MAYOR_40K">Monto mayor a $40,000</option>
+        <option value="PORC_PAGO_BAJO">% de pago menor a 10%</option>
       </select>
     </div>
 
     <!-- Sub-firmante -->
     <div class="col-md-3" id="subFirmanteDiv" style="display:none">
       <label class="form-label">Firmante (Oficina Central / Sub-firmante):</label>
-      <select id="subFirmanteSelect" class="form-select"></select>
+      <select id="subFirmanteSelect" class="form-select form-select-sm"></select>
     </div>
 
     <!-- Días sin gestión -->
     <div class="col-md-3" id="diasMinimosDiv" style="display:none;">
       <label class="form-label">Días transcurridos desde la última gestión:</label>
-      <input type="number" id="diasMinimos" value="30" class="form-control" />
+      <input type="number" id="diasMinimos" value="30" class="form-control form-control-sm" />
       <div class="form-text">Aplica sólo si elegiste “Todos”.</div>
     </div>
   </div>
 
   <div class="mb-3 d-grid">
-    <button class="btn btn-primary" id="btnAplicar" disabled>Aplicar</button>
+    <button class="btn btn-primary btn-sm w-100" id="btnAplicar" disabled>Aplicar</button>
   </div>
 
   <div class="mb-3">
-    <button class="btn btn-outline-dark w-100" id="btnAbrirAgenda">Revisar Agenda Guardada</button>
+    <button class="btn btn-outline-dark btn-sm w-100" id="btnAbrirAgenda">Revisar Agenda Guardada</button>
   </div>
+<!-- Botón para mostrar/ocultar el resumen -->
+<div class="mb-2">
+  <button class="btn btn-outline-secondary btn-sm w-100"
+          data-bs-toggle="collapse"
+          data-bs-target="#panelResumen">
+    Mostrar resumen del filtro
+  </button>
+</div>
+
+<!-- Panel colapsable -->
+<div class="collapse" id="panelResumen">
+  <div class="card card-body summary-card">
+    <div class="row text-center g-2">
+      <div class="col-6 col-md-3">
+        <div class="stat"><div class="stat-label">Créditos</div><div class="stat-value" id="resCreditos">0</div></div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="stat"><div class="stat-label">Suma saldo</div><div class="stat-value" id="resSaldo">$0</div></div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="stat"><div class="stat-label">Sucursales</div><div class="stat-value" id="resSucursales">0</div></div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="stat"><div class="stat-label">Asesores</div><div class="stat-value" id="resAsesores">0</div></div>
+      </div>
+    </div>
+
+    <div class="row text-center g-2 mt-2">
+      <div class="col-4"><div class="chip blue w-100">Admin: <span id="resAdmin">$0</span></div></div>
+      <div class="col-4"><div class="chip blue w-100">Extra: <span id="resExtra">$0</span></div></div>
+      <div class="col-4"><div class="chip blue w-100">Prev: <span id="resPrev">$0</span></div></div>
+    </div>
+
+    <div class="d-flex justify-content-center gap-2 mt-3">
+      <button class="btn btn-outline-dark btn-sm" id="btnExportFiltrado">Exportar Excel (filtrado)</button>
+      <button class="btn btn-outline-dark btn-sm" id="btnExportSucursales">Exportar Excel (por sucursal)</button>
+    </div>
+  </div>
+</div>
 
   <div id="resumenFiltro" class="alert alert-secondary d-none"></div>
   <div id="contenido"></div>
@@ -462,7 +671,26 @@
       const fv=parseVencimientoToDate(r);
       return venceEnProximos30Dias(fv);
     }
+  function valPorcentajePagado(r) {
+  const raw =
+    r["Porcentaje Pagado"] ??
+    r["Porcentaje pagado"] ??
+    r["% PAGADO"] ??
+    r["Porcentaje de pago"] ??
+    r["PorcentajePagado"];
 
+  if (raw == null) return NaN;
+
+  let s = String(raw).trim().replace(/[%\s]/g, "");
+  s = s.replace(",", ".");
+  const n = parseFloat(s);
+  if (isNaN(n)) return NaN;
+
+  // ⚙️ Nueva regla:
+  // - Si el valor está entre 0 y 1, lo dejamos tal cual (ej. 0.85 = 0.85 %)
+  // - Si es >= 1, se asume que ya está expresado como porcentaje
+  return n;
+}
     const meses=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
     function numEnEsp(n){ const u=["cero","uno","dos","tres","cuatro","cinco","seis","siete","ocho","nueve","diez","once","doce","trece","catorce","quince","dieciséis","diecisiete","dieciocho","diecinueve","veinte","veintiuno","veintidós","veintitrés","veinticuatro","veinticinco","veintiséis","veintisiete","veintiocho","veintinueve"]; if(n<30)return u[n]; const d=["","","","treinta","cuarenta","cincuenta"]; const dec=Math.floor(n/10),uni=n%10; return uni===0? d[dec]:`${d[dec]} y ${u[uni]}`; }
     function anioEnLetras(y){ const map={2023:"dos mil veintitrés",2024:"dos mil veinticuatro",2025:"dos mil veinticinco",2026:"dos mil veintiséis"}; return map[y]||y.toString(); }
@@ -478,6 +706,40 @@
       found = direcciones.find(d => norm(d.Nombre_Sucursal||"").includes(sNorm));
       return found||null;
     }
+
+
+
+let ultimaBaseFiltrada = [];  // 👈 guardaremos el resultado final del filtro
+
+function renderResumenFiltrado(base){
+  const CURRENCY = new Intl.NumberFormat("es-MX",{style:"currency",currency:"MXN"});
+  const totalCred = base.length;
+  const sumaSaldo = base.reduce((acc,r)=> acc + toNumberSafe(r["Saldo Total"]), 0);
+
+  const sucursales = new Set(base.map(r => r.Sucursal).filter(Boolean));
+  const asesores   = new Set(base.map(r => r.Ejecutivo || "SIN ASESOR"));
+
+  // Sumas por fase
+  let admin=0, extra=0, prev=0;
+  base.forEach(r=>{
+    const f = norm(valFase(r));
+    const s = toNumberSafe(r["Saldo Total"]);
+    if (f.includes("ADMINISTRATIVA")) admin += s;
+    if (f.includes("EXTRAJUDICIAL"))  extra += s;
+    if (f.includes("PREVENTIVA"))     prev  += s;
+  });
+
+  // Pintar
+  const setTxt = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  setTxt("resCreditos", totalCred.toLocaleString("es-MX"));
+  setTxt("resSaldo",    CURRENCY.format(sumaSaldo));
+  setTxt("resSucursales", sucursales.size.toLocaleString("es-MX"));
+  setTxt("resAsesores",   asesores.size.toLocaleString("es-MX"));
+  setTxt("resAdmin", CURRENCY.format(admin));
+  setTxt("resExtra", CURRENCY.format(extra));
+  setTxt("resPrev",  CURRENCY.format(prev));
+}
+
 
     function getTextosDocumento(tipo, diasMinimos, asesor, sucursal, firmanteCoord){
       if(tipo==="acta"){
@@ -764,19 +1026,19 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
       });
 
       const cont=document.getElementById("contenido");
+      cont.classList.add("compact-list"); // habilita el espaciado compacto entre tarjetas
       const h4=document.createElement("h4");
-      h4.className="mt-3 mb-3";
-      h4.innerHTML = `
-        Sucursal: <strong>${sucursal}</strong>
-        &nbsp;&nbsp;|&nbsp;&nbsp;
-        <span class="badge bg-primary badge-phase-sm">Administrativa: ${admin.toLocaleString("es-MX",{style:"currency",currency:"MXN"})}</span>
-        &nbsp;&nbsp;
-        <span class="badge bg-primary badge-phase-sm">Extrajudicial: ${extra.toLocaleString("es-MX",{style:"currency",currency:"MXN"})}</span>
-        &nbsp;&nbsp;
-        <span class="badge bg-primary badge-phase-sm">Preventiva: ${preventiva.toLocaleString("es-MX",{style:"currency",currency:"MXN"})}</span>
-        &nbsp;&nbsp;
-        <span class="badge bg-dark badge-phase-sm">Total: ${totalSucursal.toLocaleString("es-MX",{style:"currency",currency:"MXN"})}</span>`;
-      cont.appendChild(h4);
+      h4.className="mt-3 mb-2";
+h4.innerHTML = `
+  <div class="d-flex align-items-center gap-2 flex-wrap">
+    <div style="font-size:1.15rem; font-weight:800;">Sucursal: ${sucursal}</div>
+    <span class="chip blue">Administrativa: ${admin.toLocaleString("es-MX",{style:"currency",currency:"MXN"})}</span>
+    <span class="chip blue">Extrajudicial: ${extra.toLocaleString("es-MX",{style:"currency",currency:"MXN"})}</span>
+    <span class="chip blue">Preventiva: ${preventiva.toLocaleString("es-MX",{style:"currency",currency:"MXN"})}</span>
+    <span class="chip dark">Total: ${totalSucursal.toLocaleString("es-MX",{style:"currency",currency:"MXN"})}</span>
+  </div>
+`;
+
 
       const nombresAsesores=Object.keys(porAsesor).sort((a,b)=>a.localeCompare(b,"es"));
       if(nombresAsesores.length===0){
@@ -784,6 +1046,12 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
         alert.textContent="Sin registros con los criterios seleccionados en esta sucursal.";
         cont.appendChild(alert); return;
       }
+
+nombresAsesores.sort((a, b) => {
+  const ta = (porAsesor[a]||[]).reduce((acc, r) => acc + toNumberSafe(r["Saldo Total"]), 0);
+  const tb = (porAsesor[b]||[]).reduce((acc, r) => acc + toNumberSafe(r["Saldo Total"]), 0);
+  return tb - ta; // de mayor a menor
+});
 
       for(const asesor of nombresAsesores){
         const lista=porAsesor[asesor];
@@ -796,19 +1064,26 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
         }, {admin:0, extra:0, preventiva:0});
         const aTotal = lista.reduce((acc,r)=>acc + toNumberSafe(r["Saldo Total"]), 0);
 
-        const card=document.createElement("div"); card.className="card mb-3";
-        card.innerHTML=`
-          <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-            <span>${asesor}</span>
-            <span>
-              <span class="badge bg-light text-dark badge-phase-sm me-1">Admin: ${faseSums.admin.toLocaleString("es-MX",{style:"currency",currency:"MXN"})}</span>
-              <span class="badge bg-light text-dark badge-phase-sm me-1">Extra: ${faseSums.extra.toLocaleString("es-MX",{style:"currency",currency:"MXN"})}</span>
-              <span class="badge bg-light text-dark badge-phase-sm me-1">Preventiva: ${faseSums.preventiva.toLocaleString("es-MX",{style:"currency",currency:"MXN"})}</span>
-              <span class="badge bg-dark">Total: ${aTotal.toLocaleString("es-MX",{style:"currency",currency:"MXN"})}</span>
-            </span>
-          </div>
-          <div class="card-body d-flex justify-content-between align-items-center">
-            <div>Créditos: ${lista.length}<br/>Total: ${aTotal.toLocaleString("es-MX",{style:"currency",currency:"MXN"})}</div>
+        const card=document.createElement("div"); 
+	card.className = "card card-compact";
+	const totalFmt = aTotal.toLocaleString("es-MX",{style:"currency",currency:"MXN"});
+	card.innerHTML = `
+  	<div class="card-header">
+    	<div class="header-line">
+     	<div class="asesor">${asesor}</div>
+      	<div class="meta">
+        <span class="chip blue">Admin: ${faseSums.admin.toLocaleString("es-MX",{style:"currency",currency:"MXN"})}</span>
+        <span class="chip blue">Extra: ${faseSums.extra.toLocaleString("es-MX",{style:"currency",currency:"MXN"})}</span>
+        <span class="chip blue">Prev: ${faseSums.preventiva.toLocaleString("es-MX",{style:"currency",currency:"MXN"})}</span>
+        <span class="chip dark">Total: ${totalFmt}</span>
+      </div>
+    </div>
+  </div>
+          <div class="card-body">
+              <div class="card-body">
+    <div class="kpi"><strong>${lista.length}</strong> créditos</div>
+    <div class="kpi">Suma: <strong>${totalFmt}</strong></div>
+    <div style="margin-left:auto"></div>
             <button class="btn btn-warning btn-sm">Vista Previa</button>
           </div>`;
         card.querySelector("button").onclick=()=>{ sucursalSeleccionada=sucursal; mostrarVistaPrevia(asesor, lista); };
@@ -835,16 +1110,37 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
       base = creditosBaseFiltradosPorCartera(base);
 
       // 4) ¿Qué mostrar?
-      mostrarModo = document.getElementById("mostrarSelect").value;
-      if(mostrarModo==="SIN"){ base = base.filter(d=> estaSinGestion(d["Dias sin Gestion"])); }
-      else if(mostrarModo==="PAGOS_UNICOS"){ base = base.filter(cumplePagosUnicos); }
-      else if(mostrarModo==="PAGOS_UNICOS_POR_VENCER"){ base = base.filter(cumplePagosUnicosPorVencer); }
-      else { // TODOS
-        base = base.filter(d=>{
-          const dias=parseDiasSinGestion(d["Dias sin Gestion"]);
-          return (dias===null) || (typeof dias==="number" && dias>=diasFiltro);
-        });
-      }
+   mostrarModo = document.getElementById("mostrarSelect").value;
+	if (mostrarModo === "SIN") {
+  	base = base.filter(d => estaSinGestion(d["Dias sin Gestion"]));
+	} else if (mostrarModo === "PAGOS_UNICOS") {
+  	base = base.filter(cumplePagosUnicos);
+	} else if (mostrarModo === "PAGOS_UNICOS_POR_VENCER") {
+  	base = base.filter(cumplePagosUnicosPorVencer);
+	} else if (mostrarModo === "MAYOR_40K") {                 // 👈 NUEVO
+  	base = base.filter(r => valSaldo(r) >= 40000);          // 👈 NUEVO
+	} else if (mostrarModo === "PORC_PAGO_BAJO") {
+  base = base.filter(r => {
+    const p = valPorcentajePagado(r);
+    return !isNaN(p) && p <= 10.0; // Menor o igual a 10 %
+  });
+
+
+
+} else { // TODOS
+  base = base.filter(d => {
+    const dias = parseDiasSinGestion(d["Dias sin Gestion"]);
+    const diasFiltro = parseInt(document.getElementById("diasMinimos").value) || 30;
+    return (dias === null) || (typeof dias === "number" && dias >= diasFiltro);
+  });
+}
+
+
+// Guarda el resultado y pinta el resumen
+ultimaBaseFiltrada = base.slice();
+renderResumenFiltrado(ultimaBaseFiltrada);
+
+
 
       // Render
       const cont=document.getElementById("contenido"); cont.innerHTML="";
@@ -938,6 +1234,92 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
     }
 
     /* ===================== Excel, DOCX, PDF y Agenda ===================== */
+function exportarFiltradoAExcel(){
+  if (!ultimaBaseFiltrada.length) { alert("No hay datos filtrados para exportar."); return; }
+  const headers = ["Sucursal","Asesor","Crédito","Producto","Socio","Nombre","Saldo","Días atraso","Días sin gestión","Fase","Venc.","Realizó Últ. Gestión","Fecha Últ. Gestión","Tipo de Gestión"];
+  const rows = ultimaBaseFiltrada.map(c=>[
+    c.Sucursal || "",
+    c.Ejecutivo || "",
+    c.Linea || "",
+    valProducto(c),
+    valSocio(c),
+    c.Nombre || "",
+    Number(toNumberSafe(c["Saldo Total"])),
+    Number(toNumberSafe(valDiasAtr(c))),
+    (()=>{ const dsg=parseDiasSinGestion(c["Dias sin Gestion"]); return dsg===null ? "SIN GESTIÓN" : Number(dsg); })(),
+    valFase(c),
+    normDateYYYYMMDD(getFechaVencimientoRaw(c)) || "",
+    valRealizoUltimaGestion(c) || "",
+    valFechaUltimaGestion(c) || "",
+    valTipoGestion(c) || ""
+  ]);
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+  ws['!cols'] = [{wch:14},{wch:18},{wch:10},{wch:12},{wch:10},{wch:26},{wch:14},{wch:12},{wch:14},{wch:15},{wch:10},{wch:18},{wch:14},{wch:18}];
+
+  // Formatos numéricos
+  const range = XLSX.utils.decode_range(ws['!ref']);
+  for (let r=1; r<=range.e.r; r++){
+    const cSaldo = XLSX.utils.encode_cell({r, c:6}); if(ws[cSaldo]) ws[cSaldo].t='n', ws[cSaldo].z='"$"#,##0.00';
+    const cAtr   = XLSX.utils.encode_cell({r, c:7}); if(ws[cAtr]&&typeof ws[cAtr].v==='number') ws[cAtr].t='n';
+    const cSin   = XLSX.utils.encode_cell({r, c:8}); if(ws[cSin]&&typeof ws[cSin].v==='number') ws[cSin].t='n';
+  }
+
+  XLSX.utils.book_append_sheet(wb, ws, "Filtrado");
+  XLSX.writeFile(wb, `Concentrado_Filtrado_${mxISODate()}.xlsx`);
+}
+
+function exportarFiltradoPorSucursal(){
+  if (!ultimaBaseFiltrada.length) { alert("No hay datos filtrados para exportar."); return; }
+  const wb = XLSX.utils.book_new();
+  const headers = ["Asesor","Crédito","Producto","Socio","Nombre","Saldo","Días atraso","Días sin gestión","Fase","Venc.","Realizó Últ. Gestión","Fecha Últ. Gestión","Tipo de Gestión"];
+
+  const porSuc = {};
+  ultimaBaseFiltrada.forEach(r => (porSuc[r.Sucursal||"SIN_SUCURSAL"] ||= []).push(r));
+
+  Object.entries(porSuc).forEach(([suc, lista])=>{
+    const rows = lista.map(c=>[
+      c.Ejecutivo || "",
+      c.Linea || "",
+      valProducto(c),
+      valSocio(c),
+      c.Nombre || "",
+      Number(toNumberSafe(c["Saldo Total"])),
+      Number(toNumberSafe(valDiasAtr(c))),
+      (()=>{ const dsg=parseDiasSinGestion(c["Dias sin Gestion"]); return dsg===null ? "SIN GESTIÓN" : Number(dsg); })(),
+      valFase(c),
+      normDateYYYYMMDD(getFechaVencimientoRaw(c)) || "",
+      valRealizoUltimaGestion(c) || "",
+      valFechaUltimaGestion(c) || "",
+      valTipoGestion(c) || ""
+    ]);
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+    ws['!cols'] = [{wch:18},{wch:10},{wch:12},{wch:10},{wch:26},{wch:14},{wch:12},{wch:14},{wch:15},{wch:10},{wch:18},{wch:14},{wch:18}];
+
+    // formatos
+    const range = XLSX.utils.decode_range(ws['!ref']);
+    for (let r=1; r<=range.e.r; r++){
+      const cSaldo = XLSX.utils.encode_cell({r, c:5}); if(ws[cSaldo]) ws[cSaldo].t='n', ws[cSaldo].z='"$"#,##0.00';
+      const cAtr   = XLSX.utils.encode_cell({r, c:6}); if(ws[cAtr]&&typeof ws[cAtr].v==='number') ws[cAtr].t='n';
+      const cSin   = XLSX.utils.encode_cell({r, c:7}); if(ws[cSin]&&typeof ws[cSin].v==='number') ws[cSin].t='n';
+    }
+
+    // Nombre de hoja seguro (máx 31 chars sin [/\\?*] etc.)
+    const sheetName = String(suc||"SIN_SUC").substring(0,31).replace(/[\\/?*:[]]/g,"_");
+    XLSX.utils.book_append_sheet(wb, ws, sheetName || "Hoja");
+  });
+
+  XLSX.writeFile(wb, `Concentrado_PorSucursal_${mxISODate()}.xlsx`);
+}
+
+// Listeners de exportación
+document.addEventListener("DOMContentLoaded", ()=>{
+  const b1 = document.getElementById("btnExportFiltrado");
+  const b2 = document.getElementById("btnExportSucursales");
+  if (b1) b1.addEventListener("click", exportarFiltradoAExcel);
+  if (b2) b2.addEventListener("click", exportarFiltradoPorSucursal);
+});
+
     function exportarPreviewAExcel(){
       if (!Array.isArray(creditosSeleccionados) || creditosSeleccionados.length === 0){ alert("No hay datos para exportar."); return; }
       const headers = ["Crédito","Producto","Socio","Nombre del Socio","Saldo","Días atraso","Días sin gestión","Fase","Venc.","Realizó Últ. Gestión","Fecha Últ. Gestión","Tipo de Gestión","Estatus"];
