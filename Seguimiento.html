@@ -255,6 +255,19 @@ h1.mb-3{ margin-bottom: .5rem !important; }
   background: #e7f1ff;
   color: #084298;
 }
+.card-compact .asesor {
+  font-weight: 600;
+  font-size: .9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background: transparent;
+  border: 0;
+}
+
+.card-compact .asesor:hover {
+  text-decoration: underline;
+}
 .summary-card .chip.blue{ background:#e7f1ff; color:#084298; }
   </style>
 </head>
@@ -1014,82 +1027,171 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
       });
       return { admin, extra, preventiva };
     }
-    function renderTarjetasPorSucursal(base, sucursal){
-      const { admin, extra, preventiva } = sumarPorFaseSucursal(base, sucursal);
-      const totalSucursal = base.filter(r=>r.Sucursal===sucursal)
-                                .reduce((acc,r)=>acc + toNumberSafe(r["Saldo Total"]), 0);
+  function renderTarjetasPorSucursal(base, sucursal){
+  // 1) Totales por fase para el encabezado de la sucursal
+  const { admin, extra, preventiva } = sumarPorFaseSucursal(base, sucursal);
+  const totalSucursal = base
+    .filter(r => r.Sucursal === sucursal)
+    .reduce((acc, r) => acc + toNumberSafe(r["Saldo Total"]), 0);
 
-      const porAsesor = {};
-      base.filter(r=>r.Sucursal===sucursal).forEach(r=>{
-        const ejecutivo = r.Ejecutivo || "SIN ASESOR";
-        (porAsesor[ejecutivo] ||= []).push(r);
-      });
+  // 2) Agrupar créditos por asesor
+  const porAsesor = {};
+  base
+    .filter(r => r.Sucursal === sucursal)
+    .forEach(r => {
+      const ejecutivo = r.Ejecutivo || "SIN ASESOR";
+      (porAsesor[ejecutivo] ||= []).push(r);
+    });
 
-      const cont=document.getElementById("contenido");
-      cont.classList.add("compact-list"); // habilita el espaciado compacto entre tarjetas
-      const h4=document.createElement("h4");
-      h4.className="mt-3 mb-2";
-h4.innerHTML = `
-  <div class="d-flex align-items-center gap-2 flex-wrap">
-    <div style="font-size:1.15rem; font-weight:800;">Sucursal: ${sucursal}</div>
-    <span class="chip blue">Administrativa: ${admin.toLocaleString("es-MX",{style:"currency",currency:"MXN"})}</span>
-    <span class="chip blue">Extrajudicial: ${extra.toLocaleString("es-MX",{style:"currency",currency:"MXN"})}</span>
-    <span class="chip blue">Preventiva: ${preventiva.toLocaleString("es-MX",{style:"currency",currency:"MXN"})}</span>
-    <span class="chip dark">Total: ${totalSucursal.toLocaleString("es-MX",{style:"currency",currency:"MXN"})}</span>
-  </div>
-`;
+  const cont = document.getElementById("contenido");
+  cont.classList.add("compact-list");
 
-
-      const nombresAsesores=Object.keys(porAsesor).sort((a,b)=>a.localeCompare(b,"es"));
-      if(nombresAsesores.length===0){
-        const alert=document.createElement("div"); alert.className="alert alert-info";
-        alert.textContent="Sin registros con los criterios seleccionados en esta sucursal.";
-        cont.appendChild(alert); return;
-      }
-
-nombresAsesores.sort((a, b) => {
-  const ta = (porAsesor[a]||[]).reduce((acc, r) => acc + toNumberSafe(r["Saldo Total"]), 0);
-  const tb = (porAsesor[b]||[]).reduce((acc, r) => acc + toNumberSafe(r["Saldo Total"]), 0);
-  return tb - ta; // de mayor a menor
-});
-
-      for(const asesor of nombresAsesores){
-        const lista=porAsesor[asesor];
-        const faseSums = lista.reduce((acc, r)=>{
-          const fase=norm(valFase(r)); const saldo=toNumberSafe(r["Saldo Total"]);
-          if(fase.includes("ADMINISTRATIVA")) acc.admin+=saldo;
-          if(fase.includes("EXTRAJUDICIAL"))  acc.extra+=saldo;
-          if(fase.includes("PREVENTIVA"))     acc.preventiva+=saldo;
-          return acc;
-        }, {admin:0, extra:0, preventiva:0});
-        const aTotal = lista.reduce((acc,r)=>acc + toNumberSafe(r["Saldo Total"]), 0);
-
-        const card=document.createElement("div"); 
-	card.className = "card card-compact";
-	const totalFmt = aTotal.toLocaleString("es-MX",{style:"currency",currency:"MXN"});
-	card.innerHTML = `
-  	<div class="card-header">
-    	<div class="header-line">
-     	<div class="asesor">${asesor}</div>
-      	<div class="meta">
-        <span class="chip blue">Admin: ${faseSums.admin.toLocaleString("es-MX",{style:"currency",currency:"MXN"})}</span>
-        <span class="chip blue">Extra: ${faseSums.extra.toLocaleString("es-MX",{style:"currency",currency:"MXN"})}</span>
-        <span class="chip blue">Prev: ${faseSums.preventiva.toLocaleString("es-MX",{style:"currency",currency:"MXN"})}</span>
-        <span class="chip dark">Total: ${totalFmt}</span>
-      </div>
+  // 🔹 Encabezado ultra discreto de la sucursal
+  const h4 = document.createElement("div");
+  h4.className = "mt-1 mb-1";  // menos espacio vertical
+  h4.innerHTML = `
+    <div class="d-flex align-items-center flex-wrap gap-1 text-muted"
+         style="font-size:0.70rem; opacity:1.0;">
+      <span class="fw-semibold">Sucursal: ${sucursal}</span>
+      <span>Administrativa: ${admin.toLocaleString("es-MX",{style:"currency",currency:"MXN"})}</span>
+      <span>Extrajudicial: ${extra.toLocaleString("es-MX",{style:"currency",currency:"MXN"})}</span>
+      <span>Preventiva: ${preventiva.toLocaleString("es-MX",{style:"currency",currency:"MXN"})}</span>
+      <span>Total: ${totalSucursal.toLocaleString("es-MX",{style:"currency",currency:"MXN"})}</span>
     </div>
-  </div>
-          <div class="card-body">
-              <div class="card-body">
-    <div class="kpi"><strong>${lista.length}</strong> créditos</div>
-    <div class="kpi">Suma: <strong>${totalFmt}</strong></div>
-    <div style="margin-left:auto"></div>
-            <button class="btn btn-warning btn-sm">Vista Previa</button>
-          </div>`;
-        card.querySelector("button").onclick=()=>{ sucursalSeleccionada=sucursal; mostrarVistaPrevia(asesor, lista); };
-        cont.appendChild(card);
-      }
+  `;
+  cont.appendChild(h4);
+
+  // 3) Lista de asesores (todo igual que lo tenías)
+  let nombresAsesores = Object.keys(porAsesor);
+  if (nombresAsesores.length === 0){
+    const alert = document.createElement("div");
+    alert.className = "alert alert-info";
+    alert.textContent = "Sin registros con los criterios seleccionados en esta sucursal.";
+    cont.appendChild(alert);
+    return;
+  }
+
+  // Ordenar asesores por monto total DESC
+  nombresAsesores.sort((a, b) => {
+    const ta = (porAsesor[a] || []).reduce((acc, r) => acc + toNumberSafe(r["Saldo Total"]), 0);
+    const tb = (porAsesor[b] || []).reduce((acc, r) => acc + toNumberSafe(r["Saldo Total"]), 0);
+    return tb - ta;
+  });
+
+  // 4) Tarjeta por asesor con collapse (igual que antes)
+  nombresAsesores.forEach((asesor, idx) => {
+    const lista = porAsesor[asesor];
+
+    const faseSums = lista.reduce((acc, r) => {
+      const fase = norm(valFase(r));
+      const saldo = toNumberSafe(r["Saldo Total"]);
+      if (fase.includes("ADMINISTRATIVA")) acc.admin += saldo;
+      if (fase.includes("EXTRAJUDICIAL"))  acc.extra += saldo;
+      if (fase.includes("PREVENTIVA"))     acc.preventiva += saldo;
+      return acc;
+    }, { admin: 0, extra: 0, preventiva: 0 });
+
+    const aTotal = lista.reduce((acc, r) => acc + toNumberSafe(r["Saldo Total"]), 0);
+    const totalFmt = aTotal.toLocaleString("es-MX",{style:"currency",currency:"MXN"});
+
+    const collapseId = `cred-${sucursal.replace(/\s+/g, '_')}-${idx}`;
+
+    const filasCred = lista.map(c => {
+  const saldo = valSaldo(c).toLocaleString("es-MX",{style:"currency",currency:"MXN"});
+  const diasAtr = valDiasAtr(c);
+  const dsgParsed = parseDiasSinGestion(c["Dias sin Gestion"]);
+  const dsgDisplay = (dsgParsed === null) ? "SIN GESTIÓN" : dsgParsed;
+
+  // 👇 porcentaje pagado usando tu helper
+  const p = valPorcentajePagado(c);
+  const pDisplay = isNaN(p) ? "" : `${p.toFixed(2)}%`;  // ej. 0.85 → 0.85%
+
+  return `
+    <tr>
+      <td>${c.Linea ?? ""}</td>
+      <td>${valSocio(c)}</td>
+      <td>${c.Nombre ?? ""}</td>
+      <td class="text-end">${saldo}</td>
+      <td class="text-center">${diasAtr}</td>
+      <td class="text-center">${dsgDisplay}</td>
+      <td class="text-center">${pDisplay}</td>
+    </tr>`;
+}).join("");
+
+
+    const card = document.createElement("div");
+    card.className = "card card-compact";
+
+    card.innerHTML = `
+      <div class="card-header">
+        <div class="header-line"
+             data-bs-toggle="collapse"
+             data-bs-target="#${collapseId}"
+             style="cursor:pointer;">
+          <div class="asesor text-truncate">
+            ${asesor}
+          </div>
+          <div class="meta">
+            <span class="chip blue">
+              Admin: ${faseSums.admin.toLocaleString("es-MX",{style:"currency",currency:"MXN"})}
+            </span>
+            <span class="chip blue">
+              Extra: ${faseSums.extra.toLocaleString("es-MX",{style:"currency",currency:"MXN"})}
+            </span>
+            <span class="chip blue">
+              Prev: ${faseSums.preventiva.toLocaleString("es-MX",{style:"currency",currency:"MXN"})}
+            </span>
+            <span class="chip dark">
+              Total: ${totalFmt}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-body">
+        <div class="kpi"><strong>${lista.length}</strong> créditos</div>
+        <div class="kpi">Suma: <strong>${totalFmt}</strong></div>
+        <div style="margin-left:auto"></div>
+        <button class="btn btn-warning btn-sm btn-vista-previa">Vista Previa</button>
+      </div>
+
+      <div id="${collapseId}" class="collapse">
+        <div class="table-responsive border-top">
+          <table class="table table-sm table-bordered mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Crédito</th>
+		<th>Socio</th>
+                <th>Nombre</th>
+                <th>Saldo</th>
+                <th>Días atr.</th>
+                <th>Días s/gestión</th>
+		<th>% pagado</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${filasCred}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+
+    const btnPrev = card.querySelector(".btn-vista-previa");
+    if (btnPrev) {
+      btnPrev.onclick = () => {
+        sucursalSeleccionada = sucursal;
+        mostrarVistaPrevia(asesor, lista);
+      };
     }
+
+    cont.appendChild(card);
+  });
+}
+
+
+   
+  
     async function cargarDatos(){
       const coordSel = document.getElementById("coordinadorSelect").value;
       if(!coordSel){ alert("Selecciona el coordinador."); return; }
