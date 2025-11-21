@@ -870,11 +870,61 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
     }
 
     /* ===================== INICIO ===================== */
+async function obtenerFechaActualizacionGitHub() {
+  try {
+    // Se pide a GitHub el último commit del archivo datos.json
+    const resp = await fetch(
+      "https://api.github.com/repos/alcnca/mapa-semaforo/commits?path=datos.json&page=1&per_page=1",
+      { cache: "no-store" }
+    );
+
+    // Si GitHub no responde bien → error
+    if (!resp.ok) throw new Error("No se pudo obtener el commit");
+
+    // Convertimos la respuesta a JSON
+    const json = await resp.json();
+
+    // Obtenemos la fecha del commit más reciente
+    const fecha = json?.[0]?.commit?.committer?.date;
+
+    if (!fecha) return null;
+
+    // Convertimos la fecha a formato de México
+    const d = new Date(fecha);
+
+    return d.toLocaleString("es-MX", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZone: "America/Mexico_City"
+    });
+
+  } catch (e) {
+    console.warn("No se pudo obtener la fecha por API GitHub:", e);
+    return null;
+  }
+}
+
     window.addEventListener("DOMContentLoaded", async () => {
       try{
         const [resDatos, resDir] = await Promise.all([
           fetch(URL_DATOS,{cache:"no-store"}), fetch(URL_DIRECCION,{cache:"no-store"})
         ]);
+// NUEVO: obtener fecha real de última actualización
+const fechaAct = await obtenerFechaActualizacionGitHub();
+const infoEl = document.getElementById("infoActualizacion");
+
+if (infoEl) {
+  if (fechaAct) {
+    infoEl.textContent = `Última actualización de datos: ${fechaAct}`;
+  } else {
+    infoEl.textContent = "Última actualización: No disponible";
+  }
+}
+
+
 		  const lastMod = resDatos.headers.get("last-modified");
     if (lastMod) {
       const dt = new Date(lastMod);
@@ -1044,7 +1094,11 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
       });
       return { admin, extra, preventiva };
     }
-  function renderTarjetasPorSucursal(base, sucursal){
+
+
+
+
+function renderTarjetasPorSucursal(base, sucursal){
   // 1) Totales por fase para el encabezado de la sucursal
   const { admin, extra, preventiva } = sumarPorFaseSucursal(base, sucursal);
   const totalSucursal = base
@@ -1063,9 +1117,9 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
   const cont = document.getElementById("contenido");
   cont.classList.add("compact-list");
 
-  // 🔹 Encabezado ultra discreto de la sucursal
+  // 🔹 Encabezado sucursal
   const h4 = document.createElement("div");
-  h4.className = "mt-1 mb-1";  // menos espacio vertical
+  h4.className = "mt-1 mb-1";
   h4.innerHTML = `
     <div class="d-flex align-items-center flex-wrap gap-1 text-muted"
          style="font-size:0.70rem; opacity:1.0;">
@@ -1078,7 +1132,6 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
   `;
   cont.appendChild(h4);
 
-  // 3) Lista de asesores (todo igual que lo tenías)
   let nombresAsesores = Object.keys(porAsesor);
   if (nombresAsesores.length === 0){
     const alert = document.createElement("div");
@@ -1095,9 +1148,15 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
     return tb - ta;
   });
 
-  // 4) Tarjeta por asesor con collapse (igual que antes)
   nombresAsesores.forEach((asesor, idx) => {
-    const lista = porAsesor[asesor];
+    const listaOriginal = porAsesor[asesor];
+
+    // 🔹 NUEVO: ordenar créditos de ese asesor por días de atraso DESC
+    const lista = [...listaOriginal].sort((a, b) => {
+      const da = toNumberSafe(valDiasAtr(a));
+      const db = toNumberSafe(valDiasAtr(b));
+      return db - da; // mayor → menor
+    });
 
     const faseSums = lista.reduce((acc, r) => {
       const fase = norm(valFase(r));
@@ -1114,27 +1173,25 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
     const collapseId = `cred-${sucursal.replace(/\s+/g, '_')}-${idx}`;
 
     const filasCred = lista.map(c => {
-  const saldo = valSaldo(c).toLocaleString("es-MX",{style:"currency",currency:"MXN"});
-  const diasAtr = valDiasAtr(c);
-  const dsgParsed = parseDiasSinGestion(c["Dias sin Gestion"]);
-  const dsgDisplay = (dsgParsed === null) ? "SIN GESTIÓN" : dsgParsed;
+      const saldo = valSaldo(c).toLocaleString("es-MX",{style:"currency",currency:"MXN"});
+      const diasAtr = valDiasAtr(c);
+      const dsgParsed = parseDiasSinGestion(c["Dias sin Gestion"]);
+      const dsgDisplay = (dsgParsed === null) ? "SIN GESTIÓN" : dsgParsed;
 
-  // 👇 porcentaje pagado usando tu helper
-  const p = valPorcentajePagado(c);
-  const pDisplay = isNaN(p) ? "" : `${p.toFixed(2)}%`;  // ej. 0.85 → 0.85%
+      const p = valPorcentajePagado(c);
+      const pDisplay = isNaN(p) ? "" : `${p.toFixed(2)}%`;
 
-  return `
-    <tr>
-      <td>${c.Linea ?? ""}</td>
-      <td>${valSocio(c)}</td>
-      <td>${c.Nombre ?? ""}</td>
-      <td class="text-end">${saldo}</td>
-      <td class="text-center">${diasAtr}</td>
-      <td class="text-center">${dsgDisplay}</td>
-      <td class="text-center">${pDisplay}</td>
-    </tr>`;
-}).join("");
-
+      return `
+        <tr>
+          <td>${c.Linea ?? ""}</td>
+          <td>${valSocio(c)}</td>
+          <td>${c.Nombre ?? ""}</td>
+          <td class="text-end">${saldo}</td>
+          <td class="text-center">${diasAtr}</td>
+          <td class="text-center">${dsgDisplay}</td>
+          <td class="text-center">${pDisplay}</td>
+        </tr>`;
+    }).join("");
 
     const card = document.createElement("div");
     card.className = "card card-compact";
@@ -1178,12 +1235,12 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
             <thead class="table-light">
               <tr>
                 <th>Crédito</th>
-		<th>Socio</th>
+                <th>Socio</th>
                 <th>Nombre</th>
                 <th>Saldo</th>
                 <th>Días atr.</th>
                 <th>Días s/gestión</th>
-		<th>% pagado</th>
+                <th>% pagado</th>
               </tr>
             </thead>
             <tbody>
@@ -1198,6 +1255,7 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
     if (btnPrev) {
       btnPrev.onclick = () => {
         sucursalSeleccionada = sucursal;
+        // 👇 también la vista previa usa la lista ya ordenada
         mostrarVistaPrevia(asesor, lista);
       };
     }
@@ -1205,6 +1263,7 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
     cont.appendChild(card);
   });
 }
+
 
 
    
