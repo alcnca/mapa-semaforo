@@ -273,6 +273,7 @@ h1.mb-3{ margin-bottom: .5rem !important; }
 </head>
 <body class="container py-4">
   <h1 class="mb-3">Seguimiento SemiAutomático</h1>
+	<div id="infoActualizacion" class="text-muted small mb-2"></div>
 
   <!-- Filtros -->
   <div class="mb-2 row g-1 filters-compact">   <!-- antes: mb-4 row g-3 -->
@@ -874,6 +875,22 @@ Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al c
         const [resDatos, resDir] = await Promise.all([
           fetch(URL_DATOS,{cache:"no-store"}), fetch(URL_DIRECCION,{cache:"no-store"})
         ]);
+		  const lastMod = resDatos.headers.get("last-modified");
+    if (lastMod) {
+      const dt = new Date(lastMod);
+      const formatted = dt.toLocaleString("es-MX", {
+        day:    "2-digit",
+        month:  "2-digit",
+        year:   "numeric",
+        hour:   "2-digit",
+        minute: "2-digit",
+        timeZone: "America/Mexico_City"
+      });
+      const infoEl = document.getElementById("infoActualizacion");
+      if (infoEl) {
+        infoEl.textContent = `Última actualización de datos: ${formatted}`;
+      }
+    }
         data = await resDatos.json();
         const dirJson = await resDir.json();
         direcciones = Array.isArray(dirJson) ? dirJson
