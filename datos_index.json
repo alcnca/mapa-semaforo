@@ -1,0 +1,37 @@
+﻿[
+    {
+        "Coordinador":  "#N/D",
+        "Archivo":  "data/by_coordinador/_N_D.json",
+        "Registros":  13
+    },
+    {
+        "Coordinador":  "ALCNCA",
+        "Archivo":  "data/by_coordinador/ALCNCA.json",
+        "Registros":  3769
+    },
+    {
+        "Coordinador":  "DASADI",
+        "Archivo":  "data/by_coordinador/DASADI.json",
+        "Registros":  1321
+    },
+    {
+        "Coordinador":  "FAPERO",
+        "Archivo":  "data/by_coordinador/FAPERO.json",
+        "Registros":  1480
+    },
+    {
+        "Coordinador":  "INANME",
+        "Archivo":  "data/by_coordinador/INANME.json",
+        "Registros":  1493
+    },
+    {
+        "Coordinador":  "MCRAVI",
+        "Archivo":  "data/by_coordinador/MCRAVI.json",
+        "Registros":  1978
+    },
+    {
+        "Coordinador":  "MISADA",
+        "Archivo":  "data/by_coordinador/MISADA.json",
+        "Registros":  2874
+    }
+]
