@@ -13,22 +13,57 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
   <style>
-    :root{
-      --bg: #0b1220;
-      --panel: rgba(255,255,255,0.06);
-      --panel-2: rgba(255,255,255,0.08);
-      --text: rgba(255,255,255,0.92);
-      --muted: rgba(255,255,255,0.70);
-      --line: rgba(255,255,255,0.10);
-      --shadow: 0 18px 45px rgba(0,0,0,0.35);
-      --radius: 16px;
+/* Ajusta este valor hasta que te empate con la tarjeta de la gráfica */
+:root{
+  --bg: #0b1220;
+  --panel: rgba(255,255,255,0.06);
+  --panel-2: rgba(255,255,255,0.08);
+  --text: rgba(255,255,255,0.92);
+  --muted: rgba(255,255,255,0.70);
+  --line: rgba(255,255,255,0.10);
+  --shadow: 0 18px 45px rgba(0,0,0,0.35);
+  --radius: 16px;
 
-      --ok: #22c55e;
-      --warn: #f59e0b;
-      --bad: #ef4444;
-      --info: #60a5fa;
-    }
+  --ok: #22c55e;
+  --warn: #f59e0b;
+  --bad: #ef4444;
+  --info: #60a5fa;
 
+  --acciones-alto: 560px;
+} /* <- ESTA LLAVE ES CLAVE */
+
+/* Panel acciones */
+.alert-panel{
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 14px;
+  overflow: hidden;
+
+  height: var(--acciones-alto);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header fijo */
+.alert-panel-h{
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.10);
+  display:flex;
+  align-items:center;
+  justify-content: space-between;
+  gap: 12px;
+  flex: 0 0 auto;
+}
+
+/* Lista scrolleable */
+.alert-panel-b{
+  flex: 1 1 auto;
+  min-height: 0;          /* clave en flex */
+  overflow: auto;
+  max-height: none;
+}
+
+    
     *{ box-sizing: border-box; }
     body{
       margin:0;
@@ -234,17 +269,18 @@
       border-collapse: collapse;
       font-size: 12px;
     }
-    thead th{
-      text-align:left;
-      color: rgba(255,255,255,0.80);
-      font-weight: 700;
-      padding: 10px 10px;
-      border-bottom: 1px solid var(--line);
-      background: rgba(0,0,0,0.16);
-      position: sticky;
-      top: 78px; /* header sticky height */
-      z-index: 10;
-    }
+   thead th{
+  text-align:left;
+  color: rgba(255,255,255,0.80);
+  font-weight: 700;
+  padding: 10px 10px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(0,0,0,0.35);
+
+  position: sticky;
+  top: 0;              /* <- clave */
+  z-index: 50;         /* <- por encima de filas */
+}
     tbody td{
       padding: 10px 10px;
       border-bottom: 1px solid rgba(255,255,255,0.06);
@@ -280,6 +316,66 @@
       font-size: 12px;
       color: var(--muted);
     }
+
+.alert-title{
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: .2px;
+}
+
+.alert-sub{
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+
+.alert-item{
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  cursor: pointer;
+}
+
+.alert-item:hover{
+  background: rgba(255,255,255,0.05);
+}
+
+.alert-row{
+  display:flex;
+  align-items:flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.alert-name{
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.alert-meta{
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 3px;
+  line-height: 1.35;
+}
+
+.alert-right{
+  text-align:right;
+  white-space: nowrap;
+}
+
+.alert-saldo{
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.alert-days{
+  font-size: 12px;
+  color: rgba(255,255,255,0.85);
+  margin-top: 3px;
+}
+
   </style>
 </head>
 
@@ -353,7 +449,21 @@
       <p class="note" style="margin-top:12px">
         Recomendación ejecutiva: priorizar casos en rojo con mayor saldo, mayor atraso y mayor tiempo sin gestión; monitorear transición de fase (administrativa → extrajudicial).
       </p>
+<div class="alert-panel" style="margin-top:12px;">
+  <div class="alert-panel-h">
+    <div>
+      <div class="alert-title" id="alertTitle">Acciones del día</div>
+      <div class="alert-sub" id="alertSub">—</div>
     </div>
+    <div class="badge" id="alertCountBadge"><span class="dot" style="background:var(--bad)"></span>0</div>
+  </div>
+  <div class="alert-panel-b" id="alertList">
+    <div class="small" style="padding:10px;">Seleccione un Coordinador para ver el listado.</div>
+  </div>
+</div>
+
+    </div>
+
   </section>
 
   <!-- Columna derecha -->
@@ -458,10 +568,6 @@
  // Base RAW del repo (ajusta si cambias rama/ruta)
 const BASE_RAW = "https://raw.githubusercontent.com/alcnca/mapa-semaforo/main/";
 const INDEX_URL = BASE_RAW + "datos_index.json";
-
-// Índice pequeño (lista de coordinadores + archivo asociado)
-const INDEX_URL = BASE_RAW + "datos_index.json";
-
 
  
 
@@ -611,6 +717,7 @@ let ALL = [];
   let FILTERED = [];
   let MAP, LAYER;
   let CHART_FASE, CHART_BANDA;
+  let MARKERS = new Map(); // key -> Leaflet marker
 
 const elCoord = document.getElementById("coordinador");
 const elMetric = document.getElementById("metric");
@@ -776,43 +883,51 @@ function setLoading(message){
   }
 
   function updateMap(){
-    LAYER.clearLayers();
-    const metric = elMetric.value;
+  LAYER.clearLayers();
+  const metric = elMetric.value;
 
-    const points = [];
-    for (const r of FILTERED){
-      const color = semaforoColor(r, metric);
-      const icon = markerIcon(color);
+  MARKERS = new Map();
+  const points = [];
 
-      const popup = `
-        <div style="min-width:260px">
-          <div style="font-weight:800; margin-bottom:6px">${escapeHtml(r.Nombre || "—")}</div>
-          <div style="font-size:12px; opacity:.9">
-            <div><b>Sucursal:</b> ${escapeHtml(r.Sucursal || "—")}</div>
-            <div><b>Socio:</b> ${escapeHtml(r.Socio || "—")} &nbsp; <b>Línea:</b> ${escapeHtml(r.Linea || "—")}</div>
-            <div><b>Saldo:</b> ${fmtMoney(r.SaldoTotal)} &nbsp; <b>% Pagado:</b> ${fmtPct(r.PorcentajePagado)}</div>
-            <div><b>Días de Atraso:</b> ${r.DiasAtraso} &nbsp; <b>Días sin Gestión:</b> ${r.DiasSinGestion}</div>
-            <div><b>Fase:</b> ${escapeHtml(r.Fase || "—")} &nbsp; <b>Banda:</b> ${escapeHtml(r.Banda || "—")}</div>
-            <div><b>Ejecutivo:</b> ${escapeHtml(r.Ejecutivo || "—")} (${escapeHtml(r.TelefonoEjecutivo || "—")})</div>
-            <div><b>Última Gestión:</b> ${r.FechaUltimaGestion ? r.FechaUltimaGestion.toLocaleDateString("es-MX") : "—"}</div>
-            <div><b>Tipo:</b> ${escapeHtml(r.TipoGestion || "—")}</div>
-          </div>
+  for (const r of FILTERED){
+    const color = semaforoColor(r, metric);
+    const icon = markerIcon(color);
+
+    const popup = `
+      <div style="min-width:260px">
+        <div style="font-weight:800; margin-bottom:6px">${escapeHtml(r.Nombre || "—")}</div>
+        <div style="font-size:12px; opacity:.9">
+          <div><b>Sucursal:</b> ${escapeHtml(r.Sucursal || "—")}</div>
+          <div><b>Socio:</b> ${escapeHtml(r.Socio || "—")} &nbsp; <b>Línea:</b> ${escapeHtml(r.Linea || "—")}</div>
+          <div><b>Saldo:</b> ${fmtMoney(r.SaldoTotal)} &nbsp; <b>% Pagado:</b> ${fmtPct(r.PorcentajePagado)}</div>
+          <div><b>Días de Atraso:</b> ${r.DiasAtraso} &nbsp; <b>Días sin Gestión:</b> ${r.DiasSinGestion}</div>
+          <div><b>Fase:</b> ${escapeHtml(r.Fase || "—")} &nbsp; <b>Banda:</b> ${escapeHtml(r.Banda || "—")}</div>
+          <div><b>Ejecutivo:</b> ${escapeHtml(r.Ejecutivo || "—")} (${escapeHtml(r.TelefonoEjecutivo || "—")})</div>
+          <div><b>Última Gestión:</b> ${r.FechaUltimaGestion ? r.FechaUltimaGestion.toLocaleDateString("es-MX") : "—"}</div>
+          <div><b>Tipo:</b> ${escapeHtml(r.TipoGestion || "—")}</div>
         </div>
-      `;
+      </div>
+    `;
 
-      const m = L.marker([r.Latitud, r.Longitud], { icon }).bindPopup(popup, { maxWidth: 420 });
-      m.addTo(LAYER);
-      points.push([r.Latitud, r.Longitud]);
-    }
+    const m = L.marker([r.Latitud, r.Longitud], { icon }).bindPopup(popup, { maxWidth: 420 });
+    m.addTo(LAYER);
 
-    if (points.length){
-      MAP.fitBounds(points, { padding: [30,30] });
-    } else {
-      MAP.setView([20.967, -89.624], 10); // fallback (Mérida aprox.)
-    }
+    points.push([r.Latitud, r.Longitud]);
 
-    updateLegend();
+    // clave estable para la lista → mapa (dentro del for)
+    const key = String(r.Linea || r.Socio || "");
+    if (key) MARKERS.set(key, m);
   }
+
+  if (points.length){
+    MAP.fitBounds(points, { padding: [30,30] });
+  } else {
+    MAP.setView([20.967, -89.624], 10);
+  }
+
+  updateLegend();
+}
+
 
   function updateLegend(){
     const metric = elMetric.value;
@@ -879,6 +994,76 @@ function setLoading(message){
       }).join("");
   }
 
+function updateDailyActionList(){
+  const listEl = document.getElementById("alertList");
+  const titleEl = document.getElementById("alertTitle");
+  const subEl = document.getElementById("alertSub");
+  const badgeEl = document.getElementById("alertCountBadge");
+
+  if (!ALL.length){
+    titleEl.textContent = "Acciones del día";
+    subEl.textContent = "Seleccione un Coordinador para ver el listado.";
+    badgeEl.innerHTML = `<span class="dot" style="background:var(--bad)"></span>0`;
+    listEl.innerHTML = `<div class="small" style="padding:10px;">Seleccione un Coordinador para ver el listado.</div>`;
+    return;
+  }
+
+  const today = new Date();
+  const isSaturday = today.getDay() === 6; // 0=Dom, 6=Sáb
+  const targets = isSaturday ? [88, 89] : [89];
+
+  titleEl.textContent = isSaturday ? "Acciones del día (Sábado)" : "Acciones del día";
+  subEl.textContent = isSaturday
+    ? "Listado con 88 y 89 días de atraso."
+    : "Listado con 89 días de atraso.";
+
+  // Tomamos FILTERED para respetar filtros (Sucursal/Fase/Buscar) y coordinador seleccionado
+  const hits = FILTERED
+    .filter(r => targets.includes(Number(r.DiasAtraso)))
+    .sort((a,b) => (b.SaldoTotal - a.SaldoTotal)); // prioridad por saldo (ajustable)
+
+  badgeEl.innerHTML = `<span class="dot" style="background:var(--bad)"></span>${hits.length.toLocaleString("es-MX")}`;
+
+  if (!hits.length){
+    listEl.innerHTML = `<div class="small" style="padding:10px;">No hay créditos con ${targets.join(" o ")} días de atraso bajo los filtros actuales.</div>`;
+    return;
+  }
+
+  listEl.innerHTML = hits.slice(0, 200).map(r => {
+    const key = String(r.Linea || r.Socio || "");
+    const fechaUG = r.FechaUltimaGestion ? r.FechaUltimaGestion.toLocaleDateString("es-MX") : "—";
+    return `
+      <div class="alert-item" data-key="${escapeHtml(key)}">
+        <div class="alert-row">
+          <div>
+            <div class="alert-name">${escapeHtml(r.Nombre || "—")}</div>
+            <div class="alert-meta">
+              Socio: ${escapeHtml(r.Socio || "—")} • Línea: ${escapeHtml(r.Linea || "—")} • ${escapeHtml(r.Sucursal || "—")}<br/>
+              Fase: ${escapeHtml(r.Fase || "—")} • Banda: ${escapeHtml(r.Banda || "—")} • Sin gestión: ${r.DiasSinGestion} días<br/>
+              Última gestión: ${escapeHtml(fechaUG)} • Ejecutivo: ${escapeHtml(r.Ejecutivo || "—")}
+            </div>
+          </div>
+          <div class="alert-right">
+            <div class="alert-saldo">${fmtMoney(r.SaldoTotal)}</div>
+            <div class="alert-days">${r.DiasAtraso} días atraso</div>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  // Click → zoom y popup en mapa
+  listEl.querySelectorAll(".alert-item").forEach(el => {
+    el.addEventListener("click", () => {
+      const key = el.getAttribute("data-key");
+      const marker = MARKERS.get(key);
+      if (marker){
+        MAP.setView(marker.getLatLng(), 16, { animate: true });
+        marker.openPopup();
+      }
+    });
+  });
+}
   function escapeHtml(s){
     return String(s ?? "")
       .replaceAll("&","&amp;")
@@ -903,12 +1088,14 @@ function setLoading(message){
   }
 
   function rerender(){
-    applyFilters();
-    updateKPIs();
-    upsertCharts();
-    updateMap();
-    updateTable();
-  }
+  applyFilters();
+  updateKPIs();
+  upsertCharts();
+  updateMap();
+  updateTable();
+  updateDailyActionList(); // <- nuevo
+}
+
 
   /********************************************************************
    * 10) EVENTOS
