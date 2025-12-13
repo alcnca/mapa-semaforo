@@ -1,0 +1,993 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Reporte Ejecutivo de Cartera – Georreferenciado</title>
+
+  <!-- Leaflet (mapa) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- Chart.js (gráficas) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <style>
+    :root{
+      --bg: #0b1220;
+      --panel: rgba(255,255,255,0.06);
+      --panel-2: rgba(255,255,255,0.08);
+      --text: rgba(255,255,255,0.92);
+      --muted: rgba(255,255,255,0.70);
+      --line: rgba(255,255,255,0.10);
+      --shadow: 0 18px 45px rgba(0,0,0,0.35);
+      --radius: 16px;
+
+      --ok: #22c55e;
+      --warn: #f59e0b;
+      --bad: #ef4444;
+      --info: #60a5fa;
+    }
+
+    *{ box-sizing: border-box; }
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      background: radial-gradient(1200px 800px at 20% 10%, rgba(96,165,250,0.25), transparent 55%),
+                  radial-gradient(900px 700px at 80% 0%, rgba(34,197,94,0.18), transparent 55%),
+                  radial-gradient(900px 700px at 50% 100%, rgba(245,158,11,0.16), transparent 60%),
+                  var(--bg);
+      color: var(--text);
+    }
+
+    header{
+      padding: 22px 22px 12px 22px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(to bottom, rgba(255,255,255,0.05), transparent);
+      position: sticky;
+      top: 0;
+      backdrop-filter: blur(10px);
+      z-index: 20;
+    }
+
+    .topbar{
+      display:flex;
+      align-items:flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    .title{
+      display:flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .title h1{
+      font-size: 18px;
+      margin:0;
+      letter-spacing: .2px;
+      font-weight: 700;
+    }
+    .title .sub{
+      font-size: 13px;
+      color: var(--muted);
+      margin:0;
+      line-height: 1.35;
+    }
+
+    .controls{
+      display:flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: flex-end;
+    }
+
+    .pill{
+      display:flex;
+      gap: 8px;
+      align-items: center;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 10px 12px;
+      box-shadow: var(--shadow);
+    }
+    .pill label{
+      font-size: 12px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    .pill select, .pill input{
+      appearance: none;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(0,0,0,0.15);
+      color: var(--text);
+      border-radius: 10px;
+      padding: 8px 10px;
+      font-size: 12px;
+      outline: none;
+      min-width: 160px;
+    }
+    .pill input{
+      min-width: 220px;
+    }
+    .btn{
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(0,0,0,0.22);
+      color: var(--text);
+      border-radius: 12px;
+      padding: 10px 12px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .btn:hover{ background: rgba(0,0,0,0.32); }
+
+    main{
+      max-width: 1400px;
+      margin: 18px auto 40px auto;
+      padding: 0 22px;
+      display:grid;
+      grid-template-columns: 1.15fr .85fr;
+      gap: 16px;
+    }
+
+    @media (max-width: 1100px){
+      main{ grid-template-columns: 1fr; }
+    }
+
+    .card{
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .card .card-h{
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+      display:flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .card .card-h h2{
+      margin:0;
+      font-size: 13px;
+      letter-spacing: .2px;
+    }
+    .card .card-h .hint{
+      margin:0;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .card .card-b{
+      padding: 16px;
+    }
+
+    .kpis{
+      display:grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+    @media (max-width: 1100px){
+      .kpis{ grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 520px){
+      .kpis{ grid-template-columns: 1fr; }
+    }
+
+    .kpi{
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 14px;
+      display:flex;
+      flex-direction: column;
+      gap: 6px;
+      min-height: 92px;
+    }
+    .kpi .label{
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .kpi .value{
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: .2px;
+    }
+    .kpi .meta{
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    #map{
+      height: 560px;
+      border-radius: 14px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.12);
+    }
+
+    .grid2{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+
+    .legend{
+      display:flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .dot{
+      width: 10px; height: 10px; border-radius: 999px; display:inline-block;
+      margin-right: 6px;
+    }
+
+    table{
+      width:100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    thead th{
+      text-align:left;
+      color: rgba(255,255,255,0.80);
+      font-weight: 700;
+      padding: 10px 10px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(0,0,0,0.16);
+      position: sticky;
+      top: 78px; /* header sticky height */
+      z-index: 10;
+    }
+    tbody td{
+      padding: 10px 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      color: rgba(255,255,255,0.92);
+      vertical-align: top;
+    }
+    tbody tr:hover{
+      background: rgba(255,255,255,0.05);
+    }
+
+    .badge{
+      font-size: 11px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(0,0,0,0.18);
+      white-space: nowrap;
+      display:inline-flex;
+      gap: 6px;
+      align-items:center;
+    }
+
+    .badge .dot{ width:8px; height:8px; margin:0; }
+
+    .note{
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+      margin: 0;
+    }
+
+    .small{
+      font-size: 12px;
+      color: var(--muted);
+    }
+  </style>
+</head>
+
+<body>
+<header>
+  <div class="topbar">
+    <div class="title">
+      <h1>Reporte Ejecutivo de Cartera – Georreferenciado</h1>
+      <p class="sub">
+        Vista ejecutiva (KPIs), análisis por Banda/Fase y mapa con semáforo por criticidad. Diseñado para seguimiento de gestión y priorización operativa.
+      </p>
+    </div>
+
+    <div class="controls">
+<div class="pill">
+  <label for="coordinador">Coordinador</label>
+  <select id="coordinador">
+    <option value="__none__">Seleccione…</option>
+  </select>
+</div>
+      <div class="pill">
+        <label for="metric">Color por</label>
+        <select id="metric">
+          <option value="atraso">Días de Atraso</option>
+          <option value="sinGestion">Días sin Gestión</option>
+          <option value="banda">Banda</option>
+          <option value="fase">Fase</option>
+        </select>
+      </div>
+
+      <div class="pill">
+        <label for="sucursal">Sucursal</label>
+        <select id="sucursal">
+          <option value="__all__">Todas</option>
+        </select>
+      </div>
+
+      <div class="pill">
+        <label for="fase">Fase</label>
+        <select id="fase">
+          <option value="__all__">Todas</option>
+          <option value="ADMINISTRATIVA">ADMINISTRATIVA</option>
+          <option value="EXTRAJUDICIAL">EXTRAJUDICIAL</option>
+        </select>
+      </div>
+
+      <div class="pill">
+        <label for="q">Buscar</label>
+        <input id="q" placeholder="Nombre, socio, línea, ejecutivo..." />
+      </div>
+
+      <button class="btn" id="reset">Restablecer</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- Columna izquierda -->
+  <section class="card">
+    <div class="card-h">
+      <h2>Mapa de Cartera (Semáforo)</h2>
+      <div class="legend" id="legend">
+        <span><span class="dot" style="background:var(--ok)"></span>Verde</span>
+        <span><span class="dot" style="background:var(--warn)"></span>Amarillo</span>
+        <span><span class="dot" style="background:var(--bad)"></span>Rojo</span>
+        <span class="small">Reglas configurables en el código</span>
+      </div>
+    </div>
+    <div class="card-b">
+      <div id="map"></div>
+      <p class="note" style="margin-top:12px">
+        Recomendación ejecutiva: priorizar casos en rojo con mayor saldo, mayor atraso y mayor tiempo sin gestión; monitorear transición de fase (administrativa → extrajudicial).
+      </p>
+    </div>
+  </section>
+
+  <!-- Columna derecha -->
+  <section class="grid2">
+    <div class="card">
+      <div class="card-h">
+        <h2>KPIs Ejecutivos</h2>
+        <p class="hint" id="asof">Corte: —</p>
+      </div>
+      <div class="card-b">
+        <div class="kpis">
+          <div class="kpi">
+            <div class="label">Créditos (registros)</div>
+            <div class="value" id="kpiCount">—</div>
+            <div class="meta" id="kpiCountMeta">Filtrados vs total</div>
+          </div>
+          <div class="kpi">
+            <div class="label">Saldo Total</div>
+            <div class="value" id="kpiSaldo">—</div>
+            <div class="meta">Suma de cartera filtrada</div>
+          </div>
+          <div class="kpi">
+            <div class="label">% Pagado Promedio</div>
+            <div class="value" id="kpiPaid">—</div>
+            <div class="meta">Promedio simple (ajustable)</div>
+          </div>
+          <div class="kpi">
+            <div class="label">Alertas</div>
+            <div class="value" id="kpiAlerts">—</div>
+            <div class="meta">Rojo (según métrica)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-h">
+        <h2>Distribución por Fase</h2>
+        <p class="hint">Conteo</p>
+      </div>
+      <div class="card-b">
+        <canvas id="chartFase" height="220"></canvas>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-h">
+        <h2>Distribución por Banda</h2>
+        <p class="hint">Conteo</p>
+      </div>
+      <div class="card-b">
+        <canvas id="chartBanda" height="240"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tabla completa -->
+  <section class="card" style="grid-column: 1 / -1;">
+    <div class="card-h">
+      <h2>Detalle Operativo (para priorización)</h2>
+      <p class="hint">Búsqueda y filtros aplican a mapa, KPIs, gráficas y tabla</p>
+    </div>
+    <div class="card-b" style="padding:0;">
+      <div style="max-height: 520px; overflow:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>Semáforo</th>
+              <th>Sucursal</th>
+              <th>Socio</th>
+              <th>Nombre</th>
+              <th>Saldo</th>
+              <th>% Pagado</th>
+              <th>Días Atraso</th>
+              <th>Días sin Gestión</th>
+              <th>Fase</th>
+              <th>Banda</th>
+              <th>Ejecutivo</th>
+              <th>Última Gestión</th>
+              <th>Tipo Gestión</th>
+            </tr>
+          </thead>
+          <tbody id="tbody">
+            <tr><td colspan="13" class="small" style="padding:14px;">Cargando datos…</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div style="padding: 12px 16px; border-top:1px solid var(--line);">
+        <p class="note">
+          Notas de calidad de datos: “Saldo Total” se normaliza a numérico; fechas se interpretan como DD/MM/YYYY; campos como “Cuotas”, “Cuotas Vencidas” y “Días sin Gestión” se convierten a número para análisis.
+        </p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+  /********************************************************************
+   * 1) CONFIGURACIÓN
+   ********************************************************************/
+
+ // Base RAW del repo (ajusta si cambias rama/ruta)
+const BASE_RAW = "https://raw.githubusercontent.com/alcnca/mapa-semaforo/main/";
+const INDEX_URL = BASE_RAW + "datos_index.json";
+
+// Índice pequeño (lista de coordinadores + archivo asociado)
+const INDEX_URL = BASE_RAW + "datos_index.json";
+
+
+ 
+
+  // Reglas de semáforo (por defecto: Días de Atraso)
+  // Ajusta umbrales según tu operación.
+  const SEMAFORO_RULES = {
+    atraso:   { greenMax: 7,  yellowMax: 30 },   // <=7 verde, 8-30 amarillo, >30 rojo
+    sinGestion:{ greenMax: 7,  yellowMax: 30 },  // <=7 verde, 8-30 amarillo, >30 rojo
+
+    // Banda: típico enfoque (ajústalo a tu criterio)
+    // Banda 1-2: verde, Banda 3: amarillo, Banda 4-5: rojo
+    banda: (b) => {
+      const n = parseInt(String(b || "").replace(/\D+/g,""), 10);
+      if (!Number.isFinite(n)) return "yellow";
+      if (n <= 2) return "green";
+      if (n === 3) return "yellow";
+      return "red";
+    },
+
+    // Fase: administrativa (amarillo), extrajudicial (rojo)
+    fase: (f) => {
+      const v = String(f || "").toUpperCase();
+      if (v.includes("EXTRA")) return "red";
+      if (v.includes("ADMIN")) return "yellow";
+      return "yellow";
+    }
+  };
+
+  /********************************************************************
+   * 2) UTILIDADES DE NORMALIZACIÓN
+   ********************************************************************/
+  function parseMoney(mx){
+    // "$158,754.75" -> 158754.75
+    if (mx == null) return 0;
+    const s = String(mx).replace(/[^0-9.\-]/g, "");
+    const v = parseFloat(s);
+    return Number.isFinite(v) ? v : 0;
+  }
+
+  function parseIntSafe(x){
+    const v = parseInt(String(x ?? "").replace(/[^\d\-]/g,""), 10);
+    return Number.isFinite(v) ? v : 0;
+  }
+
+  function parseDateDMY(s){
+    // "29/11/2025" -> Date
+    if (!s) return null;
+    const m = String(s).match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if (!m) return null;
+    const dd = parseInt(m[1],10), mm = parseInt(m[2],10)-1, yy = parseInt(m[3],10);
+    const d = new Date(yy, mm, dd);
+    return Number.isFinite(d.getTime()) ? d : null;
+  }
+
+  function fmtMoney(v){
+    return v.toLocaleString("es-MX", { style:"currency", currency:"MXN" });
+  }
+
+  function fmtPct(v){
+    const n = Number(v);
+    if (!Number.isFinite(n)) return "—";
+    return `${n.toFixed(2)}%`;
+  }
+
+  function normalizeRow(r){
+    return {
+      raw: r,
+      Latitud: Number(r["Latitud"]),
+      Longitud: Number(r["Longitud"]),
+      Sucursal: String(r["Sucursal"] ?? "").trim(),
+      DiasSinGestion: parseIntSafe(r["Dias sin Gestion"]),
+      Aceptacion: String(r["Aceptacion"] ?? "").trim(),
+      Linea: String(r["Linea"] ?? "").trim(),
+      Socio: String(r["Socio"] ?? "").trim(),
+      Nombre: String(r["Nombre"] ?? "").trim(),
+      SaldoTotal: parseMoney(r["Saldo Total"]),
+      SaldoTotalTxt: String(r["Saldo Total"] ?? "").trim(),
+      PorcentajePagado: Number(r["Porcentaje Pagado"]),
+      Producto: String(r["Producto"] ?? "").trim(),
+      DiasAtraso: parseIntSafe(r["Dias de Atraso"]),
+      Ejecutivo: String(r["Ejecutivo"] ?? "").trim(),
+      TelefonoEjecutivo: String(r["Telefono Ejecutivo"] ?? "").trim(),
+      Coordinador: String(r["Coordinador"] ?? "").trim(),
+      Banda: String(r["Banda"] ?? "").trim(),
+      Coordinacion: String(r["Coordinacion"] ?? "").trim(),
+      Fase: String(r["Fase"] ?? "").trim(),
+      Cuotas: parseIntSafe(r["Cuotas"]),
+      CuotasVencidas: parseIntSafe(r["Cuotas Vencidas"]),
+      FechaVencimiento: parseDateDMY(r["Fecha Vencimiento"]),
+      FechaUltimaGestion: parseDateDMY(r["Fecha Ultima Gestion"]),
+      RealizoUltimaGestion: String(r["Realizo Ultima Gestion"] ?? "").trim(),
+      TipoGestion: String(r["Tipo de Gestion"] ?? "").trim(),
+    }
+  }
+
+  /********************************************************************
+   * 3) SEMÁFORO Y ESTILO DE MARCADOR
+   ********************************************************************/
+  function semaforoColor(row, metric){
+    if (metric === "atraso"){
+      const v = row.DiasAtraso;
+      const {greenMax, yellowMax} = SEMAFORO_RULES.atraso;
+      if (v <= greenMax) return "green";
+      if (v <= yellowMax) return "yellow";
+      return "red";
+    }
+    if (metric === "sinGestion"){
+      const v = row.DiasSinGestion;
+      const {greenMax, yellowMax} = SEMAFORO_RULES.sinGestion;
+      if (v <= greenMax) return "green";
+      if (v <= yellowMax) return "yellow";
+      return "red";
+    }
+    if (metric === "banda") return SEMAFORO_RULES.banda(row.Banda);
+    if (metric === "fase") return SEMAFORO_RULES.fase(row.Fase);
+    return "yellow";
+  }
+
+  function cssVarFor(color){
+    if (color === "green") return getComputedStyle(document.documentElement).getPropertyValue("--ok").trim();
+    if (color === "yellow") return getComputedStyle(document.documentElement).getPropertyValue("--warn").trim();
+    return getComputedStyle(document.documentElement).getPropertyValue("--bad").trim();
+  }
+
+  function markerIcon(color){
+    const fill = cssVarFor(color);
+    // Icono SVG simple para mantenerlo profesional
+    const svg = encodeURIComponent(`
+      <svg xmlns="http://www.w3.org/2000/svg" width="34" height="34" viewBox="0 0 24 24">
+        <path d="M12 22s7-4.438 7-11a7 7 0 1 0-14 0c0 6.562 7 11 7 11Z" fill="${fill}" fill-opacity="0.95"/>
+        <circle cx="12" cy="11" r="3" fill="white" fill-opacity="0.95"/>
+      </svg>
+    `);
+    return L.icon({
+      iconUrl: `data:image/svg+xml,${svg}`,
+      iconSize: [34,34],
+      iconAnchor: [17,34],
+      popupAnchor: [0,-30]
+    });
+  }
+
+  /********************************************************************
+   * 4) ESTADO GLOBAL
+   ********************************************************************/
+let INDEX = [];    
+let ALL = [];
+  let FILTERED = [];
+  let MAP, LAYER;
+  let CHART_FASE, CHART_BANDA;
+
+const elCoord = document.getElementById("coordinador");
+const elMetric = document.getElementById("metric");
+  const elSucursal = document.getElementById("sucursal");
+  const elFase = document.getElementById("fase");
+  const elQ = document.getElementById("q");
+  const elReset = document.getElementById("reset");
+
+  /********************************************************************
+   * 5) CARGA DE DATOS
+   ********************************************************************/
+  
+async function loadIndex(){
+  const res = await fetch(INDEX_URL, { cache: "no-store" });
+  if (!res.ok) throw new Error(`No se pudo cargar índice. HTTP ${res.status}`);
+  return await res.json();
+}
+
+function populateCoordinadores(){
+  elCoord.innerHTML = `<option value="__none__">Seleccione…</option>`;
+  for (const item of INDEX){
+    const opt = document.createElement("option");
+    opt.value = item.Archivo; // ruta relativa en el repo (del índice)
+    opt.textContent = `${item.Coordinador} (${Number(item.Registros).toLocaleString("es-MX")})`;
+    elCoord.appendChild(opt);
+  }
+}
+
+async function loadByCoordinador(relPath){
+  const url = BASE_RAW + relPath;
+  const res = await fetch(url, { cache: "no-store" });
+  if (!res.ok) throw new Error(`No se pudo cargar ${relPath}. HTTP ${res.status}`);
+  return await res.json();
+}
+
+function setLoading(message){
+  document.getElementById("tbody").innerHTML = `
+    <tr><td colspan="13" class="small" style="padding:14px;">${escapeHtml(message)}</td></tr>
+  `;
+}
+
+
+
+
+  /********************************************************************
+   * 6) FILTROS
+   ********************************************************************/
+  function applyFilters(){
+    const suc = elSucursal.value;
+    const fase = elFase.value;
+    const q = (elQ.value || "").trim().toLowerCase();
+
+    FILTERED = ALL.filter(r => {
+      if (suc !== "__all__" && r.Sucursal !== suc) return false;
+      if (fase !== "__all__" && r.Fase.toUpperCase() !== fase) return false;
+      if (q){
+        const hay = [
+          r.Socio, r.Nombre, r.Linea, r.Ejecutivo, r.Banda, r.Producto, r.Coordinador, r.TipoGestion
+        ].join(" ").toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      // Coordenadas válidas para el mapa
+      if (!Number.isFinite(r.Latitud) || !Number.isFinite(r.Longitud)) return false;
+      return true;
+    });
+  }
+
+  /********************************************************************
+   * 7) KPIs Y GRÁFICAS
+   ********************************************************************/
+  function updateKPIs(){
+    const total = ALL.length;
+    const n = FILTERED.length;
+
+    const saldo = FILTERED.reduce((a,b)=>a+b.SaldoTotal, 0);
+    const paidAvg = FILTERED.length
+      ? FILTERED.reduce((a,b)=>a+(Number.isFinite(b.PorcentajePagado)?b.PorcentajePagado:0), 0) / FILTERED.length
+      : 0;
+
+    const metric = elMetric.value;
+    const alerts = FILTERED.filter(r => semaforoColor(r, metric) === "red").length;
+
+    document.getElementById("kpiCount").textContent = n.toLocaleString("es-MX");
+    document.getElementById("kpiCountMeta").textContent = `Filtrados: ${n.toLocaleString("es-MX")} / Total: ${total.toLocaleString("es-MX")}`;
+    document.getElementById("kpiSaldo").textContent = fmtMoney(saldo);
+    document.getElementById("kpiPaid").textContent = fmtPct(paidAvg);
+    document.getElementById("kpiAlerts").textContent = alerts.toLocaleString("es-MX");
+
+    // Corte (as-of) basado en la fecha máxima de última gestión encontrada
+    const dates = FILTERED.map(r => r.FechaUltimaGestion).filter(d => d && Number.isFinite(d.getTime()));
+    const maxD = dates.length ? new Date(Math.max(...dates.map(d=>d.getTime()))) : null;
+    document.getElementById("asof").textContent = maxD
+      ? `Corte: ${maxD.toLocaleDateString("es-MX")}`
+      : "Corte: —";
+  }
+
+  function upsertCharts(){
+    // Conteo por fase
+    const byFase = {};
+    for (const r of FILTERED){
+      const k = (r.Fase || "SIN FASE").toUpperCase();
+      byFase[k] = (byFase[k] || 0) + 1;
+    }
+
+    // Conteo por banda
+    const byBanda = {};
+    for (const r of FILTERED){
+      const k = (r.Banda || "SIN BANDA").toUpperCase();
+      byBanda[k] = (byBanda[k] || 0) + 1;
+    }
+
+    const faseLabels = Object.keys(byFase);
+    const faseValues = faseLabels.map(k => byFase[k]);
+
+    const bandaLabels = Object.keys(byBanda).sort((a,b)=>{
+      // Orden natural si existe número de banda
+      const na = parseInt(a.replace(/\D+/g,""),10);
+      const nb = parseInt(b.replace(/\D+/g,""),10);
+      if (Number.isFinite(na) && Number.isFinite(nb)) return na-nb;
+      return a.localeCompare(b);
+    });
+    const bandaValues = bandaLabels.map(k => byBanda[k]);
+
+    const commonOptions = {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: { enabled: true }
+      },
+      scales: {
+        x: { ticks: { color: "rgba(255,255,255,0.75)" }, grid: { color: "rgba(255,255,255,0.08)" } },
+        y: { ticks: { color: "rgba(255,255,255,0.75)" }, grid: { color: "rgba(255,255,255,0.08)" } }
+      }
+    };
+
+    if (CHART_FASE) CHART_FASE.destroy();
+    CHART_FASE = new Chart(document.getElementById("chartFase"), {
+      type: "bar",
+      data: { labels: faseLabels, datasets: [{ data: faseValues }] },
+      options: commonOptions
+    });
+
+    if (CHART_BANDA) CHART_BANDA.destroy();
+    CHART_BANDA = new Chart(document.getElementById("chartBanda"), {
+      type: "bar",
+      data: { labels: bandaLabels, datasets: [{ data: bandaValues }] },
+      options: commonOptions
+    });
+  }
+
+  /********************************************************************
+   * 8) MAPA Y TABLA
+   ********************************************************************/
+  function initMap(){
+    MAP = L.map("map", { zoomControl: true, preferCanvas: true });
+
+    // Base map sobrio (OSM)
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: "&copy; OpenStreetMap"
+    }).addTo(MAP);
+
+    LAYER = L.layerGroup().addTo(MAP);
+  }
+
+  function updateMap(){
+    LAYER.clearLayers();
+    const metric = elMetric.value;
+
+    const points = [];
+    for (const r of FILTERED){
+      const color = semaforoColor(r, metric);
+      const icon = markerIcon(color);
+
+      const popup = `
+        <div style="min-width:260px">
+          <div style="font-weight:800; margin-bottom:6px">${escapeHtml(r.Nombre || "—")}</div>
+          <div style="font-size:12px; opacity:.9">
+            <div><b>Sucursal:</b> ${escapeHtml(r.Sucursal || "—")}</div>
+            <div><b>Socio:</b> ${escapeHtml(r.Socio || "—")} &nbsp; <b>Línea:</b> ${escapeHtml(r.Linea || "—")}</div>
+            <div><b>Saldo:</b> ${fmtMoney(r.SaldoTotal)} &nbsp; <b>% Pagado:</b> ${fmtPct(r.PorcentajePagado)}</div>
+            <div><b>Días de Atraso:</b> ${r.DiasAtraso} &nbsp; <b>Días sin Gestión:</b> ${r.DiasSinGestion}</div>
+            <div><b>Fase:</b> ${escapeHtml(r.Fase || "—")} &nbsp; <b>Banda:</b> ${escapeHtml(r.Banda || "—")}</div>
+            <div><b>Ejecutivo:</b> ${escapeHtml(r.Ejecutivo || "—")} (${escapeHtml(r.TelefonoEjecutivo || "—")})</div>
+            <div><b>Última Gestión:</b> ${r.FechaUltimaGestion ? r.FechaUltimaGestion.toLocaleDateString("es-MX") : "—"}</div>
+            <div><b>Tipo:</b> ${escapeHtml(r.TipoGestion || "—")}</div>
+          </div>
+        </div>
+      `;
+
+      const m = L.marker([r.Latitud, r.Longitud], { icon }).bindPopup(popup, { maxWidth: 420 });
+      m.addTo(LAYER);
+      points.push([r.Latitud, r.Longitud]);
+    }
+
+    if (points.length){
+      MAP.fitBounds(points, { padding: [30,30] });
+    } else {
+      MAP.setView([20.967, -89.624], 10); // fallback (Mérida aprox.)
+    }
+
+    updateLegend();
+  }
+
+  function updateLegend(){
+    const metric = elMetric.value;
+    const el = document.getElementById("legend");
+
+    let txt = "";
+    if (metric === "atraso"){
+      txt = `Días de Atraso: Verde ≤ ${SEMAFORO_RULES.atraso.greenMax}, Amarillo ≤ ${SEMAFORO_RULES.atraso.yellowMax}, Rojo > ${SEMAFORO_RULES.atraso.yellowMax}`;
+    } else if (metric === "sinGestion"){
+      txt = `Días sin Gestión: Verde ≤ ${SEMAFORO_RULES.sinGestion.greenMax}, Amarillo ≤ ${SEMAFORO_RULES.sinGestion.yellowMax}, Rojo > ${SEMAFORO_RULES.sinGestion.yellowMax}`;
+    } else if (metric === "banda"){
+      txt = "Banda: 1–2 Verde, 3 Amarillo, 4–5 Rojo (ajustable)";
+    } else {
+      txt = "Fase: Administrativa Amarillo, Extrajudicial Rojo (ajustable)";
+    }
+
+    el.innerHTML = `
+      <span><span class="dot" style="background:var(--ok)"></span>Verde</span>
+      <span><span class="dot" style="background:var(--warn)"></span>Amarillo</span>
+      <span><span class="dot" style="background:var(--bad)"></span>Rojo</span>
+      <span class="small">${escapeHtml(txt)}</span>
+    `;
+  }
+
+  function updateTable(){
+    const metric = elMetric.value;
+    const tb = document.getElementById("tbody");
+
+    if (!FILTERED.length){
+      tb.innerHTML = `<tr><td colspan="13" class="small" style="padding:14px;">Sin resultados con los filtros actuales.</td></tr>`;
+      return;
+    }
+
+    tb.innerHTML = FILTERED
+      .sort((a,b) => (b.SaldoTotal - a.SaldoTotal)) // prioriza por saldo (ajustable)
+      .slice(0, 2000) // límite para performance si el dataset es grande
+      .map(r => {
+        const color = semaforoColor(r, metric);
+        const dotStyle = color === "green" ? "var(--ok)" : (color === "yellow" ? "var(--warn)" : "var(--bad)");
+        const badge = `
+          <span class="badge">
+            <span class="dot" style="background:${dotStyle}"></span>
+            ${color.toUpperCase()}
+          </span>
+        `;
+
+        return `
+          <tr>
+            <td>${badge}</td>
+            <td>${escapeHtml(r.Sucursal)}</td>
+            <td>${escapeHtml(r.Socio)}</td>
+            <td>${escapeHtml(r.Nombre)}</td>
+            <td>${fmtMoney(r.SaldoTotal)}</td>
+            <td>${fmtPct(r.PorcentajePagado)}</td>
+            <td>${r.DiasAtraso}</td>
+            <td>${r.DiasSinGestion}</td>
+            <td>${escapeHtml(r.Fase)}</td>
+            <td>${escapeHtml(r.Banda)}</td>
+            <td>${escapeHtml(r.Ejecutivo)}</td>
+            <td>${r.FechaUltimaGestion ? r.FechaUltimaGestion.toLocaleDateString("es-MX") : "—"}</td>
+            <td>${escapeHtml(r.TipoGestion)}</td>
+          </tr>
+        `;
+      }).join("");
+  }
+
+  function escapeHtml(s){
+    return String(s ?? "")
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+
+  /********************************************************************
+   * 9) UI: LISTAS DE FILTRO
+   ********************************************************************/
+  function populateSucursal(){
+    const set = new Set(ALL.map(r => r.Sucursal).filter(Boolean));
+    const list = Array.from(set).sort((a,b)=>a.localeCompare(b));
+    for (const s of list){
+      const opt = document.createElement("option");
+      opt.value = s;
+      opt.textContent = s;
+      elSucursal.appendChild(opt);
+    }
+  }
+
+  function rerender(){
+    applyFilters();
+    updateKPIs();
+    upsertCharts();
+    updateMap();
+    updateTable();
+  }
+
+  /********************************************************************
+   * 10) EVENTOS
+   ********************************************************************/
+  elMetric.addEventListener("change", rerender);
+  elSucursal.addEventListener("change", rerender);
+  elFase.addEventListener("change", rerender);
+  elQ.addEventListener("input", () => {
+    // debounce ligero
+    window.clearTimeout(window.__qT);
+    window.__qT = window.setTimeout(rerender, 140);
+  });
+
+  elReset.addEventListener("click", () => {
+    elMetric.value = "atraso";
+    elSucursal.value = "__all__";
+    elFase.value = "__all__";
+    elQ.value = "";
+    rerender();
+  });
+
+  /********************************************************************
+   * 11) INIT
+   ********************************************************************/
+ (async function init(){
+  try{
+    // 1) Inicializa mapa en vacío (no hay datos aún)
+    initMap();
+    MAP.setView([20.967, -89.624], 10); // Mérida aprox.
+
+    // 2) Carga índice (rápido) y llena dropdown
+    setLoading("Cargando índice de Coordinadores…");
+    INDEX = await loadIndex();
+    populateCoordinadores();
+
+    // 3) Deja claro que aún no se carga cartera
+    setLoading("Seleccione un Coordinador para cargar la cartera.");
+
+    // 4) Al seleccionar un coordinador: carga SOLO su archivo
+    elCoord.addEventListener("change", async () => {
+      const relPath = elCoord.value;
+      if (relPath === "__none__") {
+        setLoading("Seleccione un Coordinador para cargar la cartera.");
+        LAYER.clearLayers();
+        return;
+      }
+
+      try{
+        setLoading("Cargando cartera del Coordinador seleccionado…");
+
+        const raw = await loadByCoordinador(relPath);
+
+        // Normaliza dataset cargado
+        ALL = (raw || []).map(normalizeRow);
+
+        // Reconstruye filtros dependientes del dataset
+        elSucursal.innerHTML = `<option value="__all__">Todas</option>`;
+        populateSucursal();
+
+        // (Opcional) reset filtros operativos
+        elFase.value = "__all__";
+        elQ.value = "";
+
+        // Render total (KPIs, charts, mapa, tabla)
+        rerender();
+
+      }catch(err2){
+        console.error(err2);
+        setLoading(`Error cargando cartera: ${err2.message}`);
+      }
+    });
+
+  }catch(err){
+    console.error(err);
+    setLoading(`Error inicial: ${err.message}`);
+    // Mapa queda inicializado, aunque sin datos
+  }
+})();
+
+</script>
+</body>
+</html>
