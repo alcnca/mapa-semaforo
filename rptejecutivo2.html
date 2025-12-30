@@ -13,7 +13,6 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
   <style>
-/* Ajusta este valor hasta que te empate con la tarjeta de la gráfica */
 :root{
   --bg: #0b1220;
   --panel: rgba(255,255,255,0.06);
@@ -30,7 +29,7 @@
   --info: #60a5fa;
 
   --acciones-alto: 560px;
-} /* <- ESTA LLAVE ES CLAVE */
+}
 
 /* Panel acciones */
 .alert-panel{
@@ -58,287 +57,284 @@
 /* Lista scrolleable */
 .alert-panel-b{
   flex: 1 1 auto;
-  min-height: 0;          /* clave en flex */
+  min-height: 0;
   overflow: auto;
   max-height: none;
 }
 
-    
-    *{ box-sizing: border-box; }
-    body{
-      margin:0;
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
-      background: radial-gradient(1200px 800px at 20% 10%, rgba(96,165,250,0.25), transparent 55%),
-                  radial-gradient(900px 700px at 80% 0%, rgba(34,197,94,0.18), transparent 55%),
-                  radial-gradient(900px 700px at 50% 100%, rgba(245,158,11,0.16), transparent 60%),
-                  var(--bg);
-      color: var(--text);
-    }
+/* NUEVO: encabezado por sucursal dentro de Acciones del día */
+.alert-group{
+  position: sticky;
+  top: 0; /* sticky dentro del scroll del panel */
+  z-index: 5;
+  padding: 10px 14px;
+  background: rgba(0,0,0,0.28);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  display:flex;
+  align-items:center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.alert-group-title{
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .2px;
+  color: rgba(255,255,255,0.92);
+}
+.alert-group-meta{
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+}
 
-    header{
-      padding: 22px 22px 12px 22px;
-      border-bottom: 1px solid var(--line);
-      background: linear-gradient(to bottom, rgba(255,255,255,0.05), transparent);
-      position: sticky;
-      top: 0;
-      backdrop-filter: blur(10px);
-      z-index: 20;
-    }
+*{ box-sizing: border-box; }
+body{
+  margin:0;
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+  background: radial-gradient(1200px 800px at 20% 10%, rgba(96,165,250,0.25), transparent 55%),
+              radial-gradient(900px 700px at 80% 0%, rgba(34,197,94,0.18), transparent 55%),
+              radial-gradient(900px 700px at 50% 100%, rgba(245,158,11,0.16), transparent 60%),
+              var(--bg);
+  color: var(--text);
+}
 
-    .topbar{
-      display:flex;
-      align-items:flex-start;
-      justify-content: space-between;
-      gap: 16px;
-      max-width: 1400px;
-      margin: 0 auto;
-    }
-    .title{
-      display:flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-    .title h1{
-      font-size: 18px;
-      margin:0;
-      letter-spacing: .2px;
-      font-weight: 700;
-    }
-    .title .sub{
-      font-size: 13px;
-      color: var(--muted);
-      margin:0;
-      line-height: 1.35;
-    }
+header{
+  padding: 22px 22px 12px 22px;
+  border-bottom: 1px solid var(--line);
+  background: linear-gradient(to bottom, rgba(255,255,255,0.05), transparent);
+  position: sticky;
+  top: 0;
+  backdrop-filter: blur(10px);
+  z-index: 20;
+}
 
-    .controls{
-      display:flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: flex-end;
-    }
+.topbar{
+  display:flex;
+  align-items:flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+.title{
+  display:flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.title h1{
+  font-size: 18px;
+  margin:0;
+  letter-spacing: .2px;
+  font-weight: 700;
+}
+.title .sub{
+  font-size: 13px;
+  color: var(--muted);
+  margin:0;
+  line-height: 1.35;
+}
 
-    .pill{
-      display:flex;
-      gap: 8px;
-      align-items: center;
-      background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: 999px;
-      padding: 10px 12px;
-      box-shadow: var(--shadow);
-    }
-    .pill label{
-      font-size: 12px;
-      color: var(--muted);
-      white-space: nowrap;
-    }
-    .pill select, .pill input{
-      appearance: none;
-      border: 1px solid rgba(255,255,255,0.12);
-      background: rgba(0,0,0,0.15);
-      color: var(--text);
-      border-radius: 10px;
-      padding: 8px 10px;
-      font-size: 12px;
-      outline: none;
-      min-width: 160px;
-    }
-    .pill input{
-      min-width: 220px;
-    }
-    .btn{
-      border: 1px solid rgba(255,255,255,0.12);
-      background: rgba(0,0,0,0.22);
-      color: var(--text);
-      border-radius: 12px;
-      padding: 10px 12px;
-      cursor: pointer;
-      font-size: 12px;
-    }
-    .btn:hover{ background: rgba(0,0,0,0.32); }
+.controls{
+  display:flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+}
 
-    main{
-      max-width: 1400px;
-      margin: 18px auto 40px auto;
-      padding: 0 22px;
-      display:grid;
-      grid-template-columns: 1.15fr .85fr;
-      gap: 16px;
-    }
+.pill{
+  display:flex;
+  gap: 8px;
+  align-items: center;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 10px 12px;
+  box-shadow: var(--shadow);
+}
+.pill label{
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.pill select, .pill input{
+  appearance: none;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(0,0,0,0.15);
+  color: var(--text);
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 12px;
+  outline: none;
+  min-width: 160px;
+}
+.pill input{ min-width: 220px; }
+.btn{
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(0,0,0,0.22);
+  color: var(--text);
+  border-radius: 12px;
+  padding: 10px 12px;
+  cursor: pointer;
+  font-size: 12px;
+}
+.btn:hover{ background: rgba(0,0,0,0.32); }
 
-    @media (max-width: 1100px){
-      main{ grid-template-columns: 1fr; }
-    }
+main{
+  max-width: 1400px;
+  margin: 18px auto 40px auto;
+  padding: 0 22px;
+  display:grid;
+  grid-template-columns: 1.15fr .85fr;
+  gap: 16px;
+}
 
-    .card{
-      background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      overflow: hidden;
-    }
+@media (max-width: 1100px){
+  main{ grid-template-columns: 1fr; }
+}
 
-    .card .card-h{
-      padding: 14px 16px;
-      border-bottom: 1px solid var(--line);
-      display:flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-    }
-    .card .card-h h2{
-      margin:0;
-      font-size: 13px;
-      letter-spacing: .2px;
-    }
-    .card .card-h .hint{
-      margin:0;
-      font-size: 12px;
-      color: var(--muted);
-    }
-    .card .card-b{
-      padding: 16px;
-    }
+.card{
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
 
-    .kpis{
-      display:grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 12px;
-    }
-    @media (max-width: 1100px){
-      .kpis{ grid-template-columns: repeat(2, 1fr); }
-    }
-    @media (max-width: 520px){
-      .kpis{ grid-template-columns: 1fr; }
-    }
+.card .card-h{
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line);
+  display:flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.card .card-h h2{
+  margin:0;
+  font-size: 13px;
+  letter-spacing: .2px;
+}
+.card .card-h .hint{
+  margin:0;
+  font-size: 12px;
+  color: var(--muted);
+}
+.card .card-b{ padding: 16px; }
 
-    .kpi{
-      background: var(--panel-2);
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      padding: 14px;
-      display:flex;
-      flex-direction: column;
-      gap: 6px;
-      min-height: 92px;
-    }
-    .kpi .label{
-      font-size: 12px;
-      color: var(--muted);
-    }
-    .kpi .value{
-      font-size: 20px;
-      font-weight: 800;
-      letter-spacing: .2px;
-    }
-    .kpi .meta{
-      font-size: 12px;
-      color: var(--muted);
-    }
+.kpis{
+  display:grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+@media (max-width: 1100px){
+  .kpis{ grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 520px){
+  .kpis{ grid-template-columns: 1fr; }
+}
 
-    #map{
-      height: 560px;
-      border-radius: 14px;
-      overflow: hidden;
-      border: 1px solid rgba(255,255,255,0.12);
-    }
+.kpi{
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 14px;
+  display:flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 92px;
+}
+.kpi .label{ font-size: 12px; color: var(--muted); }
+.kpi .value{ font-size: 20px; font-weight: 800; letter-spacing: .2px; }
+.kpi .meta{ font-size: 12px; color: var(--muted); }
 
-    .grid2{
-      display:grid;
-      grid-template-columns: 1fr;
-      gap: 12px;
-    }
+#map{
+  height: 560px;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.12);
+}
 
-    .legend{
-      display:flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      align-items: center;
-      font-size: 12px;
-      color: var(--muted);
-    }
-    .dot{
-      width: 10px; height: 10px; border-radius: 999px; display:inline-block;
-      margin-right: 6px;
-    }
+.grid2{
+  display:grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
 
-    table{
-      width:100%;
-      border-collapse: collapse;
-      font-size: 12px;
-    }
-   thead th{
+.legend{
+  display:flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  font-size: 12px;
+  color: var(--muted);
+}
+.dot{
+  width: 10px; height: 10px; border-radius: 999px; display:inline-block;
+  margin-right: 6px;
+}
+
+table{
+  width:100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+thead th{
   text-align:left;
   color: rgba(255,255,255,0.80);
   font-weight: 700;
   padding: 10px 10px;
   border-bottom: 1px solid var(--line);
   background: rgba(0,0,0,0.35);
-
   position: sticky;
-  top: 0;              /* <- clave */
-  z-index: 50;         /* <- por encima de filas */
+  top: 0;
+  z-index: 50;
 }
-    tbody td{
-      padding: 10px 10px;
-      border-bottom: 1px solid rgba(255,255,255,0.06);
-      color: rgba(255,255,255,0.92);
-      vertical-align: top;
-    }
-    tbody tr:hover{
-      background: rgba(255,255,255,0.05);
-    }
+tbody td{
+  padding: 10px 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.92);
+  vertical-align: top;
+}
+tbody tr:hover{ background: rgba(255,255,255,0.05); }
 
-    .badge{
-      font-size: 11px;
-      padding: 4px 8px;
-      border-radius: 999px;
-      border: 1px solid rgba(255,255,255,0.12);
-      background: rgba(0,0,0,0.18);
-      white-space: nowrap;
-      display:inline-flex;
-      gap: 6px;
-      align-items:center;
-    }
+.badge{
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(0,0,0,0.18);
+  white-space: nowrap;
+  display:inline-flex;
+  gap: 6px;
+  align-items:center;
+}
+.badge .dot{ width:8px; height:8px; margin:0; }
 
-    .badge .dot{ width:8px; height:8px; margin:0; }
-
-    .note{
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.45;
-      margin: 0;
-    }
-
-    .small{
-      font-size: 12px;
-      color: var(--muted);
-    }
+.note{
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+  margin: 0;
+}
+.small{ font-size: 12px; color: var(--muted); }
 
 .alert-title{
   font-size: 13px;
   font-weight: 800;
   letter-spacing: .2px;
 }
-
 .alert-sub{
   font-size: 12px;
   color: var(--muted);
   margin-top: 2px;
 }
 
-
 .alert-item{
   padding: 10px 14px;
   border-bottom: 1px solid rgba(255,255,255,0.06);
   cursor: pointer;
 }
-
-.alert-item:hover{
-  background: rgba(255,255,255,0.05);
-}
+.alert-item:hover{ background: rgba(255,255,255,0.05); }
 
 .alert-row{
   display:flex;
@@ -375,7 +371,6 @@
   color: rgba(255,255,255,0.85);
   margin-top: 3px;
 }
-
   </style>
 </head>
 
@@ -390,12 +385,13 @@
     </div>
 
     <div class="controls">
-<div class="pill">
-  <label for="coordinador">Coordinador</label>
-  <select id="coordinador">
-    <option value="__none__">Seleccione…</option>
-  </select>
-</div>
+      <div class="pill">
+        <label for="coordinador">Coordinador</label>
+        <select id="coordinador">
+          <option value="__none__">Seleccione…</option>
+        </select>
+      </div>
+
       <div class="pill">
         <label for="metric">Color por</label>
         <select id="metric">
@@ -419,6 +415,17 @@
           <option value="__all__">Todas</option>
           <option value="ADMINISTRATIVA">ADMINISTRATIVA</option>
           <option value="EXTRAJUDICIAL">EXTRAJUDICIAL</option>
+        </select>
+      </div>
+
+      <div class="pill">
+        <label for="order">Ordenar</label>
+        <select id="order">
+          <option value="saldo_desc">Saldo (desc)</option>
+          <option value="sucursal">Sucursal (A-Z)</option>
+          <option value="semaforo">Semáforo (Rojo→Verde)</option>
+          <option value="atraso_desc">Días Atraso (desc)</option>
+          <option value="sinGestion_desc">Días sin Gestión (desc)</option>
         </select>
       </div>
 
@@ -449,18 +456,19 @@
       <p class="note" style="margin-top:12px">
         Recomendación ejecutiva: priorizar casos en rojo con mayor saldo, mayor atraso y mayor tiempo sin gestión; monitorear transición de fase (administrativa → extrajudicial).
       </p>
-<div class="alert-panel" style="margin-top:12px;">
-  <div class="alert-panel-h">
-    <div>
-      <div class="alert-title" id="alertTitle">Acciones del día</div>
-      <div class="alert-sub" id="alertSub">—</div>
-    </div>
-    <div class="badge" id="alertCountBadge"><span class="dot" style="background:var(--bad)"></span>0</div>
-  </div>
-  <div class="alert-panel-b" id="alertList">
-    <div class="small" style="padding:10px;">Seleccione un Coordinador para ver el listado.</div>
-  </div>
-</div>
+
+      <div class="alert-panel" style="margin-top:12px;">
+        <div class="alert-panel-h">
+          <div>
+            <div class="alert-title" id="alertTitle">Acciones del día</div>
+            <div class="alert-sub" id="alertSub">—</div>
+          </div>
+          <div class="badge" id="alertCountBadge"><span class="dot" style="background:var(--bad)"></span>0</div>
+        </div>
+        <div class="alert-panel-b" id="alertList">
+          <div class="small" style="padding:10px;">Seleccione un Coordinador para ver el listado.</div>
+        </div>
+      </div>
 
     </div>
 
@@ -561,328 +569,299 @@
 </main>
 
 <script>
-  /********************************************************************
-   * 1) CONFIGURACIÓN
-   ********************************************************************/
-
- // Base RAW del repo (ajusta si cambias rama/ruta)
+/********************************************************************
+ * 1) CONFIGURACIÓN
+ ********************************************************************/
 const BASE_RAW = "https://raw.githubusercontent.com/alcnca/mapa-semaforo/main/";
 const INDEX_URL = BASE_RAW + "datos_index.json";
 
- 
-
-  // Reglas de semáforo (por defecto: Días de Atraso)
-  // Ajusta umbrales según tu operación.
-  const SEMAFORO_RULES = {
-    atraso:   { greenMax: 7,  yellowMax: 30 },   // <=7 verde, 8-30 amarillo, >30 rojo
-    sinGestion:{ greenMax: 7,  yellowMax: 30 },  // <=7 verde, 8-30 amarillo, >30 rojo
-
-    // Banda: típico enfoque (ajústalo a tu criterio)
-    // Banda 1-2: verde, Banda 3: amarillo, Banda 4-5: rojo
-    banda: (b) => {
-      const n = parseInt(String(b || "").replace(/\D+/g,""), 10);
-      if (!Number.isFinite(n)) return "yellow";
-      if (n <= 2) return "green";
-      if (n === 3) return "yellow";
-      return "red";
-    },
-
-    // Fase: administrativa (amarillo), extrajudicial (rojo)
-    fase: (f) => {
-      const v = String(f || "").toUpperCase();
-      if (v.includes("EXTRA")) return "red";
-      if (v.includes("ADMIN")) return "yellow";
-      return "yellow";
-    }
-  };
-
-  /********************************************************************
-   * 2) UTILIDADES DE NORMALIZACIÓN
-   ********************************************************************/
-  function parseMoney(mx){
-    // "$158,754.75" -> 158754.75
-    if (mx == null) return 0;
-    const s = String(mx).replace(/[^0-9.\-]/g, "");
-    const v = parseFloat(s);
-    return Number.isFinite(v) ? v : 0;
-  }
-
-  function parseIntSafe(x){
-    const v = parseInt(String(x ?? "").replace(/[^\d\-]/g,""), 10);
-    return Number.isFinite(v) ? v : 0;
-  }
-
-  function parseDateDMY(s){
-    // "29/11/2025" -> Date
-    if (!s) return null;
-    const m = String(s).match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-    if (!m) return null;
-    const dd = parseInt(m[1],10), mm = parseInt(m[2],10)-1, yy = parseInt(m[3],10);
-    const d = new Date(yy, mm, dd);
-    return Number.isFinite(d.getTime()) ? d : null;
-  }
-
-  function fmtMoney(v){
-    return v.toLocaleString("es-MX", { style:"currency", currency:"MXN" });
-  }
-
-  function fmtPct(v){
-    const n = Number(v);
-    if (!Number.isFinite(n)) return "—";
-    return `${n.toFixed(2)}%`;
-  }
-
-  function normalizeRow(r){
-    return {
-      raw: r,
-      Latitud: Number(r["Latitud"]),
-      Longitud: Number(r["Longitud"]),
-      Sucursal: String(r["Sucursal"] ?? "").trim(),
-      DiasSinGestion: parseIntSafe(r["Dias sin Gestion"]),
-      Aceptacion: String(r["Aceptacion"] ?? "").trim(),
-      Linea: String(r["Linea"] ?? "").trim(),
-      Socio: String(r["Socio"] ?? "").trim(),
-      Nombre: String(r["Nombre"] ?? "").trim(),
-      SaldoTotal: parseMoney(r["Saldo Total"]),
-      SaldoTotalTxt: String(r["Saldo Total"] ?? "").trim(),
-      PorcentajePagado: Number(r["Porcentaje Pagado"]),
-      Producto: String(r["Producto"] ?? "").trim(),
-      DiasAtraso: parseIntSafe(r["Dias de Atraso"]),
-      Ejecutivo: String(r["Ejecutivo"] ?? "").trim(),
-      TelefonoEjecutivo: String(r["Telefono Ejecutivo"] ?? "").trim(),
-      Coordinador: String(r["Coordinador"] ?? "").trim(),
-      Banda: String(r["Banda"] ?? "").trim(),
-      Coordinacion: String(r["Coordinacion"] ?? "").trim(),
-      Fase: String(r["Fase"] ?? "").trim(),
-      Cuotas: parseIntSafe(r["Cuotas"]),
-      CuotasVencidas: parseIntSafe(r["Cuotas Vencidas"]),
-      FechaVencimiento: parseDateDMY(r["Fecha Vencimiento"]),
-      FechaUltimaGestion: parseDateDMY(r["Fecha Ultima Gestion"]),
-      RealizoUltimaGestion: String(r["Realizo Ultima Gestion"] ?? "").trim(),
-      TipoGestion: String(r["Tipo de Gestion"] ?? "").trim(),
-    }
-  }
-
-  /********************************************************************
-   * 3) SEMÁFORO Y ESTILO DE MARCADOR
-   ********************************************************************/
-  function semaforoColor(row, metric){
-    if (metric === "atraso"){
-      const v = row.DiasAtraso;
-      const {greenMax, yellowMax} = SEMAFORO_RULES.atraso;
-      if (v <= greenMax) return "green";
-      if (v <= yellowMax) return "yellow";
-      return "red";
-    }
-    if (metric === "sinGestion"){
-      const v = row.DiasSinGestion;
-      const {greenMax, yellowMax} = SEMAFORO_RULES.sinGestion;
-      if (v <= greenMax) return "green";
-      if (v <= yellowMax) return "yellow";
-      return "red";
-    }
-    if (metric === "banda") return SEMAFORO_RULES.banda(row.Banda);
-    if (metric === "fase") return SEMAFORO_RULES.fase(row.Fase);
+const SEMAFORO_RULES = {
+  atraso:   { greenMax: 7,  yellowMax: 30 },
+  sinGestion:{ greenMax: 7,  yellowMax: 30 },
+  banda: (b) => {
+    const n = parseInt(String(b || "").replace(/\D+/g,""), 10);
+    if (!Number.isFinite(n)) return "yellow";
+    if (n <= 2) return "green";
+    if (n === 3) return "yellow";
+    return "red";
+  },
+  fase: (f) => {
+    const v = String(f || "").toUpperCase();
+    if (v.includes("EXTRA")) return "red";
+    if (v.includes("ADMIN")) return "yellow";
     return "yellow";
   }
+};
 
-  function cssVarFor(color){
-    if (color === "green") return getComputedStyle(document.documentElement).getPropertyValue("--ok").trim();
-    if (color === "yellow") return getComputedStyle(document.documentElement).getPropertyValue("--warn").trim();
-    return getComputedStyle(document.documentElement).getPropertyValue("--bad").trim();
+/********************************************************************
+ * 2) UTILIDADES
+ ********************************************************************/
+function parseMoney(mx){
+  if (mx == null) return 0;
+  const s = String(mx).replace(/[^0-9.\-]/g, "");
+  const v = parseFloat(s);
+  return Number.isFinite(v) ? v : 0;
+}
+function parseIntSafe(x){
+  const v = parseInt(String(x ?? "").replace(/[^\d\-]/g,""), 10);
+  return Number.isFinite(v) ? v : 0;
+}
+function parseDateDMY(s){
+  if (!s) return null;
+  const m = String(s).match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (!m) return null;
+  const dd = parseInt(m[1],10), mm = parseInt(m[2],10)-1, yy = parseInt(m[3],10);
+  const d = new Date(yy, mm, dd);
+  return Number.isFinite(d.getTime()) ? d : null;
+}
+function fmtMoney(v){ return v.toLocaleString("es-MX", { style:"currency", currency:"MXN" }); }
+function fmtPct(v){
+  const n = Number(v);
+  if (!Number.isFinite(n)) return "—";
+  return `${n.toFixed(2)}%`;
+}
+function escapeHtml(s){
+  return String(s ?? "")
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+}
+function normalizeRow(r){
+  return {
+    raw: r,
+    Latitud: Number(r["Latitud"]),
+    Longitud: Number(r["Longitud"]),
+    Sucursal: String(r["Sucursal"] ?? "").trim(),
+    DiasSinGestion: parseIntSafe(r["Dias sin Gestion"]),
+    Aceptacion: String(r["Aceptacion"] ?? "").trim(),
+    Linea: String(r["Linea"] ?? "").trim(),
+    Socio: String(r["Socio"] ?? "").trim(),
+    Nombre: String(r["Nombre"] ?? "").trim(),
+    SaldoTotal: parseMoney(r["Saldo Total"]),
+    SaldoTotalTxt: String(r["Saldo Total"] ?? "").trim(),
+    PorcentajePagado: Number(r["Porcentaje Pagado"]),
+    Producto: String(r["Producto"] ?? "").trim(),
+    DiasAtraso: parseIntSafe(r["Dias de Atraso"]),
+    Ejecutivo: String(r["Ejecutivo"] ?? "").trim(),
+    TelefonoEjecutivo: String(r["Telefono Ejecutivo"] ?? "").trim(),
+    Coordinador: String(r["Coordinador"] ?? "").trim(),
+    Banda: String(r["Banda"] ?? "").trim(),
+    Coordinacion: String(r["Coordinacion"] ?? "").trim(),
+    Fase: String(r["Fase"] ?? "").trim(),
+    Cuotas: parseIntSafe(r["Cuotas"]),
+    CuotasVencidas: parseIntSafe(r["Cuotas Vencidas"]),
+    FechaVencimiento: parseDateDMY(r["Fecha Vencimiento"]),
+    FechaUltimaGestion: parseDateDMY(r["Fecha Ultima Gestion"]),
+    RealizoUltimaGestion: String(r["Realizo Ultima Gestion"] ?? "").trim(),
+    TipoGestion: String(r["Tipo de Gestion"] ?? "").trim(),
   }
+}
 
-  function markerIcon(color){
-    const fill = cssVarFor(color);
-    // Icono SVG simple para mantenerlo profesional
-    const svg = encodeURIComponent(`
-      <svg xmlns="http://www.w3.org/2000/svg" width="34" height="34" viewBox="0 0 24 24">
-        <path d="M12 22s7-4.438 7-11a7 7 0 1 0-14 0c0 6.562 7 11 7 11Z" fill="${fill}" fill-opacity="0.95"/>
-        <circle cx="12" cy="11" r="3" fill="white" fill-opacity="0.95"/>
-      </svg>
-    `);
-    return L.icon({
-      iconUrl: `data:image/svg+xml,${svg}`,
-      iconSize: [34,34],
-      iconAnchor: [17,34],
-      popupAnchor: [0,-30]
-    });
+/********************************************************************
+ * 3) SEMÁFORO Y MARCADOR
+ ********************************************************************/
+function semaforoColor(row, metric){
+  if (metric === "atraso"){
+    const v = row.DiasAtraso;
+    const {greenMax, yellowMax} = SEMAFORO_RULES.atraso;
+    if (v <= greenMax) return "green";
+    if (v <= yellowMax) return "yellow";
+    return "red";
   }
+  if (metric === "sinGestion"){
+    const v = row.DiasSinGestion;
+    const {greenMax, yellowMax} = SEMAFORO_RULES.sinGestion;
+    if (v <= greenMax) return "green";
+    if (v <= yellowMax) return "yellow";
+    return "red";
+  }
+  if (metric === "banda") return SEMAFORO_RULES.banda(row.Banda);
+  if (metric === "fase") return SEMAFORO_RULES.fase(row.Fase);
+  return "yellow";
+}
+function semaforoRank(color){
+  if (color === "red") return 3;
+  if (color === "yellow") return 2;
+  return 1;
+}
+function cssVarFor(color){
+  if (color === "green") return getComputedStyle(document.documentElement).getPropertyValue("--ok").trim();
+  if (color === "yellow") return getComputedStyle(document.documentElement).getPropertyValue("--warn").trim();
+  return getComputedStyle(document.documentElement).getPropertyValue("--bad").trim();
+}
+function markerIcon(color){
+  const fill = cssVarFor(color);
+  const svg = encodeURIComponent(`
+    <svg xmlns="http://www.w3.org/2000/svg" width="34" height="34" viewBox="0 0 24 24">
+      <path d="M12 22s7-4.438 7-11a7 7 0 1 0-14 0c0 6.562 7 11 7 11Z" fill="${fill}" fill-opacity="0.95"/>
+      <circle cx="12" cy="11" r="3" fill="white" fill-opacity="0.95"/>
+    </svg>
+  `);
+  return L.icon({
+    iconUrl: `data:image/svg+xml,${svg}`,
+    iconSize: [34,34],
+    iconAnchor: [17,34],
+    popupAnchor: [0,-30]
+  });
+}
 
-  /********************************************************************
-   * 4) ESTADO GLOBAL
-   ********************************************************************/
-let INDEX = [];    
+/********************************************************************
+ * 4) ESTADO GLOBAL
+ ********************************************************************/
+let INDEX = [];
 let ALL = [];
-  let FILTERED = [];
-  let MAP, LAYER;
-  let CHART_FASE, CHART_BANDA;
-  let MARKERS = new Map(); // key -> Leaflet marker
+let FILTERED = [];
+let MAP, LAYER;
+let CHART_FASE, CHART_BANDA;
+let MARKERS = new Map();
 
 const elCoord = document.getElementById("coordinador");
 const elMetric = document.getElementById("metric");
-  const elSucursal = document.getElementById("sucursal");
-  const elFase = document.getElementById("fase");
-  const elQ = document.getElementById("q");
-  const elReset = document.getElementById("reset");
+const elSucursal = document.getElementById("sucursal");
+const elFase = document.getElementById("fase");
+const elOrder = document.getElementById("order");
+const elQ = document.getElementById("q");
+const elReset = document.getElementById("reset");
 
-  /********************************************************************
-   * 5) CARGA DE DATOS
-   ********************************************************************/
-  
+/********************************************************************
+ * 5) CARGA DE DATOS
+ ********************************************************************/
 async function loadIndex(){
   const res = await fetch(INDEX_URL, { cache: "no-store" });
   if (!res.ok) throw new Error(`No se pudo cargar índice. HTTP ${res.status}`);
   return await res.json();
 }
-
 function populateCoordinadores(){
   elCoord.innerHTML = `<option value="__none__">Seleccione…</option>`;
   for (const item of INDEX){
     const opt = document.createElement("option");
-    opt.value = item.Archivo; // ruta relativa en el repo (del índice)
+    opt.value = item.Archivo;
     opt.textContent = `${item.Coordinador} (${Number(item.Registros).toLocaleString("es-MX")})`;
     elCoord.appendChild(opt);
   }
 }
-
 async function loadByCoordinador(relPath){
   const url = BASE_RAW + relPath;
   const res = await fetch(url, { cache: "no-store" });
   if (!res.ok) throw new Error(`No se pudo cargar ${relPath}. HTTP ${res.status}`);
   return await res.json();
 }
-
 function setLoading(message){
   document.getElementById("tbody").innerHTML = `
     <tr><td colspan="13" class="small" style="padding:14px;">${escapeHtml(message)}</td></tr>
   `;
 }
 
+/********************************************************************
+ * 6) FILTROS
+ ********************************************************************/
+function applyFilters(){
+  const suc = elSucursal.value;
+  const fase = elFase.value;
+  const q = (elQ.value || "").trim().toLowerCase();
 
-
-
-  /********************************************************************
-   * 6) FILTROS
-   ********************************************************************/
-  function applyFilters(){
-    const suc = elSucursal.value;
-    const fase = elFase.value;
-    const q = (elQ.value || "").trim().toLowerCase();
-
-    FILTERED = ALL.filter(r => {
-      if (suc !== "__all__" && r.Sucursal !== suc) return false;
-      if (fase !== "__all__" && r.Fase.toUpperCase() !== fase) return false;
-      if (q){
-        const hay = [
-          r.Socio, r.Nombre, r.Linea, r.Ejecutivo, r.Banda, r.Producto, r.Coordinador, r.TipoGestion
-        ].join(" ").toLowerCase();
-        if (!hay.includes(q)) return false;
-      }
-      // Coordenadas válidas para el mapa
-      if (!Number.isFinite(r.Latitud) || !Number.isFinite(r.Longitud)) return false;
-      return true;
-    });
-  }
-
-  /********************************************************************
-   * 7) KPIs Y GRÁFICAS
-   ********************************************************************/
-  function updateKPIs(){
-    const total = ALL.length;
-    const n = FILTERED.length;
-
-    const saldo = FILTERED.reduce((a,b)=>a+b.SaldoTotal, 0);
-    const paidAvg = FILTERED.length
-      ? FILTERED.reduce((a,b)=>a+(Number.isFinite(b.PorcentajePagado)?b.PorcentajePagado:0), 0) / FILTERED.length
-      : 0;
-
-    const metric = elMetric.value;
-    const alerts = FILTERED.filter(r => semaforoColor(r, metric) === "red").length;
-
-    document.getElementById("kpiCount").textContent = n.toLocaleString("es-MX");
-    document.getElementById("kpiCountMeta").textContent = `Filtrados: ${n.toLocaleString("es-MX")} / Total: ${total.toLocaleString("es-MX")}`;
-    document.getElementById("kpiSaldo").textContent = fmtMoney(saldo);
-    document.getElementById("kpiPaid").textContent = fmtPct(paidAvg);
-    document.getElementById("kpiAlerts").textContent = alerts.toLocaleString("es-MX");
-
-    // Corte (as-of) basado en la fecha máxima de última gestión encontrada
-    const dates = FILTERED.map(r => r.FechaUltimaGestion).filter(d => d && Number.isFinite(d.getTime()));
-    const maxD = dates.length ? new Date(Math.max(...dates.map(d=>d.getTime()))) : null;
-    document.getElementById("asof").textContent = maxD
-      ? `Corte: ${maxD.toLocaleDateString("es-MX")}`
-      : "Corte: —";
-  }
-
-  function upsertCharts(){
-    // Conteo por fase
-    const byFase = {};
-    for (const r of FILTERED){
-      const k = (r.Fase || "SIN FASE").toUpperCase();
-      byFase[k] = (byFase[k] || 0) + 1;
+  FILTERED = ALL.filter(r => {
+    if (suc !== "__all__" && r.Sucursal !== suc) return false;
+    if (fase !== "__all__" && r.Fase.toUpperCase() !== fase) return false;
+    if (q){
+      const hay = [
+        r.Socio, r.Nombre, r.Linea, r.Ejecutivo, r.Banda, r.Producto, r.Coordinador, r.TipoGestion
+      ].join(" ").toLowerCase();
+      if (!hay.includes(q)) return false;
     }
+    if (!Number.isFinite(r.Latitud) || !Number.isFinite(r.Longitud)) return false;
+    return true;
+  });
+}
 
-    // Conteo por banda
-    const byBanda = {};
-    for (const r of FILTERED){
-      const k = (r.Banda || "SIN BANDA").toUpperCase();
-      byBanda[k] = (byBanda[k] || 0) + 1;
+/********************************************************************
+ * 7) KPIs Y GRÁFICAS
+ ********************************************************************/
+function updateKPIs(){
+  const total = ALL.length;
+  const n = FILTERED.length;
+
+  const saldo = FILTERED.reduce((a,b)=>a+b.SaldoTotal, 0);
+  const paidAvg = FILTERED.length
+    ? FILTERED.reduce((a,b)=>a+(Number.isFinite(b.PorcentajePagado)?b.PorcentajePagado:0), 0) / FILTERED.length
+    : 0;
+
+  const metric = elMetric.value;
+  const alerts = FILTERED.filter(r => semaforoColor(r, metric) === "red").length;
+
+  document.getElementById("kpiCount").textContent = n.toLocaleString("es-MX");
+  document.getElementById("kpiCountMeta").textContent = `Filtrados: ${n.toLocaleString("es-MX")} / Total: ${total.toLocaleString("es-MX")}`;
+  document.getElementById("kpiSaldo").textContent = fmtMoney(saldo);
+  document.getElementById("kpiPaid").textContent = fmtPct(paidAvg);
+  document.getElementById("kpiAlerts").textContent = alerts.toLocaleString("es-MX");
+
+  const dates = FILTERED.map(r => r.FechaUltimaGestion).filter(d => d && Number.isFinite(d.getTime()));
+  const maxD = dates.length ? new Date(Math.max(...dates.map(d=>d.getTime()))) : null;
+  document.getElementById("asof").textContent = maxD
+    ? `Corte: ${maxD.toLocaleDateString("es-MX")}`
+    : "Corte: —";
+}
+
+function upsertCharts(){
+  const byFase = {};
+  for (const r of FILTERED){
+    const k = (r.Fase || "SIN FASE").toUpperCase();
+    byFase[k] = (byFase[k] || 0) + 1;
+  }
+
+  const byBanda = {};
+  for (const r of FILTERED){
+    const k = (r.Banda || "SIN BANDA").toUpperCase();
+    byBanda[k] = (byBanda[k] || 0) + 1;
+  }
+
+  const faseLabels = Object.keys(byFase);
+  const faseValues = faseLabels.map(k => byFase[k]);
+
+  const bandaLabels = Object.keys(byBanda).sort((a,b)=>{
+    const na = parseInt(a.replace(/\D+/g,""),10);
+    const nb = parseInt(b.replace(/\D+/g,""),10);
+    if (Number.isFinite(na) && Number.isFinite(nb)) return na-nb;
+    return a.localeCompare(b);
+  });
+  const bandaValues = bandaLabels.map(k => byBanda[k]);
+
+  const commonOptions = {
+    responsive: true,
+    plugins: { legend: { display: false }, tooltip: { enabled: true } },
+    scales: {
+      x: { ticks: { color: "rgba(255,255,255,0.75)" }, grid: { color: "rgba(255,255,255,0.08)" } },
+      y: { ticks: { color: "rgba(255,255,255,0.75)" }, grid: { color: "rgba(255,255,255,0.08)" } }
     }
+  };
 
-    const faseLabels = Object.keys(byFase);
-    const faseValues = faseLabels.map(k => byFase[k]);
+  if (CHART_FASE) CHART_FASE.destroy();
+  CHART_FASE = new Chart(document.getElementById("chartFase"), {
+    type: "bar",
+    data: { labels: faseLabels, datasets: [{ data: faseValues }] },
+    options: commonOptions
+  });
 
-    const bandaLabels = Object.keys(byBanda).sort((a,b)=>{
-      // Orden natural si existe número de banda
-      const na = parseInt(a.replace(/\D+/g,""),10);
-      const nb = parseInt(b.replace(/\D+/g,""),10);
-      if (Number.isFinite(na) && Number.isFinite(nb)) return na-nb;
-      return a.localeCompare(b);
-    });
-    const bandaValues = bandaLabels.map(k => byBanda[k]);
+  if (CHART_BANDA) CHART_BANDA.destroy();
+  CHART_BANDA = new Chart(document.getElementById("chartBanda"), {
+    type: "bar",
+    data: { labels: bandaLabels, datasets: [{ data: bandaValues }] },
+    options: commonOptions
+  });
+}
 
-    const commonOptions = {
-      responsive: true,
-      plugins: {
-        legend: { display: false },
-        tooltip: { enabled: true }
-      },
-      scales: {
-        x: { ticks: { color: "rgba(255,255,255,0.75)" }, grid: { color: "rgba(255,255,255,0.08)" } },
-        y: { ticks: { color: "rgba(255,255,255,0.75)" }, grid: { color: "rgba(255,255,255,0.08)" } }
-      }
-    };
+/********************************************************************
+ * 8) MAPA Y TABLA
+ ********************************************************************/
+function initMap(){
+  MAP = L.map("map", { zoomControl: true, preferCanvas: true });
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "&copy; OpenStreetMap" }).addTo(MAP);
+  LAYER = L.layerGroup().addTo(MAP);
+}
 
-    if (CHART_FASE) CHART_FASE.destroy();
-    CHART_FASE = new Chart(document.getElementById("chartFase"), {
-      type: "bar",
-      data: { labels: faseLabels, datasets: [{ data: faseValues }] },
-      options: commonOptions
-    });
-
-    if (CHART_BANDA) CHART_BANDA.destroy();
-    CHART_BANDA = new Chart(document.getElementById("chartBanda"), {
-      type: "bar",
-      data: { labels: bandaLabels, datasets: [{ data: bandaValues }] },
-      options: commonOptions
-    });
-  }
-
-  /********************************************************************
-   * 8) MAPA Y TABLA
-   ********************************************************************/
-  function initMap(){
-    MAP = L.map("map", { zoomControl: true, preferCanvas: true });
-
-    // Base map sobrio (OSM)
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: "&copy; OpenStreetMap"
-    }).addTo(MAP);
-
-    LAYER = L.layerGroup().addTo(MAP);
-  }
-
-  function updateMap(){
+function updateMap(){
   LAYER.clearLayers();
   const metric = elMetric.value;
 
@@ -904,6 +883,7 @@ function setLoading(message){
           <div><b>Fase:</b> ${escapeHtml(r.Fase || "—")} &nbsp; <b>Banda:</b> ${escapeHtml(r.Banda || "—")}</div>
           <div><b>Ejecutivo:</b> ${escapeHtml(r.Ejecutivo || "—")} (${escapeHtml(r.TelefonoEjecutivo || "—")})</div>
           <div><b>Última Gestión:</b> ${r.FechaUltimaGestion ? r.FechaUltimaGestion.toLocaleDateString("es-MX") : "—"}</div>
+          <div><b>Resultado:</b> ${escapeHtml(r.RealizoUltimaGestion || "—")}</div>
           <div><b>Tipo:</b> ${escapeHtml(r.TipoGestion || "—")}</div>
         </div>
       </div>
@@ -914,86 +894,120 @@ function setLoading(message){
 
     points.push([r.Latitud, r.Longitud]);
 
-    // clave estable para la lista → mapa (dentro del for)
     const key = String(r.Linea || r.Socio || "");
     if (key) MARKERS.set(key, m);
   }
 
-  if (points.length){
-    MAP.fitBounds(points, { padding: [30,30] });
-  } else {
-    MAP.setView([20.967, -89.624], 10);
-  }
+  if (points.length) MAP.fitBounds(points, { padding: [30,30] });
+  else MAP.setView([20.967, -89.624], 10);
 
   updateLegend();
 }
 
+function updateLegend(){
+  const metric = elMetric.value;
+  const el = document.getElementById("legend");
 
-  function updateLegend(){
-    const metric = elMetric.value;
-    const el = document.getElementById("legend");
-
-    let txt = "";
-    if (metric === "atraso"){
-      txt = `Días de Atraso: Verde ≤ ${SEMAFORO_RULES.atraso.greenMax}, Amarillo ≤ ${SEMAFORO_RULES.atraso.yellowMax}, Rojo > ${SEMAFORO_RULES.atraso.yellowMax}`;
-    } else if (metric === "sinGestion"){
-      txt = `Días sin Gestión: Verde ≤ ${SEMAFORO_RULES.sinGestion.greenMax}, Amarillo ≤ ${SEMAFORO_RULES.sinGestion.yellowMax}, Rojo > ${SEMAFORO_RULES.sinGestion.yellowMax}`;
-    } else if (metric === "banda"){
-      txt = "Banda: 1–2 Verde, 3 Amarillo, 4–5 Rojo (ajustable)";
-    } else {
-      txt = "Fase: Administrativa Amarillo, Extrajudicial Rojo (ajustable)";
-    }
-
-    el.innerHTML = `
-      <span><span class="dot" style="background:var(--ok)"></span>Verde</span>
-      <span><span class="dot" style="background:var(--warn)"></span>Amarillo</span>
-      <span><span class="dot" style="background:var(--bad)"></span>Rojo</span>
-      <span class="small">${escapeHtml(txt)}</span>
-    `;
+  let txt = "";
+  if (metric === "atraso"){
+    txt = `Días de Atraso: Verde ≤ ${SEMAFORO_RULES.atraso.greenMax}, Amarillo ≤ ${SEMAFORO_RULES.atraso.yellowMax}, Rojo > ${SEMAFORO_RULES.atraso.yellowMax}`;
+  } else if (metric === "sinGestion"){
+    txt = `Días sin Gestión: Verde ≤ ${SEMAFORO_RULES.sinGestion.greenMax}, Amarillo ≤ ${SEMAFORO_RULES.sinGestion.yellowMax}, Rojo > ${SEMAFORO_RULES.sinGestion.yellowMax}`;
+  } else if (metric === "banda"){
+    txt = "Banda: 1–2 Verde, 3 Amarillo, 4–5 Rojo (ajustable)";
+  } else {
+    txt = "Fase: Administrativa Amarillo, Extrajudicial Rojo (ajustable)";
   }
 
-  function updateTable(){
-    const metric = elMetric.value;
-    const tb = document.getElementById("tbody");
+  el.innerHTML = `
+    <span><span class="dot" style="background:var(--ok)"></span>Verde</span>
+    <span><span class="dot" style="background:var(--warn)"></span>Amarillo</span>
+    <span><span class="dot" style="background:var(--bad)"></span>Rojo</span>
+    <span class="small">${escapeHtml(txt)}</span>
+  `;
+}
 
-    if (!FILTERED.length){
-      tb.innerHTML = `<tr><td colspan="13" class="small" style="padding:14px;">Sin resultados con los filtros actuales.</td></tr>`;
-      return;
-    }
+function updateTable(){
+  const metric = elMetric.value;
+  const order = elOrder ? elOrder.value : "saldo_desc";
+  const tb = document.getElementById("tbody");
 
-    tb.innerHTML = FILTERED
-      .sort((a,b) => (b.SaldoTotal - a.SaldoTotal)) // prioriza por saldo (ajustable)
-      .slice(0, 2000) // límite para performance si el dataset es grande
-      .map(r => {
-        const color = semaforoColor(r, metric);
-        const dotStyle = color === "green" ? "var(--ok)" : (color === "yellow" ? "var(--warn)" : "var(--bad)");
-        const badge = `
-          <span class="badge">
-            <span class="dot" style="background:${dotStyle}"></span>
-            ${color.toUpperCase()}
-          </span>
-        `;
-
-        return `
-          <tr>
-            <td>${badge}</td>
-            <td>${escapeHtml(r.Sucursal)}</td>
-            <td>${escapeHtml(r.Socio)}</td>
-            <td>${escapeHtml(r.Nombre)}</td>
-            <td>${fmtMoney(r.SaldoTotal)}</td>
-            <td>${fmtPct(r.PorcentajePagado)}</td>
-            <td>${r.DiasAtraso}</td>
-            <td>${r.DiasSinGestion}</td>
-            <td>${escapeHtml(r.Fase)}</td>
-            <td>${escapeHtml(r.Banda)}</td>
-            <td>${escapeHtml(r.Ejecutivo)}</td>
-            <td>${r.FechaUltimaGestion ? r.FechaUltimaGestion.toLocaleDateString("es-MX") : "—"}</td>
-            <td>${escapeHtml(r.TipoGestion)}</td>
-          </tr>
-        `;
-      }).join("");
+  if (!FILTERED.length){
+    tb.innerHTML = `<tr><td colspan="13" class="small" style="padding:14px;">Sin resultados con los filtros actuales.</td></tr>`;
+    return;
   }
 
+  const data = [...FILTERED];
+
+  data.sort((a,b) => {
+    if (order === "sucursal"){
+      const sa = (a.Sucursal || "").toUpperCase();
+      const sb = (b.Sucursal || "").toUpperCase();
+      const c = sa.localeCompare(sb);
+      if (c) return c;
+
+      const ra = semaforoRank(semaforoColor(a, metric));
+      const rb = semaforoRank(semaforoColor(b, metric));
+      if (ra !== rb) return rb - ra;
+
+      return b.SaldoTotal - a.SaldoTotal;
+    }
+
+    if (order === "semaforo"){
+      const ra = semaforoRank(semaforoColor(a, metric));
+      const rb = semaforoRank(semaforoColor(b, metric));
+      if (ra !== rb) return rb - ra;
+      return b.SaldoTotal - a.SaldoTotal;
+    }
+
+    if (order === "atraso_desc"){
+      if (b.DiasAtraso !== a.DiasAtraso) return b.DiasAtraso - a.DiasAtraso;
+      return b.SaldoTotal - a.SaldoTotal;
+    }
+
+    if (order === "sinGestion_desc"){
+      if (b.DiasSinGestion !== a.DiasSinGestion) return b.DiasSinGestion - a.DiasSinGestion;
+      return b.SaldoTotal - a.SaldoTotal;
+    }
+
+    return b.SaldoTotal - a.SaldoTotal;
+  });
+
+  tb.innerHTML = data
+    .slice(0, 2000)
+    .map(r => {
+      const color = semaforoColor(r, metric);
+      const dotStyle = color === "green" ? "var(--ok)" : (color === "yellow" ? "var(--warn)" : "var(--bad)");
+      const badge = `
+        <span class="badge">
+          <span class="dot" style="background:${dotStyle}"></span>
+          ${color.toUpperCase()}
+        </span>
+      `;
+
+      return `
+        <tr>
+          <td>${badge}</td>
+          <td>${escapeHtml(r.Sucursal)}</td>
+          <td>${escapeHtml(r.Socio)}</td>
+          <td>${escapeHtml(r.Nombre)}</td>
+          <td>${fmtMoney(r.SaldoTotal)}</td>
+          <td>${fmtPct(r.PorcentajePagado)}</td>
+          <td>${r.DiasAtraso}</td>
+          <td>${r.DiasSinGestion}</td>
+          <td>${escapeHtml(r.Fase)}</td>
+          <td>${escapeHtml(r.Banda)}</td>
+          <td>${escapeHtml(r.Ejecutivo)}</td>
+          <td>${r.FechaUltimaGestion ? r.FechaUltimaGestion.toLocaleDateString("es-MX") : "—"}</td>
+          <td>${escapeHtml(r.TipoGestion)}</td>
+        </tr>
+      `;
+    }).join("");
+}
+
+/********************************************************************
+ * 8.1) ACCIONES DEL DÍA (AGRUPADO POR SUCURSAL)
+ ********************************************************************/
 function updateDailyActionList(){
   const listEl = document.getElementById("alertList");
   const titleEl = document.getElementById("alertTitle");
@@ -1017,10 +1031,23 @@ function updateDailyActionList(){
     ? "Listado con 88 y 89 días de atraso."
     : "Listado con 89 días de atraso.";
 
-  // Tomamos FILTERED para respetar filtros (Sucursal/Fase/Buscar) y coordinador seleccionado
+  const metric = elMetric.value;
+
+  // 1) Filtra y ordena por sucursal, luego semáforo, luego saldo
   const hits = FILTERED
     .filter(r => targets.includes(Number(r.DiasAtraso)))
-    .sort((a,b) => (b.SaldoTotal - a.SaldoTotal)); // prioridad por saldo (ajustable)
+    .sort((a,b) => {
+      const sa = (a.Sucursal || "SIN SUCURSAL").toUpperCase();
+      const sb = (b.Sucursal || "SIN SUCURSAL").toUpperCase();
+      const c1 = sa.localeCompare(sb);
+      if (c1) return c1;
+
+      const ra = semaforoRank(semaforoColor(a, metric));
+      const rb = semaforoRank(semaforoColor(b, metric));
+      if (ra !== rb) return rb - ra;
+
+      return b.SaldoTotal - a.SaldoTotal;
+    });
 
   badgeEl.innerHTML = `<span class="dot" style="background:var(--bad)"></span>${hits.length.toLocaleString("es-MX")}`;
 
@@ -1029,28 +1056,58 @@ function updateDailyActionList(){
     return;
   }
 
-  listEl.innerHTML = hits.slice(0, 200).map(r => {
-    const key = String(r.Linea || r.Socio || "");
-    const fechaUG = r.FechaUltimaGestion ? r.FechaUltimaGestion.toLocaleDateString("es-MX") : "—";
-    return `
-      <div class="alert-item" data-key="${escapeHtml(key)}">
-        <div class="alert-row">
-          <div>
-            <div class="alert-name">${escapeHtml(r.Nombre || "—")}</div>
-            <div class="alert-meta">
-              Socio: ${escapeHtml(r.Socio || "—")} • Línea: ${escapeHtml(r.Linea || "—")} • ${escapeHtml(r.Sucursal || "—")}<br/>
-              Fase: ${escapeHtml(r.Fase || "—")} • Banda: ${escapeHtml(r.Banda || "—")} • Sin gestión: ${r.DiasSinGestion} días<br/>
-              Última gestión: ${escapeHtml(fechaUG)} • Ejecutivo: ${escapeHtml(r.Ejecutivo || "—")}
-            </div>
-          </div>
-          <div class="alert-right">
-            <div class="alert-saldo">${fmtMoney(r.SaldoTotal)}</div>
-            <div class="alert-days">${r.DiasAtraso} días atraso</div>
-          </div>
-        </div>
+  // 2) Agrupa por sucursal
+  const groups = new Map();
+  for (const r of hits){
+    const k = (r.Sucursal || "SIN SUCURSAL").trim() || "SIN SUCURSAL";
+    if (!groups.has(k)) groups.set(k, []);
+    groups.get(k).push(r);
+  }
+
+  // 3) Render con encabezado por sucursal + totales por grupo
+  let html = "";
+  const sortedSucursal = Array.from(groups.keys()).sort((a,b)=>a.localeCompare(b));
+
+  for (const suc of sortedSucursal){
+    const arr = groups.get(suc) || [];
+    const suma = arr.reduce((acc,x)=>acc + (x.SaldoTotal || 0), 0);
+
+    html += `
+      <div class="alert-group">
+        <div class="alert-group-title">${escapeHtml(suc)}</div>
+        <div class="alert-group-meta">${arr.length.toLocaleString("es-MX")} • ${fmtMoney(suma)}</div>
       </div>
     `;
-  }).join("");
+
+    html += arr.slice(0, 300).map(r => {
+      const key = String(r.Linea || r.Socio || "");
+      const fechaUG = r.FechaUltimaGestion ? r.FechaUltimaGestion.toLocaleDateString("es-MX") : "—";
+      const resultadoUG = r.RealizoUltimaGestion ? r.RealizoUltimaGestion : "—";
+      const tipoUG = r.TipoGestion ? r.TipoGestion : "—";
+
+      return `
+        <div class="alert-item" data-key="${escapeHtml(key)}">
+          <div class="alert-row">
+            <div>
+              <div class="alert-name">${escapeHtml(r.Nombre || "—")}</div>
+              <div class="alert-meta">
+                Socio: ${escapeHtml(r.Socio || "—")} • Línea: ${escapeHtml(r.Linea || "—")}<br/>
+                Fase: ${escapeHtml(r.Fase || "—")} • Banda: ${escapeHtml(r.Banda || "—")} • Sin gestión: ${r.DiasSinGestion} días<br/>
+                Última gestión: ${escapeHtml(fechaUG)} • Resultado: ${escapeHtml(resultadoUG)}<br/>
+                Tipo: ${escapeHtml(tipoUG)} • Ejecutivo: ${escapeHtml(r.Ejecutivo || "—")}
+              </div>
+            </div>
+            <div class="alert-right">
+              <div class="alert-saldo">${fmtMoney(r.SaldoTotal)}</div>
+              <div class="alert-days">${r.DiasAtraso} días atraso</div>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join("");
+  }
+
+  listEl.innerHTML = html;
 
   // Click → zoom y popup en mapa
   listEl.querySelectorAll(".alert-item").forEach(el => {
@@ -1064,77 +1121,66 @@ function updateDailyActionList(){
     });
   });
 }
-  function escapeHtml(s){
-    return String(s ?? "")
-      .replaceAll("&","&amp;")
-      .replaceAll("<","&lt;")
-      .replaceAll(">","&gt;")
-      .replaceAll('"',"&quot;")
-      .replaceAll("'","&#039;");
-  }
 
-  /********************************************************************
-   * 9) UI: LISTAS DE FILTRO
-   ********************************************************************/
-  function populateSucursal(){
-    const set = new Set(ALL.map(r => r.Sucursal).filter(Boolean));
-    const list = Array.from(set).sort((a,b)=>a.localeCompare(b));
-    for (const s of list){
-      const opt = document.createElement("option");
-      opt.value = s;
-      opt.textContent = s;
-      elSucursal.appendChild(opt);
-    }
+/********************************************************************
+ * 9) UI: LISTAS DE FILTRO
+ ********************************************************************/
+function populateSucursal(){
+  const set = new Set(ALL.map(r => r.Sucursal).filter(Boolean));
+  const list = Array.from(set).sort((a,b)=>a.localeCompare(b));
+  for (const s of list){
+    const opt = document.createElement("option");
+    opt.value = s;
+    opt.textContent = s;
+    elSucursal.appendChild(opt);
   }
+}
 
-  function rerender(){
+function rerender(){
   applyFilters();
   updateKPIs();
   upsertCharts();
   updateMap();
   updateTable();
-  updateDailyActionList(); // <- nuevo
+  updateDailyActionList();
 }
 
+/********************************************************************
+ * 10) EVENTOS
+ ********************************************************************/
+elMetric.addEventListener("change", rerender);
+elSucursal.addEventListener("change", rerender);
+elFase.addEventListener("change", rerender);
+elOrder.addEventListener("change", rerender);
 
-  /********************************************************************
-   * 10) EVENTOS
-   ********************************************************************/
-  elMetric.addEventListener("change", rerender);
-  elSucursal.addEventListener("change", rerender);
-  elFase.addEventListener("change", rerender);
-  elQ.addEventListener("input", () => {
-    // debounce ligero
-    window.clearTimeout(window.__qT);
-    window.__qT = window.setTimeout(rerender, 140);
-  });
+elQ.addEventListener("input", () => {
+  window.clearTimeout(window.__qT);
+  window.__qT = window.setTimeout(rerender, 140);
+});
 
-  elReset.addEventListener("click", () => {
-    elMetric.value = "atraso";
-    elSucursal.value = "__all__";
-    elFase.value = "__all__";
-    elQ.value = "";
-    rerender();
-  });
+elReset.addEventListener("click", () => {
+  elMetric.value = "atraso";
+  elSucursal.value = "__all__";
+  elFase.value = "__all__";
+  elOrder.value = "saldo_desc";
+  elQ.value = "";
+  rerender();
+});
 
-  /********************************************************************
-   * 11) INIT
-   ********************************************************************/
- (async function init(){
+/********************************************************************
+ * 11) INIT
+ ********************************************************************/
+(async function init(){
   try{
-    // 1) Inicializa mapa en vacío (no hay datos aún)
     initMap();
-    MAP.setView([20.967, -89.624], 10); // Mérida aprox.
+    MAP.setView([20.967, -89.624], 10);
 
-    // 2) Carga índice (rápido) y llena dropdown
     setLoading("Cargando índice de Coordinadores…");
     INDEX = await loadIndex();
     populateCoordinadores();
 
-    // 3) Deja claro que aún no se carga cartera
     setLoading("Seleccione un Coordinador para cargar la cartera.");
 
-    // 4) Al seleccionar un coordinador: carga SOLO su archivo
     elCoord.addEventListener("change", async () => {
       const relPath = elCoord.value;
       if (relPath === "__none__") {
@@ -1147,21 +1193,15 @@ function updateDailyActionList(){
         setLoading("Cargando cartera del Coordinador seleccionado…");
 
         const raw = await loadByCoordinador(relPath);
-
-        // Normaliza dataset cargado
         ALL = (raw || []).map(normalizeRow);
 
-        // Reconstruye filtros dependientes del dataset
         elSucursal.innerHTML = `<option value="__all__">Todas</option>`;
         populateSucursal();
 
-        // (Opcional) reset filtros operativos
         elFase.value = "__all__";
         elQ.value = "";
 
-        // Render total (KPIs, charts, mapa, tabla)
         rerender();
-
       }catch(err2){
         console.error(err2);
         setLoading(`Error cargando cartera: ${err2.message}`);
@@ -1171,10 +1211,8 @@ function updateDailyActionList(){
   }catch(err){
     console.error(err);
     setLoading(`Error inicial: ${err.message}`);
-    // Mapa queda inicializado, aunque sin datos
   }
 })();
-
 </script>
 </body>
 </html>
