@@ -1,0 +1,1024 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Seguimiento Gestores - Matriz + Línea de Tiempo (L–S)</title>
+
+  <!-- Bootstrap -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+
+  <style>
+    :root{
+      --grid-border:#cfd4da; --dot:#0d6efd; --empty:#ffd9d9; --empty-green:#d7f9cf; --off:#f5f6fa; --highlight:#fff0c2;
+    }
+    body{background:#fff}
+    .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace}
+    .smallnote{font-size:.9rem;color:#6c757d}
+    .scroll-x{overflow-x:auto}
+    .empty-note{ color:#6c757d; font-size:.9rem; }
+    .error-note{ color:#b02a37; font-weight:600; }
+
+    /* Tabla de horario (matriz principal) */
+    .table-grid th,.table-grid td{
+      border:1px solid var(--grid-border);
+      text-align:center;vertical-align:middle;
+      padding:.25rem .35rem;
+      font-size:.66rem;
+    }
+
+.badge-gestiones{
+  font-size: .85rem;      /* más grande */
+  font-weight: 700;
+  padding: .45rem .65rem;
+}
+
+
+    .table-grid thead th{position:sticky;top:0;background:#fff;z-index:2;box-shadow:0 1px 0 0 var(--grid-border)}
+    .nowrap{white-space:nowrap}
+    .w-hour{min-width:2.4rem}
+    .cell-dot{width:1.4rem;height:1.4rem;display:inline-flex;align-items:center;justify-content:center;margin:auto}
+    .cell-dot::after{content:"";width:9px;height:9px;border-radius:50%;background:var(--dot);display:inline-block}
+    .cell-empty::after{display:none}
+    .cell-empty-wk{background:var(--empty); outline:1px solid #ffb3b3}
+    .cell-empty-green{background:var(--empty-green)!important; outline:1px solid #b7f0c1!important}
+    .cell-off{background:var(--off);color:#adb5bd}
+    .badge-spot{background:#e7f1ff;color:#0d6efd;border:1px solid #b6d4fe}
+    .col-highlight{background:var(--highlight)!important}
+
+    /* Tablas pequeñas */
+    #tblGaps, #tblSpots { font-size: .82rem; line-height: 1.25; }
+    #tblGaps th, #tblGaps td, #tblSpots th, #tblSpots td { padding: .20rem .40rem; vertical-align: middle; }
+    #tblGaps thead th, #tblSpots thead th { font-weight: 600; letter-spacing: .2px; }
+    #tblGaps td.mono, #tblSpots td.mono { font-size: .78rem; }
+    #tblGaps tbody td:nth-child(3),
+    #tblGaps thead th:nth-child(3) { text-align: center; }
+
+    /* Gestiones diarias — 4 columnas */
+    .daily-card table { font-size: .70rem; }
+    .daily-card th, .daily-card td { padding: .20rem .32rem; font-weight: 700; }
+    .daily-card tbody tr { cursor:pointer; }
+    .daily-card tbody tr:hover { background:#f1f3f5; }
+    .daily-card td:first-child { text-align: left; }
+    .daily-card td:nth-child(2) { text-align: center; }
+
+    /* KPIs */
+    .kpi-bar .badge{font-size:.88rem;padding:.45rem .6rem}
+
+    /* ===== Timeline ===== */
+    .timeline-day{
+      border:1px solid var(--grid-border);
+      border-radius:.5rem;
+      padding:.6rem .75rem;
+    }
+    .timeline-head{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:.75rem;
+      margin-bottom:.25rem;
+    }
+    .timeline-track{
+      position:relative;
+      height:34px;
+      border-radius:10px;
+      background:linear-gradient(to right, #f1f3f5, #ffffff);
+      border:1px solid var(--grid-border);
+      overflow:hidden;
+    }
+    .timeline-ticks{
+      position:absolute; inset:0;
+      display:flex;
+      pointer-events:none;
+    }
+    .timeline-ticks > div{
+      flex:1;
+      border-left:1px dashed #dee2e6;
+      opacity:.9;
+    }
+    .timeline-ticks > div:first-child{border-left:none;}
+
+    /* Etiquetas de hora debajo de la barra */
+    .timeline-hours{
+      display:flex;
+      justify-content:space-between;
+      gap:0;
+      margin-top:.25rem;
+      font-size:.72rem;
+      color:#6c757d;
+      user-select:none;
+    }
+    .timeline-hours span{
+      flex:1;
+      text-align:center;
+      white-space:nowrap;
+    }
+    .timeline-hours span:first-child{ text-align:left; }
+    .timeline-hours span:last-child{ text-align:right; }
+
+    .timeline-marker{
+      position:absolute;
+      top:50%;
+      transform:translate(-50%,-50%);
+      width:12px;
+      height:12px;
+      border-radius:50%;
+      background:#0d6efd;
+      border:2px solid #fff;
+      box-shadow:0 1px 2px rgba(0,0,0,.15);
+      cursor:default;
+    }
+    .timeline-marker:hover{
+      transform:translate(-50%,-50%) scale(1.15);
+      z-index:3;
+    }
+    .timeline-meta{
+      display:flex;
+      justify-content:space-between;
+      font-size:.75rem;
+      color:#6c757d;
+      margin-top:.25rem;
+      gap:.75rem;
+      flex-wrap:wrap;
+    }
+    .timeline-table{
+      font-size:.78rem;
+      margin-top:.5rem;
+    }
+    .timeline-table td, .timeline-table th{
+      padding:.2rem .35rem;
+      vertical-align:middle;
+    }
+
+/* Resaltado temporal de fila en matriz */
+.row-flash{
+  background: #fff3cd !important;
+  outline: 2px solid #ffca2c;
+}
+
+/* Inactividad a ancho completo: mejor lectura */
+#tblGaps th, #tblGaps td { text-align: center; }
+#tblGaps td:last-child { text-align: left; }         /* lista de horas alineada a la izquierda */
+#tblGaps td.mono { font-size: .82rem; }             /* un poco más grande */
+#tblGaps th:nth-child(4), #tblGaps td:nth-child(4){ width: 70%; }
+
+  </style>
+</head>
+
+<body>
+  <main class="container py-3">
+    <header class="mb-3">
+      <h1 class="h4 mb-1">Seguimiento de Gestores - Acreimex -</h1>
+      <p class="smallnote mb-0">
+        Se muestran <b>todos los días laborables (L–S)</b> del rango, aunque no haya actividad.<br>
+        Vista horaria: 08:00–19:00. Proceso: L–V 09:00–18:00 (sin 14:00) y Sáb 09:00–14:00.
+      </p>
+    </header>
+
+    <!-- CONTROLES -->
+    <section class="card mb-3">
+      <div class="card-body">
+        <div class="row g-3 align-items-end">
+          <div class="col-12 col-md-3">
+            <label class="form-label">Usuario (USUARIO_ASIGNADO)</label>
+            <select id="userSelect" class="form-select"><option value="">(Selecciona)</option></select>
+          </div>
+          <div class="col-12 col-md-4 col-lg-3">
+            <label class="form-label">Sucursal</label>
+            <select id="fltSucursal" class="form-select"><option value="">(Todas)</option></select>
+          </div>
+          <div class="col-6 col-md-3">
+            <label class="form-label">Fecha desde</label>
+            <input id="fltDesde" type="date" class="form-control" />
+          </div>
+          <div class="col-6 col-md-3 col-lg-2">
+            <label class="form-label">Fecha hasta</label>
+            <input id="fltHasta" type="date" class="form-control" />
+          </div>
+          <div class="col-12 col-lg-4 d-grid d-md-flex gap-2">
+            <button id="btnRender" class="btn btn-success flex-fill">Generar Reporte</button>
+          </div>
+        </div>
+        <div id="loadMsg" class="mt-2 empty-note"></div>
+      </div>
+    </section>
+
+    <!-- MATRIZ + META -->
+    <section class="mb-3">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <div>
+          <span class="badge rounded-pill text-bg-secondary" id="badgeRows">0 REGISTROS</span>
+        </div>
+        <div>
+          <span class="badge rounded-pill text-bg-secondary" id="badgeGroups">0 días laborables (L–S)</span>
+        </div>
+      </div>
+
+      <div class="scroll-x">
+        <table id="grid" class="table table-grid table-sm">
+          <thead></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- KPIs -->
+    <section class="card mb-3">
+      <div class="card-body kpi-bar d-flex flex-wrap gap-2">
+        <span class="badge rounded-pill text-bg-primary">Total: <span id="kpiTotal">0</span></span>
+        <span class="badge rounded-pill text-bg-secondary">Días laborables (L–V): <span id="kpiDias">0</span></span>
+        <span class="badge rounded-pill text-bg-success">Promedio/día (L–V): <span id="kpiProm">0.00</span></span>
+      </div>
+    </section>
+
+    <!-- RESUMEN DIARIO -->
+    <section class="mb-3">
+      <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-3">
+        <div class="col">
+          <div class="card h-100 daily-card">
+            <div class="card-body">
+              <div class="scroll-x">
+                <table id="tblDailyA" class="table table-sm table-striped mb-0">
+                 <thead><tr><th>FECHA</th><th>REGISTROS</th><th>GESTIONES</th></tr></thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col">
+          <div class="card h-100 daily-card">
+            <div class="card-body">
+              <div class="scroll-x">
+                <table id="tblDailyB" class="table table-sm table-striped mb-0">
+                  <thead><tr><th>FECHA</th><th>REGISTROS</th><th>GESTIONES</th></tr></thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col">
+          <div class="card h-100 daily-card">
+            <div class="card-body">
+              <div class="scroll-x">
+                <table id="tblDailyC" class="table table-sm table-striped mb-0">
+                  <thead><tr><th>FECHA</th><th>REGISTROS</th><th>GESTIONES</th></tr></thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col">
+          <div class="card h-100 daily-card">
+            <div class="card-body">
+              <div class="scroll-x">
+                <table id="tblDailyD" class="table table-sm table-striped mb-0">
+                  <thead><tr><th>FECHA</th><th>REGISTROS</th><th>GESTIONES</th></tr></thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+       </div>
+      </div>
+    </section>
+
+    <!-- LINEA DE TIEMPO -->
+    <section class="card mb-3">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h2 class="h6 mb-0">Línea de tiempo (por día)</h2>
+          <span class="smallnote">Incluye días sin actividad</span>
+        </div>
+        <div id="timelineWrap" class="vstack gap-3"></div>
+        <div id="timelineEmpty" class="empty-note mt-2"></div>
+      </div>
+    </section>
+
+    <!-- INACTIVIDAD + REPETIDOS -->
+ <section class="row g-3">
+  <div class="col-12">
+    <div class="card h-100">
+      <div class="card-body">
+        <h2 class="h6 mb-3">INACTIVIDAD (por proceso)</h2>
+        <div class="scroll-x">
+          <table id="tblGaps" class="table table-sm table-striped">
+            <thead>
+              <tr>
+                <th>USUARIO</th>
+                <th>FECHA</th>
+                <th>Numero Hrs Inactivas</th>
+                <th>Horas sin Actividad</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+  </main>
+
+  <!-- JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+  // ===== Config =====
+  const JSON_URLS = [
+    "https://github.com/alcnca/rutasgestores/blob/main/DESEMBOLSOS.json",
+    "https://raw.githubusercontent.com/alcnca/rutasgestores/refs/heads/main/DESEMBOLSOS.json"
+  ];
+const GESTIONES_URLS = [
+  "https://raw.githubusercontent.com/alcnca/mapa-semaforo/main/datos.json",
+  "https://raw.githubusercontent.com/alcnca/mapa-semaforo/refs/heads/main/datos.json"
+];
+
+  const HOUR_START = 8;  // vista
+  const HOUR_END   = 19; // vista
+  const HOURS = Array.from({length: HOUR_END - HOUR_START + 1}, (_, i) => HOUR_START + i);
+
+  // ===== Utils =====
+  const uniq = arr => Array.from(new Set(arr));
+  const by = (a,b) => (a||"").toString().localeCompare((b||"").toString(),'es');
+  const pad2 = n => String(n).padStart(2,'0');
+  const hourLabel = h => `${pad2(h)}:00`;
+
+  const normalizeHourStr = s => (s||'')
+    .replace(/\s+/g,' ')
+    .replace('a. m.','AM').replace('p. m.','PM')
+    .replace('a. m','AM').replace('p. m','PM')
+    .trim();
+
+  function parseTimeToHourBase(str){
+    if(!str) return null;
+    const s = normalizeHourStr(str).toUpperCase();
+    const m = s.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)?$/);
+    if(!m) return null;
+    let hh = parseInt(m[1],10);
+    const ap = m[4]||null;
+    if(ap){
+      if(ap==='AM'){ if(hh===12) hh=0; }
+      else { if(hh!==12) hh+=12; }
+    }
+    return (hh>=0&&hh<=23)? hh : null;
+  }
+
+  function parseTimeToMinutes(str){
+    if(!str) return null;
+    const s = normalizeHourStr(str).toUpperCase();
+
+    // 1) HH:MM(:SS)? (24h)
+    let m = s.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+    if(m){
+      const hh = parseInt(m[1],10);
+      const mm = parseInt(m[2],10);
+      if(hh>=0 && hh<=23 && mm>=0 && mm<=59) return hh*60+mm;
+      return null;
+    }
+
+    // 2) HH:MM(:SS)? AM/PM
+    m = s.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)$/);
+    if(m){
+      let hh = parseInt(m[1],10);
+      const mm = parseInt(m[2],10);
+      const ap = m[4];
+      if(ap==='AM'){ if(hh===12) hh=0; }
+      else { if(hh!==12) hh+=12; }
+      if(hh>=0 && hh<=23 && mm>=0 && mm<=59) return hh*60+mm;
+      return null;
+    }
+    return null;
+  }
+
+  function toISODate(dstr){
+    if(!dstr) return '';
+    const s = (dstr+'').trim();
+    if(/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+    const m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if(m) return `${m[3]}-${m[2]}-${m[1]}`;
+    const d = new Date(s);
+    if(Number.isNaN(d.getTime())) return '';
+    return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+  }
+
+  const dowOfISO = iso => new Date(iso+'T00:00:00').getDay();
+
+  // Días laborables: Lunes(1) a Sábado(6)
+  function getBusinessDays(fromISO, toISO){
+    const out = [];
+    if(!fromISO || !toISO) return out;
+    let d = new Date(fromISO + 'T00:00:00');
+    const end = new Date(toISO + 'T00:00:00');
+    while(d <= end){
+      const dow = d.getDay(); // 0=dom ... 6=sab
+      if(dow >= 1 && dow <= 6){
+        out.push(`${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`);
+      }
+      d.setDate(d.getDate()+1);
+    }
+    return out;
+  }
+
+  // Horarios de proceso para marcación (vacíos rojos y verde)
+  function workHoursForDate(iso){
+    const dow = dowOfISO(iso);
+    const set = new Set();
+    if (dow >= 1 && dow <= 5) { for (let h = 9; h <= 18; h++) if(h!==14) set.add(h); }
+    else if (dow === 6) { for (let h = 9; h <= 14; h++) set.add(h); }
+    return set;
+  }
+  function countHoursForDate(iso){
+    const dow = dowOfISO(iso);
+    const set = new Set();
+    if (dow >= 1 && dow <= 5) { for (let h = 9; h <= 17; h++) if(h!==14) set.add(h); }
+    else if (dow === 6) { for (let h = 9; h <= 14; h++) set.add(h); }
+    return set;
+  }
+  function countWorkdays(fromISO, toISO){
+    if(!fromISO || !toISO) return 0;
+    const d = new Date(fromISO + 'T00:00:00');
+    const end = new Date(toISO + 'T00:00:00');
+    let c = 0;
+    while(d <= end){
+      const dow = d.getDay();
+      if(dow >= 1 && dow <= 5) c++; // solo L-V
+      d.setDate(d.getDate()+1);
+    }
+    return c;
+  }
+
+  // ===== Estado =====
+  let rawRows = [];
+  let gestRows = []; // filas del JSON de gestiones
+
+
+  // Gestor = USUARIO_ASIGNADO
+  const getUserField = r => (r['USUARIO_ASIGNADO'] || '').toString().trim();
+
+  // ====== Carga de datos ======
+  async function loadRemoteJson(){
+    const loadMsg = document.getElementById('loadMsg');
+    loadMsg.textContent = 'Cargando JSON…';
+
+    for(const url of JSON_URLS){
+      try{
+        const res = await fetch(`${url}?t=${Date.now()}`, {mode:'cors', cache:'no-store'});
+        if(!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+
+        const norm=o=>{const n={}; for(const k of Object.keys(o)){ n[k.toUpperCase()]=o[k]; } return n; };
+        rawRows = (Array.isArray(data)?data:(data?.rows||[])).map(norm);
+
+        if(!Array.isArray(rawRows) || rawRows.length===0) continue;
+
+        const users = uniq(rawRows.map(getUserField).filter(Boolean)).sort(by);
+        const userSel = document.getElementById('userSelect');
+        userSel.innerHTML = users.length
+          ? '<option value="">(Selecciona)</option>' + users.map(v=>`<option>${v}</option>`).join('')
+          : '<option value="">(Sin usuarios)</option>';
+
+        document.getElementById('fltSucursal').innerHTML = '<option value="">(Todas)</option>';
+        loadMsg.textContent = `JSON cargado (${rawRows.length} filas)`;
+        return;
+      }catch(err){
+        console.error('Fallo cargando', url, err);
+      }
+    }
+
+    document.getElementById('loadMsg').innerHTML =
+      `<span class="error-note">No se pudo cargar el JSON remoto.</span> Revisa que el archivo exista y sea público.`;
+    rawRows = [];
+  }
+async function loadGestionesJson(){
+  const loadMsg = document.getElementById('loadMsg');
+  const prev = loadMsg.textContent || '';
+  loadMsg.textContent = prev ? (prev + ' | Cargando gestiones…') : 'Cargando gestiones…';
+
+  for(const url of GESTIONES_URLS){
+    try{
+      const res = await fetch(`${url}?t=${Date.now()}`, {mode:'cors', cache:'no-store'});
+      if(!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+
+      // normaliza llaves (incluye espacios y acentos tal cual, pero en mayúsculas)
+      const norm=o=>{const n={}; for(const k of Object.keys(o||{})){ n[k.toUpperCase()] = o[k]; } return n; };
+
+      gestRows = (Array.isArray(data) ? data : (data?.rows||[])).map(norm);
+
+      // normaliza campos útiles
+   gestRows = gestRows.map(r=>{
+  const ejecutivo = (r['EJECUTIVO2']||'').toString().trim();
+  const fechaUlt  = toISODate((r['FECHA ULTIMA GESTION']||'').toString().trim());
+  return {...r, _ejecutivo: ejecutivo, _fechaUlt: fechaUlt};
+}).filter(r=> r._ejecutivo && r._fechaUlt);
+
+      loadMsg.textContent = (prev ? prev + ' | ' : '') + `Gestiones cargadas (${gestRows.length} filas)`;
+      return;
+    }catch(err){
+      console.error('Fallo cargando gestiones', url, err);
+    }
+  }
+
+  // si no carga, no tronamos el reporte; solo avisamos y quedará 0 gestiones
+  const tail = 'No se pudo cargar datos.json de gestiones (se mostrará 0).';
+  document.getElementById('loadMsg').innerHTML = `<span class="error-note">${tail}</span>`;
+  gestRows = [];
+}
+
+
+  function sucursalesForUser(user){
+    return uniq(rawRows
+      .filter(r=> getUserField(r)===user)
+      .map(r=> (r['SUCURSAL']||'').toString().trim())
+      .filter(Boolean)).sort(by);
+  }
+
+  // ===== Timeline =====
+  function renderTimeline(groups){
+    const wrap = document.getElementById('timelineWrap');
+    const empty = document.getElementById('timelineEmpty');
+    wrap.innerHTML = '';
+    empty.textContent = '';
+
+    if(!groups.length){
+      empty.textContent = 'No hay días para el rango/filtros seleccionados.';
+      return;
+    }
+
+    const startMin = HOUR_START * 60;      // 08:00
+    const endMin   = HOUR_END * 60 + 59;   // 19:59
+    const span     = endMin - startMin;
+
+    const hourSpans = HOURS.map(h => `<span>${pad2(h)}:00</span>`).join('');
+
+    for(const g of groups){
+      const rows = g.rows || [];
+
+      // puntos solo si hay hora válida y cae en rango
+      const items = rows
+        .filter(x => Number.isFinite(x._minsDay))
+        .map(x => ({...x, _pos: (x._minsDay - startMin) / span}))
+        .filter(x => x._pos >= 0 && x._pos <= 1)
+        .sort((a,b)=> (a._minsDay - b._minsDay));
+
+      const card = document.createElement('div');
+      card.className = 'timeline-day';
+      card.id = `tl-${g.usuario}-${g.fecha}`.replace(/\s+/g,'_');
+
+      card.innerHTML = `
+        <div class="timeline-head">
+          <div class="fw-semibold">${g.usuario}</div>
+          <div class="mono">${g.fecha}</div>
+        </div>
+
+        <div class="timeline-track" aria-label="Línea de tiempo">
+          <div class="timeline-ticks">
+            ${Array.from({length:(HOUR_END-HOUR_START+1)}, ()=>'<div></div>').join('')}
+          </div>
+        </div>
+
+        <div class="timeline-hours">${hourSpans}</div>
+
+        <div class="timeline-meta">
+          <span>Total registros: <b>${rows.length}</b></span>
+          <span>Puntos visibles (08–19): <b>${items.length}</b></span>
+        </div>
+
+        <div class="scroll-x">
+          <table class="table table-sm table-striped timeline-table mb-0">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Hora</th>
+                <th>Crédito</th>
+                <th>Socio</th>
+                <th>Nombre</th>
+                <th>Producto</th>
+                <th>Sucursal</th>
+                <th>Usuario Mesa</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      `;
+
+      // markers
+      const track = card.querySelector('.timeline-track');
+      items.forEach((r, idx)=>{
+        const mk = document.createElement('div');
+        mk.className = 'timeline-marker';
+        mk.style.left = `${(r._pos*100).toFixed(3)}%`;
+
+        const horaTxt = (r['HORA1'] || r['HORA2'] || '').toString().trim();
+        const credito = (r['CREDITO']||'').toString();
+        const socio   = (r['SOCIO']||'').toString();
+        const nombre  = (r['NOMBRE']||'').toString();
+        const prod    = (r['PRODUCTO']||'').toString();
+        const suc     = (r['SUCURSAL']||'').toString();
+        const mesa    = (r['USUARIO_MESA']||'').toString();
+
+        mk.title = `${idx+1}. ${horaTxt}\nCrédito: ${credito}\nSocio: ${socio}\nNombre: ${nombre}\nProducto: ${prod}\nSucursal: ${suc}\nMesa: ${mesa}`;
+        track.appendChild(mk);
+      });
+
+      // tabla detalle (incluye aunque caigan fuera de 08-19; se ordena por hora si es parseable)
+      const tb = card.querySelector('tbody');
+      rows
+        .slice()
+        .sort((a,b)=> (a._minsDay ?? 1e9) - (b._minsDay ?? 1e9))
+        .forEach((r,i)=>{
+          tb.insertAdjacentHTML('beforeend', `
+            <tr>
+              <td>${i+1}</td>
+              <td class="mono">${(r['HORA1'] || r['HORA2'] || '').toString().trim()}</td>
+              <td class="mono">${(r['CREDITO']||'').toString()}</td>
+              <td class="mono">${(r['SOCIO']||'').toString()}</td>
+              <td>${(r['NOMBRE']||'').toString()}</td>
+              <td>${(r['PRODUCTO']||'').toString()}</td>
+              <td>${(r['SUCURSAL']||'').toString()}</td>
+              <td class="mono">${(r['USUARIO_MESA']||'').toString()}</td>
+            </tr>
+          `);
+        });
+
+      wrap.appendChild(card);
+    }
+  }
+
+  function scrollToTimeline(user, fecha){
+    const id = `tl-${user}-${fecha}`.replace(/\s+/g,'_');
+    const el = document.getElementById(id);
+    if(el){
+      el.scrollIntoView({behavior:'smooth', block:'start'});
+      el.classList.add('border-primary');
+      setTimeout(()=> el.classList.remove('border-primary'), 1200);
+    }
+ 
+function flashMatrixRows(user, fecha){
+  const tbody = document.querySelector('#grid tbody');
+  if(!tbody) return;
+
+  const rows = Array.from(tbody.querySelectorAll('tr'));
+  if(!rows.length) return;
+
+  // Si hay usuario, buscamos coincidencia exacta usuario+fecha.
+  // Si no hay usuario, buscamos todas las filas de esa fecha.
+  const matches = rows.filter(tr=>{
+    const tds = tr.querySelectorAll('td');
+    if(tds.length < 2) return false;
+    const u = (tds[0].textContent || '').trim();
+    const f = (tds[1].textContent || '').trim();
+    if(user) return (u === user && f === fecha);
+    return (f === fecha);
+  });
+
+  if(!matches.length) return;
+
+  // Scroll a la primera coincidencia (en la matriz)
+  matches[0].scrollIntoView({behavior:'smooth', block:'center'});
+
+  // Flash de resaltado
+  matches.forEach(tr => tr.classList.add('row-flash'));
+  setTimeout(()=> matches.forEach(tr => tr.classList.remove('row-flash')), 1500);
+}
+ }
+
+
+  // ===== Render principal =====
+  function buildMatrix(){
+    const user  = document.getElementById('userSelect').value;
+    const suc   = document.getElementById('fltSucursal').value;
+    const desde = document.getElementById('fltDesde').value;
+    const hasta = document.getElementById('fltHasta').value;
+
+    // Limpieza base si no hay datos
+    if(!rawRows.length){
+      document.getElementById('badgeRows').textContent = `0 REGISTROS`;
+      document.getElementById('badgeGroups').textContent = `0 días laborables (L–S)`;
+      document.querySelector('#grid thead').innerHTML = '';
+      document.querySelector('#grid tbody').innerHTML = '';
+      ['#tblDailyA','#tblDailyB','#tblDailyC','#tblDailyD','#tblGaps'].forEach(sel=>{
+        const tb=document.querySelector(`${sel} tbody`); if(tb) tb.innerHTML='';
+      });
+      document.getElementById('timelineWrap').innerHTML = '';
+      document.getElementById('timelineEmpty').textContent = 'No hay datos cargados.';
+      return;
+    }
+
+    // Pre-normalización al esquema:
+    const pre = rawRows.map(r=>{
+      const horaSrc = (r['HORA1'] && r['HORA1'].toString().trim() !== '') ? r['HORA1'] : r['HORA2'];
+      const hourBase = parseTimeToHourBase(horaSrc);
+      const minsDay  = parseTimeToMinutes(horaSrc);
+      const fechaISO = toISODate(r['FECHA'] || '');
+      const usuario  = getUserField(r);
+
+      const socio  = (r['SOCIO']||'').toString().trim();
+      const nombre = (r['NOMBRE']||'').toString().trim();
+
+      return {...r,_usuario:usuario,_fecha:fechaISO,_hourBase:hourBase,_minsDay:minsDay,_socio:socio,_nombre:nombre};
+    }).filter(r=> r._fecha && r._usuario);
+
+    // Filtrado base por UI
+    const rowsF = pre.filter(r=>
+      (!user || r._usuario===user) &&
+      (!suc  || (r['SUCURSAL']||'').toString().trim()===suc) &&
+      (!desde|| r._fecha>=desde) &&
+      (!hasta|| r._fecha<=hasta)
+    );
+
+    document.getElementById('badgeRows').textContent = `${rowsF.length} REGISTROS`;
+
+
+// ===== Índice de gestiones por Ejecutivo + Fecha (Fecha Ultima Gestion) =====
+const gestIndex = new Map(); // key: "EJECUTIVO|YYYY-MM-DD" -> count
+for(const gr of gestRows){
+  const k = `${gr._ejecutivo}|${gr._fechaUlt}`;
+  gestIndex.set(k, (gestIndex.get(k) || 0) + 1);
+}
+
+
+    // ==== DÍAS LABORABLES L–S (incluye sin actividad) ====
+    const businessDays = getBusinessDays(desde, hasta);
+
+    // ==== AGRUPAR REGISTROS REALES por usuario+fecha ====
+    const mapReal = new Map();
+    for(const r of rowsF){
+      const k = `${r._usuario}|${r._fecha}`;
+      if(!mapReal.has(k)) mapReal.set(k,{usuario:r._usuario,fecha:r._fecha,hours:new Set(),rows:[]});
+      const g = mapReal.get(k);
+      if(r._hourBase!=null) g.hours.add(r._hourBase);
+      g.rows.push(r);
+    }
+
+    // Usuarios a mostrar (si hay filtro por usuario, uno; si no, todos los del dataset filtrado)
+    // Nota: para evitar “sin filas” cuando no hay rowsF pero sí quieres ver todos los días del usuario seleccionado,
+    // este bloque conserva el usuario si está seleccionado.
+    const usuarios = user ? [user] : uniq(rowsF.map(r=>r._usuario));
+
+    // ==== CONSTRUIR GRUPOS COMPLETOS (incluye días sin acción) ====
+    const groups = [];
+    for(const u of usuarios){
+      for(const f of businessDays){
+        const key = `${u}|${f}`;
+        if(mapReal.has(key)) groups.push(mapReal.get(key));
+        else groups.push({usuario:u, fecha:f, hours:new Set(), rows:[]}); // día sin actividad
+      }
+    }
+    groups.sort((a,b)=> by(a.usuario,b.usuario) || by(a.fecha,b.fecha));
+    document.getElementById('badgeGroups').textContent = `${groups.length} días laborables (L–S)`;
+
+    // ===== KPIs (L–V, como estaba) =====
+    const totalReg = rowsF.length;
+    const workdays = countWorkdays(desde, hasta);
+    const avg = workdays ? totalReg / workdays : 0;
+    document.getElementById('kpiTotal').textContent = totalReg;
+    document.getElementById('kpiDias').textContent = workdays;
+    document.getElementById('kpiProm').textContent = avg.toFixed(2);
+
+    // ===== Resumen diario (incluye 0) =====
+const dailyMap = new Map();      // registros (DESEMBOLSOS)
+const gestDaily = new Map();     // gestiones (datos.json)
+
+businessDays.forEach(d => { dailyMap.set(d, 0); gestDaily.set(d, 0); });
+
+// registros: según filtro actual (user/sucursal/rango)
+rowsF.forEach(r => dailyMap.set(r._fecha, (dailyMap.get(r._fecha) || 0) + 1));
+
+// gestiones: si hay usuario seleccionado -> solo ese usuario; si no -> suma de usuarios presentes
+// Nota: usa gestIndex (Map "usuario|fecha" -> count) que ya construimos antes
+const usuariosResumen = user ? [user] : usuarios; // 'usuarios' ya existe en tu buildMatrix
+for(const d of businessDays){
+  let sum = 0;
+  for(const u of usuariosResumen){
+    sum += (gestIndex.get(`${u}|${d}`) || 0);
+  }
+  gestDaily.set(d, sum);
+}
+
+// entries ahora lleva: [fecha, registros, gestiones]
+const entries = businessDays
+  .slice()
+  .sort((a,b)=> a.localeCompare(b))
+  .map(fecha => [fecha, dailyMap.get(fecha) || 0, gestDaily.get(fecha) || 0]);
+
+
+    const DAILY_COLS = 4;
+    const size = Math.ceil(entries.length / DAILY_COLS);
+    const chunk = (arr, s, i)=> arr.slice(i*s, (i+1)*s);
+    const cols = [chunk(entries,size,0), chunk(entries,size,1), chunk(entries,size,2), chunk(entries,size,3)];
+    const tbs = [
+      document.querySelector('#tblDailyA tbody'),
+      document.querySelector('#tblDailyB tbody'),
+      document.querySelector('#tblDailyC tbody'),
+      document.querySelector('#tblDailyD tbody'),
+    ];
+    tbs.forEach(tb=> tb && (tb.innerHTML=''));
+    const rowTpl = ([fecha, regCount, gestCount]) =>
+  `<tr data-fecha="${fecha}">
+     <td>${fecha}</td>
+     <td>${regCount}</td>
+     <td>${gestCount}</td>
+   </tr>`;
+    cols.forEach((c,idx)=> c.forEach(e=> tbs[idx] && tbs[idx].insertAdjacentHTML('beforeend', rowTpl(e))));
+
+    // click resumen -> scroll al timeline
+  const onDailyClick = (ev)=>{
+  const tr = ev.target.closest('tr');
+  if(!tr || !tr.dataset.fecha) return;
+
+  const fecha = tr.dataset.fecha;
+
+  // 1) Resaltar fila(s) en la matriz (si no hay usuario, resalta todas las del día)
+  flashMatrixRows(user || '', fecha);
+
+  // 2) Timeline: si hay usuario, baja al timeline exacto; si no, solo baja a la sección timeline
+  if(user){
+    scrollToTimeline(user, fecha);
+  }else{
+    const wrap = document.getElementById('timelineWrap');
+    if(wrap) wrap.scrollIntoView({behavior:'smooth', block:'start'});
+  }
+};
+
+
+    ['#tblDailyA','#tblDailyB','#tblDailyC','#tblDailyD'].forEach(sel=>{
+      document.querySelectorAll(`${sel} tbody tr`).forEach(tr=> tr.addEventListener('click', onDailyClick));
+    });
+
+ 
+
+    // ===== Matriz horaria (usa groups; incluye días sin acción) =====
+    const thead=document.querySelector('#grid thead');
+    const tbody=document.querySelector('#grid tbody');
+    thead.innerHTML=''; tbody.innerHTML='';
+
+    // ===== Fila superior: título del horario =====
+const trTitle = document.createElement('tr');
+
+// columnas fijas vacías
+['USUARIO','FECHA','GESTIONES REALIZADAS'].forEach(()=>{
+  const th = document.createElement('th');
+  th.textContent = '';
+  trTitle.appendChild(th);
+});
+
+// título centrado sobre las horas
+const thTitle = document.createElement('th');
+thTitle.colSpan = HOURS.length;
+thTitle.textContent = 'HORA DE ACTIVIDADES DE DESEMBOLSOS';
+thTitle.className = 'text-center fw-semibold';
+trTitle.appendChild(thTitle);
+
+thead.appendChild(trTitle);
+
+// ===== Fila inferior: horas =====
+const trh = document.createElement('tr');
+['USUARIO','FECHA','GESTIONES REALIZADAS'].forEach(h=>{
+  const th=document.createElement('th');
+  th.textContent=h;
+  trh.appendChild(th);
+});
+
+for(const h of HOURS){
+  const thEl=document.createElement('th');
+  thEl.className='w-hour nowrap';
+  thEl.textContent=`${pad2(h)}:00`;
+  thEl.dataset.hour=h;
+  thEl.style.cursor='pointer';
+  trh.appendChild(thEl);
+}
+
+thead.appendChild(trh);
+
+
+    const gapsRows=[];
+    for(const g of groups){
+      const tr=document.createElement('tr');
+      tr.appendChild(Object.assign(document.createElement('td'),{textContent:g.usuario}));
+      tr.appendChild(Object.assign(document.createElement('td'),{textContent:g.fecha}));
+
+      // GESTIONES REALIZADAS: datos.json (Ejecutivo) cruzado con USUARIO_ASIGNADO y por fecha
+const gestKey = `${g.usuario}|${g.fecha}`;
+const gestCount = gestIndex.get(gestKey) || 0;
+
+const tdS = document.createElement('td');
+tdS.innerHTML = `
+  <span class="badge rounded-pill badge-spot badge-gestiones">
+    ${gestCount} gestiones
+  </span>
+`;
+tr.appendChild(tdS);
+
+
+      const wkSet  = workHoursForDate(g.fecha);
+      const cntSet = countHoursForDate(g.fecha);
+
+      const emptiesVisual = HOURS.filter(h => wkSet.has(h) && !g.hours.has(h));
+
+      // “Verde” solo L–V: el vacío más cercano a las 14:00 (referencia visual)
+      let greenHour=null;
+      const dow=dowOfISO(g.fecha);
+      if(dow>=1&&dow<=5&&emptiesVisual.length){
+        greenHour=emptiesVisual.reduce((best,h)=>{
+          if(best===null) return h;
+          const da=Math.abs(h-14), db=Math.abs(best-14);
+          if(da<db) return h; if(da>db) return best;
+          return (h<best)?h:best;
+        }, null);
+      }
+
+      for(const h of HOURS){
+        const td=document.createElement('td');
+        td.className='w-hour';
+        const has=g.hours.has(h);
+        const off=!wkSet.has(h);
+
+        if(off){
+          if(has){ td.classList.add('cell-off'); td.innerHTML='<span class="cell-dot"></span>'; }
+          else { td.classList.add('cell-off'); td.textContent='—'; }
+        } else if(has){
+          td.innerHTML='<span class="cell-dot"></span>';
+        } else {
+          if(h===greenHour) td.classList.add('cell-empty-green');
+          else td.classList.add('cell-empty-wk');
+          td.innerHTML='<span class="cell-dot cell-empty"></span>';
+        }
+        tr.appendChild(td);
+      }
+      tbody.appendChild(tr);
+
+      // Inactividad (conteo) basado en cntSet (proceso)
+      const emptiesReportHours = HOURS.filter(h => cntSet.has(h) && !g.hours.has(h));
+      gapsRows.push({usuario:g.usuario,fecha:g.fecha,count:emptiesReportHours.length,list:emptiesReportHours.map(hourLabel).join(', ')});
+    }
+
+    // click en hora para resaltar columna
+    thead.querySelectorAll('th[data-hour]').forEach(th=>{
+      th.addEventListener('click',()=>{
+        const hour=Number(th.dataset.hour);
+        const offset=(hour-HOUR_START)+3;
+        tbody.querySelectorAll('tr').forEach(tr=>{
+          tr.querySelectorAll('td').forEach((td,idx)=>{
+            td.classList.toggle('col-highlight', idx===offset);
+          });
+        });
+      });
+    });
+
+    // gaps table
+    const gapsTbody=document.querySelector('#tblGaps tbody');
+    gapsTbody.innerHTML='';
+    for(const gg of gapsRows.sort((a,b)=> by(a.usuario,b.usuario)||by(a.fecha,b.fecha))){
+      const tr=document.createElement('tr');
+      tr.innerHTML=`<td>${gg.usuario}</td><td>${gg.fecha}</td><td>${gg.count}</td><td class="mono">${gg.list}</td>`;
+      gapsTbody.appendChild(tr);
+    }
+
+    // ===== Timeline (usa groups; incluye días sin actividad) =====
+    renderTimeline(groups);
+  }
+
+  // ===== Eventos =====
+  document.getElementById('userSelect').addEventListener('change', ()=>{
+    const user=document.getElementById('userSelect').value;
+    const sucs=user? sucursalesForUser(user) : [];
+    const sel=document.getElementById('fltSucursal');
+    sel.innerHTML='<option value="">(Todas)</option>'+sucs.map(v=>`<option>${v}</option>`).join('');
+  });
+
+  document.getElementById('btnRender').addEventListener('click', buildMatrix);
+
+  // ===== Init =====
+  document.addEventListener('DOMContentLoaded', async ()=>{
+    const t=new Date();
+    const yyyy=t.getFullYear();
+    const mm=pad2(t.getMonth()+1);
+    const dd=pad2(t.getDate());
+    document.getElementById('fltDesde').value=`${yyyy}-${mm}-01`;
+    document.getElementById('fltHasta').value=`${yyyy}-${mm}-${dd}`;
+
+    await loadRemoteJson();
+    await loadGestionesJson();
+
+
+    const userSel=document.getElementById('userSelect');
+    if(userSel.options.length>1){
+      userSel.selectedIndex=1;
+      const user=userSel.value;
+      const sucs=user? sucursalesForUser(user):[];
+      const sel=document.getElementById('fltSucursal');
+      sel.innerHTML='<option value="">(Todas)</option>'+sucs.map(v=>`<option>${v}</option>`).join('');
+    }
+
+    buildMatrix();
+  });
+</script>
+
+</body>
+</html>
