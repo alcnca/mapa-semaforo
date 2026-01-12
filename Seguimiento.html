@@ -312,6 +312,7 @@ h1.mb-3{ margin-bottom: .5rem !important; }
         <option value="PAGOS_UNICOS_POR_VENCER">Pago único por vencer (fecha de pago)</option>
  	<option value="MAYOR_40K">Monto mayor a $40,000</option>
         <option value="PORC_PAGO_BAJO">% de pago menor a 10%</option>
+	<option value="AUTO_ATRASO">Créditos automáticos en atraso</option>
       </select>
     </div>
 
@@ -685,6 +686,33 @@ h1.mb-3{ margin-bottom: .5rem !important; }
       const fv=parseVencimientoToDate(r);
       return venceEnProximos30Dias(fv);
     }
+function valConvenioAutoRaw(r){
+  return (
+    r["CONVENIO_ACREINOMINA"] ??
+    r["Convenio Acreinomina"] ??
+    r["CONVENIO ACREINOMINA"] ??
+    r["CONVENIO"] ??
+    r["Convenio"] ??
+    r["Convenio_Descripcion"] ??
+    r["Tipo Entrega"] ??
+    r["TIPO_ENTREGA"] ??
+    r["Tipo_Entrega"] ??
+    ""
+  );
+}
+
+function esCreditoAutomaticoPorProducto(r){
+  const prod = norm(valProducto(r)); // ya quita acentos y pasa a MAYÚSCULAS
+  return prod.includes("CREDITO AUTOMATICO"); // cubre "CRÉDITO AUTOMÁTICO ..."
+}
+
+function cumpleCreditosAutomaticosEnAtraso(r){
+  if(!r) return false;
+  if(!esCreditoAutomaticoPorProducto(r)) return false;
+  const diasAtr = toNumberSafe(valDiasAtr(r));
+  return diasAtr >= 1;
+}
+
   function valPorcentajePagado(r) {
   const raw =
     r["Porcentaje Pagado"] ??
@@ -1287,23 +1315,29 @@ function renderTarjetasPorSucursal(base, sucursal){
       carteraSeleccionada = document.getElementById("carteraSelect").value;
       base = creditosBaseFiltradosPorCartera(base);
 
-      // 4) ¿Qué mostrar?
-   mostrarModo = document.getElementById("mostrarSelect").value;
-	if (mostrarModo === "SIN") {
-  	base = base.filter(d => estaSinGestion(d["Dias sin Gestion"]));
-	} else if (mostrarModo === "PAGOS_UNICOS") {
-  	base = base.filter(cumplePagosUnicos);
-	} else if (mostrarModo === "PAGOS_UNICOS_POR_VENCER") {
-  	base = base.filter(cumplePagosUnicosPorVencer);
-	} else if (mostrarModo === "MAYOR_40K") {                 // 👈 NUEVO
-  	base = base.filter(r => valSaldo(r) >= 40000);          // 👈 NUEVO
-	} else if (mostrarModo === "PORC_PAGO_BAJO") {
+ // 4) ¿Qué mostrar?
+mostrarModo = document.getElementById("mostrarSelect").value;
+
+if (mostrarModo === "SIN") {
+  base = base.filter(d => estaSinGestion(d["Dias sin Gestion"]));
+
+} else if (mostrarModo === "PAGOS_UNICOS") {
+  base = base.filter(cumplePagosUnicos);
+
+} else if (mostrarModo === "PAGOS_UNICOS_POR_VENCER") {
+  base = base.filter(cumplePagosUnicosPorVencer);
+
+} else if (mostrarModo === "MAYOR_40K") {
+  base = base.filter(r => valSaldo(r) >= 40000);
+
+} else if (mostrarModo === "PORC_PAGO_BAJO") {
   base = base.filter(r => {
     const p = valPorcentajePagado(r);
-    return !isNaN(p) && p <= 10.0; // Menor o igual a 10 %
+    return !isNaN(p) && p <= 10.0;
   });
 
-
+} else if (mostrarModo === "AUTO_ATRASO") {
+  base = base.filter(cumpleCreditosAutomaticosEnAtraso);
 
 } else { // TODOS
   base = base.filter(d => {
