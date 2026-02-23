@@ -1,0 +1,2144 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Exhortos / Actas + Agenda (GAS + Google Sheets)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Bootstrap -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <!-- PDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+
+  <!-- Excel -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <!-- DOCX (UMD) -->
+  <script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.min.js" defer></script>
+
+  <!-- html2canvas para capturar la tabla como PNG (para DOCX) -->
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js" defer></script>
+
+  <style>
+#asesorTitulo 
+{
+  font-size: 9px;         /* 👈 antes era 13px, lo reducimos */
+  margin-bottom: 4px;      /* 👈 menos espacio debajo */
+  margin-top: 1px;         /* 👈 menos espacio arriba */
+  line-height: 1.0;        /* 👈 texto más compacto */
+  text-align: center;      /* 👈 opcional: centrado */
+  color: #333;             /* 👈 tono más suave, opcional */
+}
+
+#vistaPreviaModal .modal-body {
+  padding-top: 0.5rem !important;
+}
+
+#tablaPreviewWrap {
+  margin-top: 0.25rem;
+}
+    .table.table-sm th, .table.table-sm td { font-size: 10px; line-height: 1.10; }
+    #tablaPreview td:nth-child(1), #tablaPreview td:nth-child(2) { text-align: center; }
+    #tablaPreview td:nth-child(3), #tablaPreview td:nth-child(4) { text-align: left; }
+    #tablaPreview td:nth-child(5) { text-align: right; }
+    #tablaPreview td:nth-child(6), #tablaPreview td:nth-child(7), #tablaPreview td:nth-child(8), #tablaPreview td:nth-child(9), #tablaPreview td:nth-child(10) { text-align: center; }
+    .tdSaldo { text-align: right; }
+    .tdCenter { text-align: center; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 10px; }
+    .badge + .badge { margin-left: 4px; }
+
+    /* Vista previa */
+    #vistaPreviaModal .table { table-layout: fixed; }
+    #vistaPreviaModal th, #vistaPreviaModal td { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    #tablaPreview td:nth-child(11) { text-align: left; }
+    #tablaPreview td:nth-child(12), 
+    #tablaPreview td:nth-child(13) { text-align: left; }
+    #vistaPreviaModal .table.table-sm th,
+    #vistaPreviaModal .table.table-sm td { font-size: 11px; line-height: 1.15; }
+    #asesorTitulo { font-size: 13px; }
+    #totalPreview { font-size: 12px; }
+    #vistaPreviaModal .estatus-cell .badge { font-size: 10px; }
+    #vistaPreviaModal table thead th:nth-child(10),
+    #vistaPreviaModal table tbody td:nth-child(10) {
+      white-space: normal !important;
+      text-overflow: clip !important;
+      overflow: visible !important;
+      word-break: break-word;
+    }
+
+    /* Agenda */
+    #agendaModal .table, #agendaListaModal .table { table-layout: fixed; }
+    #agendaModal th, #agendaModal td, #agendaListaModal th, #agendaListaModal td {
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.2;
+    }
+    #agendaModal thead th:nth-child(4),
+    #agendaModal tbody td:nth-child(4),
+    #agendaModal thead th:nth-child(6),
+    #agendaModal tbody td:nth-child(6),
+    #agendaModal thead th:nth-child(12),
+    #agendaModal tbody td:nth-child(12),
+    #agendaModal thead th:nth-child(14),
+    #agendaModal tbody td:nth-child(14),
+    #agendaModal thead th:nth-child(16),
+    #agendaModal tbody td:nth-child(16),
+    #agendaListaModal thead th:nth-child(6),
+    #agendaListaModal tbody td:nth-child(6),
+    #agendaListaModal thead th:nth-child(8),
+    #agendaListaModal tbody td:nth-child(8),
+    #agendaListaModal thead th:nth-child(14),
+    #agendaListaModal tbody td:nth-child(14),
+    #agendaListaModal thead th:nth-child(16),
+    #agendaListaModal tbody td:nth-child(16),
+    #agendaListaModal thead th:nth-child(17),
+    #agendaListaModal tbody td:nth-child(17) {
+      white-space: normal !important;
+      overflow: visible !important;
+      text-overflow: clip !important;
+      word-break: break-word;
+      vertical-align: top;
+    }
+
+    .badge-phase-sm{
+      font-size: .65rem;
+      padding: .20rem .35rem;
+      line-height: 1;
+    }
+/* ===== Tarjetas ultra compactas ===== */
+.card-compact {
+  border: 1px solid #e6e9ef;
+  border-radius: .6rem;
+  margin-bottom: .35rem;
+}
+
+.card-compact .card-header {
+  background: #0d6efd;
+  color: #fff;
+  padding: .25rem .5rem;              /* antes .35rem .6rem */
+  border-radius: .6rem .6rem 0 0;
+  min-height: 1.8rem;                 /* más baja */
+}
+
+.card-compact .header-line {
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+  flex-wrap: wrap;
+}
+
+.card-compact .asesor {
+  font-weight: 600;
+  font-size: .9rem;                  /* antes 1rem aprox */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.card-compact .meta {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: .25rem;
+  flex-wrap: wrap;
+}
+
+.card-compact .chip {
+  background: #f1f5f9;
+  color: #0f172a;
+  padding: .1rem .35rem;
+  border-radius: 999px;
+  font-size: .7rem;
+  line-height: 1;
+}
+
+.card-compact .chip.dark {
+  background: #111827;
+  color: #fff;
+}
+
+.card-compact .chip.blue {
+  background: #e7f1ff;
+  color: #084298;
+}
+
+.card-compact .card-body {
+  padding: .35rem .5rem;             /* antes .45rem .6rem */
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  min-height: 2rem;
+}
+
+.card-compact .kpi {
+  display: flex;
+  align-items: center;
+  gap: .25rem;
+  font-size: .8rem;
+  color: #334155;
+}
+
+.card-compact .kpi strong {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.card-compact .btn {
+  padding: .15rem .45rem;            /* botón más chico */
+  font-size: .8rem;
+  border-radius: .4rem;
+}
+
+.card-compact:hover {
+  box-shadow: 0 1px 4px rgba(2,6,23,.08);
+}
+/* ===== Compactar banda de filtros ===== */
+.filters-compact .form-label{
+  margin-bottom: .15rem;         /* menos espacio debajo del label */
+  font-size: .875rem;            /* ~14px */
+  line-height: 1.1;
+}
+
+.filters-compact .form-select.form-select-sm,
+.filters-compact .form-control.form-control-sm{
+  height: calc(1.6rem + 2px);    /* más bajito que el sm por defecto */
+  padding: .2rem .5rem;
+  font-size: .875rem;
+}
+
+.filters-compact .col-md-3,
+.filters-compact .col-md-6{
+  margin-bottom: .25rem;         /* menos separación vertical entre columnas */
+}
+
+.filters-compact .form-text{
+  margin-top: .15rem;
+  font-size: .75rem;
+}
+
+.filters-compact + .d-grid .btn{ /* botón Aplicar justo debajo del bloque */
+  padding: .35rem .75rem;
+  font-size: .95rem;
+}
+
+/* Ajustar paddings generales de la página para ganar alto útil */
+body.container{
+  padding-top: 1rem !important;   /* antes py-4 → ahora ~py-2 */
+  padding-bottom: 1rem !important;
+}
+
+/* Encabezados más pegados */
+h1.mb-3{ margin-bottom: .5rem !important; }
+
+/* ===== Resumen compacto del filtro ===== */
+.summary-card{
+  border: 1px solid #e6e9ef;
+  border-radius: .6rem;
+  background: #ffffff;
+  padding: .6rem .75rem;
+}
+.summary-card .stat-label{
+  font-size: .75rem;
+  color: #64748b;
+  margin-bottom: .1rem;
+}
+.summary-card .stat-value{
+  font-weight: 800;
+  font-size: 1.05rem;
+  color: #0f172a;
+}
+.summary-card .chip{
+  display: inline-block;
+  padding: .15rem .45rem;
+  border-radius: 999px;
+  font-size: .75rem;
+  background: #e7f1ff;
+  color: #084298;
+}
+.card-compact .asesor {
+  font-weight: 600;
+  font-size: .9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background: transparent;
+  border: 0;
+}
+
+.card-compact .asesor:hover {
+  text-decoration: underline;
+}
+.summary-card .chip.blue{ background:#e7f1ff; color:#084298; }
+  </style>
+</head>
+<body class="container py-4">
+  <h1 class="mb-3">Seguimiento SemiAutomático</h1>
+	<div id="infoActualizacion" class="text-muted small mb-2"></div>
+
+  <!-- Filtros -->
+  <div class="mb-2 row g-1 filters-compact">   <!-- antes: mb-4 row g-3 -->
+    <!-- Coordinador -->
+    <div class="col-md-3">
+      <label class="form-label">Coordinador que firma:</label>
+      <select id="coordinadorSelect" class="form-select form-select-sm"></select>
+    </div>
+
+    <!-- Sucursal -->
+    <div class="col-md-3">
+      <label class="form-label">Sucursal:</label>
+      <select id="sucursalSelect" class="form-select form-select-sm" disabled>
+        <option value="">-- Selecciona coordinador --</option>
+      </select>
+    </div>
+
+    <!-- Cartera -->
+    <div class="col-md-3">
+      <label class="form-label">Cartera a revisar:</label>
+      <select id="carteraSelect" class="form-select form-select-sm" disabled>
+        <option value="">-- Selecciona --</option>
+        <option value="TODAS">Todas</option>
+        <option value="ADMIN">Cartera Administrativa (Fase: Administrativa)</option>
+        <option value="EXTRA">Cartera Extrajudicial (Fase: Extrajudicial)</option>
+      </select>
+    </div>
+
+    <!-- ¿Qué mostrar? -->
+    <div class="col-md-3" id="mostrarDiv">
+      <label class="form-label">¿Qué mostrar?</label>
+      <select id="mostrarSelect" class="form-select form-select-sm" disabled>
+        <option value="SIN">Solo créditos sin gestión</option>
+        <option value="TODOS">Todos</option>
+        <option value="PAGOS_UNICOS">Pagos únicos</option>
+        <option value="PAGOS_UNICOS_POR_VENCER">Pago único por vencer (fecha de pago)</option>
+ 	<option value="MAYOR_40K">Monto mayor a $40,000</option>
+        <option value="PORC_PAGO_BAJO">% de pago menor a 10%</option>
+	<option value="AUTO_ATRASO">Créditos automáticos en atraso</option>
+	<option value="RIESGO_SEMANA">Riesgo de Semana (llega a 89 al domingo)</option>
+	<option value="RIESGO_FIN_MES">Riesgo Fin de Mes (llega a 89 al último día del mes)</option>
+      </select>
+    </div>
+
+    <!-- Sub-firmante -->
+    <div class="col-md-3" id="subFirmanteDiv" style="display:none">
+      <label class="form-label">Firmante (Oficina Central / Sub-firmante):</label>
+      <select id="subFirmanteSelect" class="form-select form-select-sm"></select>
+    </div>
+
+    <!-- Días sin gestión -->
+    <div class="col-md-3" id="diasMinimosDiv" style="display:none;">
+      <label class="form-label">Días transcurridos desde la última gestión:</label>
+      <input type="number" id="diasMinimos" value="30" class="form-control form-control-sm" />
+      <div class="form-text">Aplica sólo si elegiste “Todos”.</div>
+    </div>
+  </div>
+
+  <div class="mb-3 d-grid">
+    <button class="btn btn-primary btn-sm w-100" id="btnAplicar" disabled>Aplicar</button>
+  </div>
+
+  <div class="mb-3">
+    <button class="btn btn-outline-dark btn-sm w-100" id="btnAbrirAgenda">Revisar Agenda Guardada</button>
+  </div>
+<!-- Botón para mostrar/ocultar el resumen -->
+<div class="mb-2">
+  <button class="btn btn-outline-secondary btn-sm w-100"
+          data-bs-toggle="collapse"
+          data-bs-target="#panelResumen">
+    Mostrar resumen del filtro
+  </button>
+</div>
+
+<!-- Panel colapsable -->
+<div class="collapse" id="panelResumen">
+  <div class="card card-body summary-card">
+    <div class="row text-center g-2">
+      <div class="col-6 col-md-3">
+        <div class="stat"><div class="stat-label">Créditos</div><div class="stat-value" id="resCreditos">0</div></div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="stat"><div class="stat-label">Suma saldo</div><div class="stat-value" id="resSaldo">$0</div></div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="stat"><div class="stat-label">Sucursales</div><div class="stat-value" id="resSucursales">0</div></div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="stat"><div class="stat-label">Asesores</div><div class="stat-value" id="resAsesores">0</div></div>
+      </div>
+    </div>
+
+    <div class="row text-center g-2 mt-2">
+      <div class="col-4"><div class="chip blue w-100">Admin: <span id="resAdmin">$0</span></div></div>
+      <div class="col-4"><div class="chip blue w-100">Extra: <span id="resExtra">$0</span></div></div>
+      <div class="col-4"><div class="chip blue w-100">Prev: <span id="resPrev">$0</span></div></div>
+    </div>
+
+    <div class="d-flex justify-content-center gap-2 mt-3">
+      <button class="btn btn-outline-dark btn-sm" id="btnExportFiltrado">Exportar Excel (filtrado)</button>
+      <button class="btn btn-outline-dark btn-sm" id="btnExportSucursales">Exportar Excel (por sucursal)</button>
+    </div>
+  </div>
+</div>
+
+  <div id="resumenFiltro" class="alert alert-secondary d-none"></div>
+  <div id="contenido"></div>
+
+  <!-- =============== Modales =============== -->
+  <!-- Vista previa -->
+  <div class="modal fade" id="vistaPreviaModal" tabindex="-1">
+    <div class="modal-dialog modal-fullscreen">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Vista Previa del Documento</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <h6 id="asesorTitulo"></h6>
+          <div class="table-responsive">
+            <table class="table table-sm table-bordered align-middle" id="tablaPreviewWrap">
+              <colgroup>
+                <col style="width:7%"><col style="width:8%"><col style="width:7%"><col style="width:16%">
+                <col style="width:9%"><col style="width:6%"><col style="width:6%"><col style="width:7%">
+                <col style="width:7%"><col style="width:9%"><col style="width:7%"><col style="width:9%"><col style="width:6%">
+              </colgroup>
+              <thead class="table-dark text-center">
+                <tr>
+                  <th>Crédito</th><th>Producto</th><th>Socio</th><th>Nombre del Socio</th>
+                  <th>Saldo</th><th>Días atraso</th><th>Días sin gestión</th><th>Fase</th>
+                  <th>Venc.</th><th>Realizó Última Gestión</th><th>Fecha Última Gestión</th>
+                  <th>Tipo de Gestión</th><th>Estatus</th>
+                </tr>
+              </thead>
+              <tbody id="tablaPreview"></tbody>
+            </table>
+          </div>
+          <h6 class="mt-3 text-center" id="totalPreview"></h6>
+        </div>
+        <div class="modal-footer gap-2">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+          <button class="btn btn-success" id="btnGenerarExhorto">PDF Exhorto</button>
+          <button class="btn btn-outline-success" id="btnGenerarActa">PDF Acta</button>
+          <button class="btn btn-success" id="btnDocxExhorto">DOCX Exhorto</button>
+          <button class="btn btn-outline-success" id="btnDocxActa">DOCX Acta</button>
+          <button class="btn btn-outline-primary" id="btnAgendaPreview">Crear agenda de estos socios</button>
+          <button class="btn btn-outline-dark" id="btnExportExcel">Exportar a Excel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Crear agenda -->
+  <div class="modal fade" id="agendaModal" tabindex="-1">
+    <div class="modal-dialog modal-fullscreen">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Agenda de seguimiento — <span id="agendaTitulo"></span></h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="alert alert-info mb-3">Completa la <strong>Fecha programada</strong> y <strong>Observaciones</strong> por socio.</div>
+          <div class="row g-2 mb-3">
+            <div class="col-md-6">
+              <label class="form-label">Quién firma (automático)</label>
+              <input id="agendaRealizaRO" class="form-control" readonly />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Fecha de registro (automática)</label>
+              <input id="agendaFechaRegistroRO" class="form-control mono" readonly />
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-sm table-bordered align-middle">
+              <colgroup>
+                <col style="width:3%"><col style="width:9%"><col style="width:8%"><col style="width:15%">
+                <col style="width:11%"><col style="width:13%"><col style="width:10%"><col style="width:9%">
+                <col style="width:6%"><col style="width:6%"><col style="width:7%"><col style="width:14%">
+                <col style="width:9%"><col style="width:12%"><col style="width:10%"><col style="width:16%">
+              </colgroup>
+              <thead class="table-dark text-center">
+                <tr>
+                  <th>#</th><th>Crédito</th><th>Socio</th><th>Nombre</th><th>Sucursal</th><th>Asesor</th>
+                  <th>Producto</th><th>Saldo</th><th>Días atraso</th><th>Días sin gestión</th><th>Fase</th>
+                  <th>Realizó Últ. Gestión</th><th>Fecha Últ. Gestión</th><th>Tipo de Gestión</th>
+                  <th>Fecha programada</th><th>Observaciones</th>
+                </tr>
+              </thead>
+              <tbody id="agendaTbody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="modal-footer gap-2">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button class="btn btn-primary" id="btnGuardarAgenda">Guardar en Agenda</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Agenda guardada -->
+  <div class="modal fade" id="agendaListaModal" tabindex="-1">
+    <div class="modal-dialog modal-fullscreen">
+      <div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title">Agenda guardada</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+          <div class="row g-2 mb-3">
+            <div class="col-md-3"><button class="btn btn-outline-primary w-100" id="btnCargarHoy">CARGAR AGENDA</button></div>
+            <div class="col-md-3"><input id="filtroFechaAgenda" class="form-control" type="date" /></div>
+            <div class="col-md-3">
+              <label class="form-label">Usuario (creador)</label>
+              <input id="filtroUsuarioAgendaInput" class="form-control" placeholder="Ej. ALCNCA" />
+              <div class="form-text">Por defecto usamos el código del “Coordinador que firma”.</div>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-sm table-bordered align-middle">
+              <colgroup>
+                <col style="width:3%"><col style="width:10%"><col style="width:8%"><col style="width:8%">
+                <col style="width:8%"><col style="width:14%"><col style="width:10%"><col style="width:12%">
+                <col style="width:9%"><col style="width:8%"><col style="width:6%"><col style="width:7%"><col style="width:7%">
+                <col style="width:14%"><col style="width:10%"><col style="width:12%"><col style="width:16%">
+              </colgroup>
+              <thead class="table-dark text-center">
+                <tr>
+                  <th>#</th><th>Fecha registro</th><th>Fecha prog.</th><th>Crédito</th><th>Socio</th><th>Nombre</th>
+                  <th>Sucursal</th><th>Asesor</th><th>Producto</th><th>Saldo</th><th>Días atraso</th><th>Días sin gestión</th>
+                  <th>Fase</th><th>Realizó Últ. Gestión</th><th>Fecha Últ. Gestión</th><th>Tipo de Gestión</th><th>Observaciones</th>
+                </tr>
+              </thead>
+              <tbody id="agendaListaTbody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="modal-footer gap-2"><button class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ===================== CONFIG GAS ===================== */
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyw7OfDl9FIkApKEee5Pkt8uX4gXpYvv2eli1BBS0tmQBj6hV34Z_6yuVCpfu4B/exec";
+
+    /* ===================== Utils ===================== */
+    const norm = s => (s ?? "").toString()
+      .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+      .replace(/\s+/g," ").trim().toUpperCase();
+    
+// ===== Helpers: fechas objetivo para "riesgo" =====
+function startOfDay(d){
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+function diffDays(fromDate, toDate){
+  const a = startOfDay(fromDate).getTime();
+  const b = startOfDay(toDate).getTime();
+  return Math.round((b - a) / 86400000); // 24*60*60*1000
+}
+
+// Domingo de la semana actual (si hoy es domingo => hoy)
+function getSundayOfThisWeek(today){
+  const d = startOfDay(today);
+  const dow = d.getDay(); // 0=Dom,1=Lun,...6=Sáb
+  const delta = (7 - dow) % 7; // si dom => 0
+  const out = new Date(d);
+  out.setDate(out.getDate() + delta);
+  return out;
+}
+
+// Último día del mes actual (del "hoy" en curso)
+function getLastDayOfCurrentMonth(today){ const d = startOfDay(today); return new Date(d.getFullYear(), d.getMonth() + 1, 0); // día 0 del siguiente mes = último del actual }
+
+// Regla: "llega a 89" EXACTO en la fecha objetivo
+function llegaA89EnFecha(r, targetDate){ const diasAtr = toNumberSafe(valDiasAtr(r));  if (!isFinite(diasAtr)) return false;  const hoy = mxNow();  const delta = diffDays(hoy, targetDate);  if (delta < 0) return false;  // Si ya está en 89+ hoy, no lo consideramos "riesgo" (ya rebasó o ya llegó)  if (diasAtr >= 89) return false;  return (diasAtr + delta) === 89; }
+    function mxNow(){ return new Date(new Date().toLocaleString("en-US",{ timeZone:"America/Mexico_City" })); }
+    function pad2(n){ return String(n).padStart(2,'0'); }
+    function mxISODate(){ const d=mxNow(); return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; }
+    function mxISODateTime(){ const d=mxNow(); return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}T${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`; }
+    function toNumberSafe(val){ if(val==null) return 0; if(typeof val==="number") return isFinite(val)?val:0; const n=parseFloat(String(val).replace(/[^0-9.-]/g,"")); return isNaN(n)?0:n; }
+    function onlyDigits(s){ return String(s ?? "").replace(/\D/g,""); }
+    function normDateYYYYMMDD(s){
+      if(!s) return "";
+      const t=String(s).trim();
+      let m=t.match(/^(\d{4})[-/](\d{2})[-/](\d{2})$/); if(m) return `${m[1]}-${m[2]}-${m[3]}`;
+      m=t.match(/^(\d{2})-(\d{2})-(\d{4})$/); if(m) return `${m[3]}-${m[2]}-${m[1]}`;
+      m=t.match(/^(\d{2})\/(\d{2})\/(\d{4})$/); if(m) return `${m[3]}-${m[2]}-${m[1]}`;
+      return t.slice(0,10);
+    }
+
+    /* ===================== Datos & Constantes ===================== */
+    const URL_DATOS = "https://raw.githubusercontent.com/alcnca/mapa-semaforo/main/datos.json";
+    const URL_DIRECCION = "https://raw.githubusercontent.com/alcnca/mapa-semaforo/main/Direccion.json";
+
+    // Fuentes para encabezado/pie (raw + jsDelivr)
+    const HEADER_SOURCES = [
+      "https://raw.githubusercontent.com/alcnca/mapa-semaforo/main/encabezado.png",
+      "https://cdn.jsdelivr.net/gh/alcnca/mapa-semaforo/encabezado.png"
+    ];
+    const FOOTER_SOURCES = [
+      "https://raw.githubusercontent.com/alcnca/mapa-semaforo/main/piepagina.png",
+      "https://cdn.jsdelivr.net/gh/alcnca/mapa-semaforo/piepagina.png"
+    ];
+    // Fallbacks opcionales en Base64 (sin prefijo)
+    const BASE64_HEADER_FALLBACK = "";
+    const BASE64_FOOTER_FALLBACK = "";
+
+    let HEADER_DATA=null, FOOTER_DATA=null;
+    let data=[], direcciones=[];
+    let creditosSeleccionados=[], asesorSeleccionado="", sucursalSeleccionada="";
+    let carteraSeleccionada="", mostrarModo="SIN";
+    let guardandoAgenda=false;
+
+    // Mapa y sets para sucursales por coordinador
+    let MAP_COORD_TO_SUC = {};
+    let ALL_SUCURSALES = [];
+
+    // Codigos/Nombre
+    const USER_CODE_TO_NAME = {
+      ADGUHE:"ADAN GUTIERREZ HERNANDEZ",
+      EPMUMU:"EPIFANIO MUÑOZ MUÑOZ",
+      AEJIGA:"ABEL EDUARDO JIMENEZ GASPAR",
+      GUESDE:"GUSTAVO ESTUDILLO DE LA CRUZ",
+      MCRAVI:"MARLEN CECILIA RAMIREZ VILLANUEVA",
+      IVLAAR:"IVANI LAINES ARCOS",
+      GADZCA:"GASPAR DZIB CAMARA",
+      CAMEPE:"CAMERINO MENDOZA PEREZ",
+      INANME:"INES ANDRADE MENDEZ",
+      RJPESA:"ROBERTO JAVIER PEREZ SANTIAGO",
+      AAMODA:"ANDREA ACELA MORGA DÁVILA",
+      ADGUHE:"ADAN GUTIÉRREZ HERNÁNDEZ",
+      ZYSOIB:"ZOIBETH YANELI SORIANO IBAÑEZ",
+      ROVAHU:"ROLANDO VALERIANO HURTADO",
+      FAPERO:"FRANCISCO ANTONIO PÉREZ RODRÍGUEZ",
+      DASADI:"DANIEL SÁNCHEZ DÍAZ",
+      ALCNCA:"ALONSO CANCHE CASTILLO",
+      MISADA:"MARIO ISRAEL SALINAS DAMIÁN",
+      ALJEHE:"ALFONSO JERÓNIMO HERNÁNDEZ",
+      SLPARO:"SANDRA LORENA PACHECO ROBLES"
+    };
+    const NAME_TO_CODE = Object.fromEntries(Object.entries(USER_CODE_TO_NAME).map(([c,n])=>[norm(n), c]));
+
+    const nombresCoordinadores = {
+      DASADI:"DANIEL SÁNCHEZ DÍAZ",
+      FAPERO:"FRANCISCO ANTONIO PÉREZ RODRÍGUEZ",
+      ALCNCA:"ALONSO CANCHE CASTILLO",
+      MCRAVI:"MARLEN CECILIA RAMIREZ VILLANUEVA",
+      INANME:"INES ANDRADE MENDEZ",
+      MISADA:"MARIO ISRAEL SALINAS DAMIAN",
+      OFICINA_CENTRAL:"OFICINA CENTRAL"
+    };
+
+    const oficinaCentral = [
+      { nombre:"ADAN GUTIERREZ HERNANDEZ", puesto:"GERENTE DE RECUPERACIÓN EXTRAJUDICIAL" },
+      { nombre:"ROBERTO JAVIER PÉREZ SANTIAGO", puesto:"COORDINADOR DE RECUPERACIÓN EXTRAJUDICIAL" },
+      { nombre:"SANDRA LORENA PACHECO ROBLES", puesto:"ASISTENTE DE RECUPERACIÓN EXTRAJUDICIAL" },
+      { nombre:"ROLANDO VALERIANO HURTADO", puesto:"ASISTENTE DE RECUPERACIÓN EXTRAJUDICIAL" },
+      { nombre:"ANDREA ACELA MORGA DÁVILA", puesto:"ASISTENTE DE RECUPERACIÓN EXTRAJUDICIAL" },
+      { nombre:"GUSTAVO ESTUDILLO DE LA CRUZ", puesto:"ASISTENTE DE RECUPERACIÓN EXTRAJUDICIAL" },
+      { nombre:"ALFONSO JERÓNIMO HERNÁNDEZ", puesto:"COORDINADOR DE RECUPERACIÓN PREVENTIVA Y ADMINISTRATIVA" },
+      { nombre:"ZOIBETH YANELI SORIANO IBAÑEZ", puesto:"ASISTENTE DE RECUPERACIÓN PREVENTIVA Y ADMINISTRATIVA" },
+      { nombre:"ABEL EDUARDO JIMÉNEZ GASPAR", puesto:"ASISTENTE DE RECUPERACIÓN PREVENTIVA Y ADMINISTRATIVA" }
+    ];
+
+    /* ===== Helpers ===== */
+    async function blobToDataURL(blob){ return await new Promise(res=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.readAsDataURL(blob); }); }
+    async function fetchAsDataURL(url){
+      try{
+        const r=await fetch(url,{cache:"force-cache", mode:"cors"});
+        if(!r.ok) throw 0;
+        const b=await r.blob();
+        return await blobToDataURL(b);
+      }catch{ return null; }
+    }
+    async function loadFirstAvailableImage(sources, base64Fallback=""){
+      for(const u of sources){
+        const d=await fetchAsDataURL(u);
+        if(d) return d;
+      }
+      if(base64Fallback) return "data:image/png;base64,"+base64Fallback;
+      return null;
+    }
+    function parseDiasSinGestion(raw){ if(raw==null) return null; const s=String(raw).toLowerCase().trim(); const mk=new Set(["","sin gestion","sin gestión","s/g","sg","sen gestion","sin-gestion","sin_gestion"]); if(mk.has(s)) return null; const n=parseInt(s.replace(/[^0-9-]/g,""),10); return isNaN(n)?null:n; }
+    const estaSinGestion = raw => parseDiasSinGestion(raw)===null;
+    const valProducto = r => r.producto ?? r.Producto ?? "";
+    const valSocio    = r => r.socio ?? r.Socio ?? r["Num Socio"] ?? r["Numero Socio"] ?? r["Número de Socio"] ?? "";
+    const valFase     = r => r.fase ?? r.Fase ?? r.FASE ?? r["Fase del crédito"] ?? r["Fase del credito"] ?? "";
+    const valDiasAtr  = r => r["Dias de Atraso"] ?? r["Días de atraso"] ?? r["Dias atraso"] ?? r["Días atraso"] ?? "";
+    const valSaldo    = r => toNumberSafe(r["Saldo Total"]);
+    const valCoordCode = r => (r.Coordinador ?? r.coordinador ?? r.COORDINADOR ?? "").toString().trim().toUpperCase();
+    function valRealizoUltimaGestion(r){
+      return r["Realizo Ultima Gestion"] ?? r["Realizó Ultima Gestion"] ?? r["Realizó Última Gestión"] ?? r["Realizo Última Gestión"] ?? r["Realizo_Ultima_Gestion"] ?? r["Realizo"] ?? r["Realizó"] ?? "";
+    }
+    function valFechaUltimaGestion(r){
+      const raw = r["Fecha Ultima Gestion"] ?? r["Fecha Última Gestión"] ?? r["Fecha_Ultima_Gestion"] ?? r["FechaUltimaGestion"] ?? r["UltimaGestionFecha"] ?? "";
+      return normDateYYYYMMDD(raw) || "";
+    }
+    function valTipoGestion(r){
+      return r["Tipo de Gestion"] ?? r["Tipo de Gestión"] ?? r["Tipo_Gestion"] ?? r["TipoGestion"] ?? r["UltimaGestionTipo"] ?? "";
+    }
+    function parseCuotas(raw){
+      if(raw==null) return NaN;
+      const s=String(raw).trim().toLowerCase();
+      const m=s.match(/^\s*(\d+)\s*(?:\/|\s*de\s*)?\s*(\d+)?\s*$/i);
+      if(m) return parseInt(m[1],10);
+      const n=parseInt(s.replace(/[^\d-]/g,""),10);
+      return isNaN(n)?NaN:n;
+    }
+    function getFechaVencimientoRaw(r){
+      return r.Fecha_Vencimiento ?? r["Fecha_Vencimiento"] ?? r["Fecha de Vencimiento"] ?? r["Fecha Vencimiento"] ?? r["Vencimiento"] ?? r["fecha_vencimiento"] ?? "";
+    }
+    function parseVencimientoToDate(r){
+      const iso = normDateYYYYMMDD(getFechaVencimientoRaw(r));
+      if(!iso || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return null;
+      const [Y,M,D] = iso.split("-").map(n=>parseInt(n,10));
+      const d = new Date(`${Y}-${String(M).padStart(2,"0")}-${String(D).padStart(2,"0")}T00:00:00`);
+      return isNaN(d.getTime()) ? null : d;
+    }
+    function venceEnProximos30Dias(dateObj){
+      if(!dateObj) return false;
+      const hoy = mxNow();
+      const hoy00 = new Date(hoy.getFullYear(),hoy.getMonth(),hoy.getDate());
+      const en30 = new Date(hoy00); en30.setDate(en30.getDate()+30);
+      return dateObj.getTime()>=hoy00.getTime() && dateObj.getTime()<=en30.getTime();
+    }
+    function cumplePagosUnicos(r){
+      if(!r) return false;
+      const coord = (r.Coordinacion ?? r.coordinacion ?? r["Coordinación"] ?? "").toString();
+      if (norm(coord)!=="AGRONEGOCIOS") return false;
+      const cuotas = parseCuotas(r.Cuotas ?? r["Cuotas"]);
+      if (isNaN(cuotas) || cuotas!==1) return false;
+      const diasAtr = toNumberSafe(valDiasAtr(r));
+      return diasAtr>=1;
+    }
+    function cumplePagosUnicosPorVencer(r){
+      if(!r) return false;
+      const coord = (r.Coordinacion ?? r.coordinacion ?? r["Coordinación"] ?? "").toString();
+      if (norm(coord)!=="AGRONEGOCIOS") return false;
+      const fv=parseVencimientoToDate(r);
+      return venceEnProximos30Dias(fv);
+    }
+function valConvenioAutoRaw(r){
+  return (
+    r["CONVENIO_ACREINOMINA"] ??
+    r["Convenio Acreinomina"] ??
+    r["CONVENIO ACREINOMINA"] ??
+    r["CONVENIO"] ??
+    r["Convenio"] ??
+    r["Convenio_Descripcion"] ??
+    r["Tipo Entrega"] ??
+    r["TIPO_ENTREGA"] ??
+    r["Tipo_Entrega"] ??
+    ""
+  );
+}
+
+function esCreditoAutomaticoPorProducto(r){
+  const prod = norm(valProducto(r)); // ya quita acentos y pasa a MAYÚSCULAS
+  return prod.includes("CREDITO AUTOMATICO"); // cubre "CRÉDITO AUTOMÁTICO ..."
+}
+
+function cumpleCreditosAutomaticosEnAtraso(r){
+  if(!r) return false;
+  if(!esCreditoAutomaticoPorProducto(r)) return false;
+  const diasAtr = toNumberSafe(valDiasAtr(r));
+  return diasAtr >= 1;
+}
+
+  function valPorcentajePagado(r) {
+  const raw =
+    r["Porcentaje Pagado"] ??
+    r["Porcentaje pagado"] ??
+    r["% PAGADO"] ??
+    r["Porcentaje de pago"] ??
+    r["PorcentajePagado"];
+
+  if (raw == null) return NaN;
+
+  let s = String(raw).trim().replace(/[%\s]/g, "");
+  s = s.replace(",", ".");
+  const n = parseFloat(s);
+  if (isNaN(n)) return NaN;
+
+  // ⚙️ Nueva regla:
+  // - Si el valor está entre 0 y 1, lo dejamos tal cual (ej. 0.85 = 0.85 %)
+  // - Si es >= 1, se asume que ya está expresado como porcentaje
+  return n;
+}
+    const meses=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+    function numEnEsp(n){ const u=["cero","uno","dos","tres","cuatro","cinco","seis","siete","ocho","nueve","diez","once","doce","trece","catorce","quince","dieciséis","diecisiete","dieciocho","diecinueve","veinte","veintiuno","veintidós","veintitrés","veinticuatro","veinticinco","veintiséis","veintisiete","veintiocho","veintinueve"]; if(n<30)return u[n]; const d=["","","","treinta","cuarenta","cincuenta"]; const dec=Math.floor(n/10),uni=n%10; return uni===0? d[dec]:`${d[dec]} y ${u[uni]}`; }
+    function anioEnLetras(y){ const map={2023:"dos mil veintitrés",2024:"dos mil veinticuatro",2025:"dos mil veinticinco",2026:"dos mil veintiséis"}; return map[y]||y.toString(); }
+    function ahoraCDMX(){ return mxNow(); }
+    function fechaEnLetrasFrom(d){ const h=d.getHours(), m=d.getMinutes(), dd=d.getDate(), mm=d.getMonth(), y=d.getFullYear(); return `${numEnEsp(h)} horas con ${m===0?"cero":numEnEsp(m)} minutos del ${numEnEsp(dd)} de ${meses[mm]} de ${anioEnLetras(y)}`; }
+
+    function getDireccionPorSucursal(sucursal){
+      const sNorm=norm(sucursal);
+      let found=direcciones.find(d=>norm(d.Nombre_Sucursal)===sNorm);
+      if(found) return found;
+      found = direcciones.find(d => norm(d.SUCURSAL)===sNorm || norm(d.Sucursal)===sNorm || norm(d.Nombre)===sNorm);
+      if(found) return found;
+      found = direcciones.find(d => norm(d.Nombre_Sucursal||"").includes(sNorm));
+      return found||null;
+    }
+
+
+
+let ultimaBaseFiltrada = [];  // 👈 guardaremos el resultado final del filtro
+
+function renderResumenFiltrado(base){
+  const CURRENCY = new Intl.NumberFormat("es-MX",{style:"currency",currency:"MXN"});
+  const totalCred = base.length;
+  const sumaSaldo = base.reduce((acc,r)=> acc + toNumberSafe(r["Saldo Total"]), 0);
+
+  const sucursales = new Set(base.map(r => r.Sucursal).filter(Boolean));
+  const asesores   = new Set(base.map(r => r.Ejecutivo || "SIN ASESOR"));
+
+  // Sumas por fase
+  let admin=0, extra=0, prev=0;
+  base.forEach(r=>{
+    const f = norm(valFase(r));
+    const s = toNumberSafe(r["Saldo Total"]);
+    if (f.includes("ADMINISTRATIVA")) admin += s;
+    if (f.includes("EXTRAJUDICIAL"))  extra += s;
+    if (f.includes("PREVENTIVA"))     prev  += s;
+  });
+
+  // Pintar
+  const setTxt = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  setTxt("resCreditos", totalCred.toLocaleString("es-MX"));
+  setTxt("resSaldo",    CURRENCY.format(sumaSaldo));
+  setTxt("resSucursales", sucursales.size.toLocaleString("es-MX"));
+  setTxt("resAsesores",   asesores.size.toLocaleString("es-MX"));
+  setTxt("resAdmin", CURRENCY.format(admin));
+  setTxt("resExtra", CURRENCY.format(extra));
+  setTxt("resPrev",  CURRENCY.format(prev));
+}
+
+
+    function getTextosDocumento(tipo, diasMinimos, asesor, sucursal, firmanteCoord){
+      if(tipo==="acta"){
+        const dir=getDireccionPorSucursal(sucursal)||{};
+        const MUNICIPIO=(dir.MUNICIPIO||"________________").toString().trim();
+        const ESTADO=(dir.ESTADO||"________________").toString().trim();
+        const NOMBRE_SUCURSAL=(dir.Nombre_Sucursal||sucursal||"________________").toString().trim();
+        const DIRECCION=(dir.DIRECCION||"________________").toString().trim();
+        const GERENTE=(dir.GERENTE||"__________________________").toString().trim();
+        const inicioLocal=ahoraCDMX(), cierreLocal=new Date(inicioLocal.getTime()+30*60000);
+        const FECHA_INICIO_LETRAS=fechaEnLetrasFrom(inicioLocal);
+        const FECHA_CIERRE_LETRAS=fechaEnLetrasFrom(cierreLocal);
+
+        const intro =
+`En el Municipio de ${MUNICIPIO}, ${ESTADO}, en la sucursal de ${NOMBRE_SUCURSAL}, siendo las ${FECHA_INICIO_LETRAS}, estando presentes en las instalaciones de la COOPERATIVA ACREIMEX S.C. de A.P. de R.L. de C.V., con domicilio en ${DIRECCION}, los ciudadanos ${firmanteCoord}, que ostenta el puesto de Coordinador de Recuperación y ${asesor} con el puesto de Asesor de Créditos y Recuperación Individual. Estando presentes en su carácter de testigos los ciudadanos ${GERENTE} que ostenta el puesto de Gerente de Sucursal y ADAN GUTIERREZ HERNANDEZ con el puesto de Gerente de Recuperación Extrajudicial, a quienes les constan los hechos que dan origen al levantamiento de la presente acta.
+
+A continuación, el ciudadano ${firmanteCoord}, narra a los comparecientes los hechos y las razones por las cuales se procede a levantar la presente acta administrativa que consiste en lo siguiente:
+
+En términos de lo dispuesto en el Manual de Gestión de Recuperación de Cartera de la Cooperativa, particularmente en lo relativo a las formalidades para desempeñar las gestiones de cobro (numerales 1.4, 1.5, 2 y 3.14), se establece la obligación del Asesor de Crédito y Recuperación de:
+
+• Dar seguimiento diario y permanente a la cartera asignada a partir de cero días de mora.
+• Evidenciar y documentar todas las gestiones de recuperación realizadas en sus diferentes etapas, digitalizándolas en el sistema informático.
+• Mantener actualizada la información del socio acreditado, avales o garantes, a fin de facilitar su localización.
+• Utilizar los mecanismos autorizados para la gestión de cobranza (llamadas telefónicas, visitas, mensajería SMS o WhatsApp, notificaciones escritas, etc.), siempre con respeto y dentro del horario permitido.
+• Registrar en el sistema informático las negociaciones, acuerdos o compromisos de pago establecidos con el socio, así como anexar físicamente al expediente los documentos correspondientes, cuando aplique.`;
+
+        const hechos = `Hechos: Se hace constar que el C. ${asesor}, en su calidad de Asesor de Crédito y Recuperación, omitió realizar la gestión de seguimiento a los créditos señalados en la tabla anterior, mismos que presentan un atraso considerable hasta la fecha de la presente acta.
+
+De la revisión efectuada al sistema informático, se constató lo siguiente:
+
+• No existen registros de llamadas, visitas domiciliarias, mensajes, ni cartas de cobranza en los plazos correspondientes, y si bien lo existieran no se encuetran actualizadad
+• No se documentaron convenios, acuerdos o compromisos de pago con el socio deudor ni con sus avales.
+• Se incumplió con la obligación de prevenir el incremento del atraso, al no dar seguimiento oportuno desde los primeros días de mora.`;
+        
+
+	const faltas = `Faltas y omisiones detectadas:
+La conducta descrita constituye un incumplimiento a lo dispuesto en los numerales:
+
+1.4 Formalidades para desempeñar las gestiones de cobro, al no registrar ni evidenciar convenios, acuerdos o contactos con el socio.
+1.5 La recuperación es parte integral del ciclo crediticio, al no aplicar las políticas de prevención y recuperación administrativa.
+2. Políticas generales, al no generar ni respaldar las evidencias mínimas de gestión de recuperación (carta invitación, requerimientos, llamadas, mensajería, etc.).
+3.14 Responsabilidades del Asesor de Crédito y Recuperación, al no dar seguimiento diario ni documentar en el sistema las gestiones correspondientes.`;
+
+        const determinacion = `Determinación:
+Por lo anterior, se procede a formalizar la presente acta como parte del procedimiento tendiente para
+la aplicación de la medida disciplinaria correspondiente a fin de dejar constancia de las faltas y
+omisiones cometidas por el Asesor de Crédito y Recuperación, mismas que impactan negativamente
+en los indicadores de recuperación de cartera de la sucursal.
+Acto posterior, se le concede al socio colaborador el derecho del uso de la palabra con relación a los
+hechos que anteceden, manifestando:`;
+
+        const cierre = `Leída que fue la presente, se ratifica en todas y cada una de sus partes por los comparecientes.
+Se concluye la presente acta siendo las ${FECHA_CIERRE_LETRAS}, firmándose al calce y al margen para constancia.`;
+
+        return { titulo:"ACTA ADMINISTRATIVA", subtitulo:"Se levanta la presente ACTA ADMINISTRATIVA",
+                 intro, hechos, faltas, determinacion, cierre, gerenteSucursal: GERENTE };
+      }
+
+// EXHORTO
+      const subtitulo = `Motivo: Tener créditos en su cartera con más de ${diasMinimos} días sin gestión`;
+      const intro = `Me permito informarle que, derivado de la revisión del seguimiento a los créditos con más de 30 días de atraso de la cartera que usted administra, se han detectado créditos que carecen de gestión y seguimiento en el sistema, por el tiempo indicando en el motivo de la presente y que a continuación se enlistan:`;
+      const postTabla = `Derivado de esta situación se detecta su falta de responsabilidad, compromiso, esmero y dedicación en la ejecución de sus responsabilidades; por dicha omisión SE LEVANTA EL PRESENTE EXHORTO para su conocimiento y cumplimiento de dichas actividades, ya que nos ayuda a llevar un sano control de la cartera, manteniendo el menor porcentaje de mora y cuidando el patrimonio de la cooperativa. Para el caso de nueva omisión se tomarán las medidas necesarias de manera inmediata.`;
+      return { titulo:"EXHORTO", subtitulo, intro, postTabla };
+    }
+
+    /* ====== Encabezado/Pie ====== */
+    async function ensureHeaderFooterLoaded(){
+      if(HEADER_DATA && FOOTER_DATA) return true;
+      try{
+        [HEADER_DATA, FOOTER_DATA] = await Promise.all([
+          loadFirstAvailableImage(HEADER_SOURCES, BASE64_HEADER_FALLBACK),
+          loadFirstAvailableImage(FOOTER_SOURCES, BASE64_FOOTER_FALLBACK)
+        ]);
+        return !!(HEADER_DATA && FOOTER_DATA);
+      }catch(_){ return false; }
+    }
+    function base64ToUint8Array(base64) {
+      const bstr = atob(base64);
+      const len = bstr.length;
+      const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) bytes[i] = bstr.charCodeAt(i);
+      return bytes;
+    }
+
+    /* ====== DOCX helpers ====== */
+    async function ensureDocxLoaded(){
+      if (window.docx) return true;
+      // Ya viene por <script defer>, pero si CSP bloquea, intentamos carga dinámica:
+      try{
+        await new Promise((resolve, reject)=>{
+          const s=document.createElement("script");
+          s.src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.min.js";
+          s.onload=()=>resolve();
+          s.onerror=()=>reject(new Error("No se pudo cargar docx"));
+          document.head.appendChild(s);
+        });
+        return !!window.docx;
+      }catch(_){ return false; }
+    }
+
+    async function capturePreviewTableAsPNG(){
+      const wrap = document.getElementById("tablaPreviewWrap");
+      if(!wrap){ return null; }
+      // Forzar un ancho razonable para que la imagen quepa en Word (~600px)
+      const prevWidth = wrap.style.width;
+      wrap.style.width = "100%";
+      const canvas = await html2canvas(wrap, { scale: 2, backgroundColor:"#ffffff" });
+      wrap.style.width = prevWidth;
+      return {
+        dataUrl: canvas.toDataURL("image/png"),
+        widthPx: canvas.width,
+        heightPx: canvas.height
+      };
+    }
+
+    /* ===================== INICIO ===================== */
+async function obtenerFechaActualizacionGitHub() {
+  try {
+    // Se pide a GitHub el último commit del archivo datos.json
+    const resp = await fetch(
+      "https://api.github.com/repos/alcnca/mapa-semaforo/commits?path=datos.json&page=1&per_page=1",
+      { cache: "no-store" }
+    );
+
+    // Si GitHub no responde bien → error
+    if (!resp.ok) throw new Error("No se pudo obtener el commit");
+
+    // Convertimos la respuesta a JSON
+    const json = await resp.json();
+
+    // Obtenemos la fecha del commit más reciente
+    const fecha = json?.[0]?.commit?.committer?.date;
+
+    if (!fecha) return null;
+
+    // Convertimos la fecha a formato de México
+    const d = new Date(fecha);
+
+    return d.toLocaleString("es-MX", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZone: "America/Mexico_City"
+    });
+
+  } catch (e) {
+    console.warn("No se pudo obtener la fecha por API GitHub:", e);
+    return null;
+  }
+}
+
+    window.addEventListener("DOMContentLoaded", async () => {
+      try{
+        const [resDatos, resDir] = await Promise.all([
+          fetch(URL_DATOS,{cache:"no-store"}), fetch(URL_DIRECCION,{cache:"no-store"})
+        ]);
+// NUEVO: obtener fecha real de última actualización
+const fechaAct = await obtenerFechaActualizacionGitHub();
+const infoEl = document.getElementById("infoActualizacion");
+
+if (infoEl) {
+  if (fechaAct) {
+    infoEl.textContent = `Última actualización de datos: ${fechaAct}`;
+  } else {
+    infoEl.textContent = "Última actualización: No disponible";
+  }
+}
+
+
+		  const lastMod = resDatos.headers.get("last-modified");
+    if (lastMod) {
+      const dt = new Date(lastMod);
+      const formatted = dt.toLocaleString("es-MX", {
+        day:    "2-digit",
+        month:  "2-digit",
+        year:   "numeric",
+        hour:   "2-digit",
+        minute: "2-digit",
+        timeZone: "America/Mexico_City"
+      });
+      const infoEl = document.getElementById("infoActualizacion");
+      if (infoEl) {
+        infoEl.textContent = `Última actualización de datos: ${formatted}`;
+      }
+    }
+        data = await resDatos.json();
+        const dirJson = await resDir.json();
+        direcciones = Array.isArray(dirJson) ? dirJson
+                    : (dirJson && typeof dirJson==="object" ? Object.values(dirJson) : []);
+        // mapa coord->sucursales y todas
+        MAP_COORD_TO_SUC = {};
+        const allSucSet = new Set();
+        data.forEach(r=>{
+          const code = valCoordCode(r);
+          const suc  = (r.Sucursal ?? "").toString().trim();
+          if (suc) allSucSet.add(suc);
+          if (!code || !suc) return;
+          (MAP_COORD_TO_SUC[code] ||= new Set()).add(suc);
+        });
+        ALL_SUCURSALES = Array.from(allSucSet).sort((a,b)=>a.localeCompare(b,"es"));
+      }catch(e){
+        console.warn("No se pudo cargar datos externos:", e);
+      }
+
+      // Poblar coordinadores
+      const selCoord = document.getElementById("coordinadorSelect");
+      selCoord.innerHTML = '<option value="">-- Selecciona --</option>' +
+        Object.entries(nombresCoordinadores).map(([c,n])=>`<option value="${c}">${n}</option>`).join("");
+
+      const selSuc   = document.getElementById("sucursalSelect");
+      const selCart  = document.getElementById("carteraSelect");
+      const selShow  = document.getElementById("mostrarSelect");
+      const btnAp    = document.getElementById("btnAplicar");
+      const subDiv   = document.getElementById("subFirmanteDiv");
+      const subSel   = document.getElementById("subFirmanteSelect");
+      const diasDiv  = document.getElementById("diasMinimosDiv");
+
+      function resetAfterCoord(){
+        selSuc.disabled = true; selSuc.innerHTML = '<option value="">-- Selecciona coordinador --</option>';
+        selCart.disabled = true; selCart.value="";
+        selShow.disabled = true; selShow.value="SIN";
+        diasDiv.style.display = "none";
+        btnAp.disabled = true;
+      }
+
+      // ====== EVENTOS DE FILTROS (AUTO-APLICAR) ======
+      function autoAplicarSiListo(){
+        // aplica cuando coordinador está seleccionado y cartera/mostrar configurados
+        const ok = selCoord.value && selCart.value && selShow.value;
+        btnAp.disabled = !ok;
+        if(ok) cargarDatos();
+      }
+
+      selCoord.addEventListener("change", () => {
+        const coordVal = selCoord.value;
+        resetAfterCoord();
+
+        subSel.innerHTML = "";
+        subDiv.style.display = "none";
+        if (!coordVal) return;
+
+        if (coordVal === "OFICINA_CENTRAL") {
+          subDiv.style.display = "block";
+          oficinaCentral.forEach(p=>{
+            subSel.innerHTML += `<option value="${p.nombre}">${p.nombre} (${p.puesto})</option>`;
+          });
+        } else if (coordVal === "ALCNCA") {
+          subDiv.style.display = "block";
+          subSel.innerHTML += `<option value="ALCNCA">ALONSO CANCHE CASTILLO (Coordinador)</option>`;
+          subSel.innerHTML += `<option value="IVLAAR">IVANI LAINES ARCOS (Gestor Regional Zona Maya)</option>`;
+        } else if (coordVal === "MISADA") {
+          subDiv.style.display = "block";
+          subSel.innerHTML += `<option value="MISADA">MARIO ISRAEL SALINAS DAMIÁN (Coordinador)</option>`;
+          subSel.innerHTML += `<option value="EPMUMU">EPIFANIO MUÑOZ MUÑOZ (Gestor Regional Zona Golfo)</option>`;
+        }
+
+        // Sucursales para el coordinador (o todas)
+        let sucursales = [];
+        if (coordVal === "OFICINA_CENTRAL") {
+          sucursales = ALL_SUCURSALES.slice();
+        } else {
+          sucursales = Array.from(MAP_COORD_TO_SUC[coordVal] || []);
+          sucursales.sort((a,b)=>a.localeCompare(b,"es"));
+        }
+        selSuc.innerHTML = '<option value="TODAS">Todas</option>' +
+          sucursales.map(s=>`<option value="${s}">${s}</option>`).join("");
+        selSuc.disabled = false;
+
+        // Por defecto "TODAS" => habilitar Cartera
+        selSuc.value = "TODAS";
+        selCart.disabled = false;
+
+        // Habilitar mostrar cuando ya haya cartera
+        selShow.disabled = !selCart.value;
+
+        autoAplicarSiListo();
+      });
+
+      selSuc.addEventListener("change", () => {
+        selCart.disabled = false;
+        autoAplicarSiListo();
+      });
+
+      selCart.addEventListener("change", () => {
+        carteraSeleccionada = selCart.value;
+        selShow.disabled = !carteraSeleccionada;
+        autoAplicarSiListo();
+      });
+
+      selShow.addEventListener("change", () => {
+        mostrarModo = selShow.value;
+        document.getElementById("diasMinimosDiv").style.display = (mostrarModo === "TODOS") ? "block" : "none";
+        autoAplicarSiListo();
+      });
+
+      document.getElementById("diasMinimos").addEventListener("input", () => {
+        if (selShow.value === "TODOS") autoAplicarSiListo();
+      });
+
+      document.getElementById("btnAplicar").addEventListener("click", cargarDatos);
+
+      // Abrir agenda guardada
+      document.getElementById("btnAbrirAgenda").addEventListener("click", () => {
+        document.getElementById("filtroFechaAgenda").value = mxISODate();
+        const defaultUser = getUsuarioCreadorCode();
+        document.getElementById("filtroUsuarioAgendaInput").value = defaultUser || "";
+        document.getElementById("agendaListaTbody").innerHTML =
+          `<tr><td colspan="17" class="text-center text-muted">Ingresa un usuario y pulsa "CARGAR AGENDA".</td></tr>`;
+        new bootstrap.Modal(document.getElementById("agendaListaModal")).show();
+      });
+
+      document.getElementById("btnCargarHoy").addEventListener("click", cargarAgendasDesdeSheets);
+      document.getElementById("filtroFechaAgenda").addEventListener("change", cargarAgendasDesdeSheets);
+      document.getElementById("filtroUsuarioAgendaInput").addEventListener("keydown", (ev)=>{ if(ev.key==="Enter") cargarAgendasDesdeSheets(); });
+    });
+
+    /* ===================== Carga base y render ===================== */
+    function creditosBaseFiltradosPorCartera(base){
+      return base.filter(d=>{
+        const f = norm(valFase(d));
+        if(carteraSeleccionada==="ADMIN") return f.includes("ADMINISTRATIVA");
+        if(carteraSeleccionada==="EXTRA") return f.includes("EXTRAJUDICIAL");
+        if(carteraSeleccionada==="TODAS") return true;
+        return false;
+      });
+    }
+    function sumarPorFaseSucursal(base, sucursal){
+      let admin=0, extra=0, preventiva=0;
+      base.forEach(r=>{
+        if ((r.Sucursal||"")!==sucursal) return;
+        const fase = norm(valFase(r));
+        const saldo = toNumberSafe(r["Saldo Total"]);
+        if (fase.includes("ADMINISTRATIVA")) admin += saldo;
+        if (fase.includes("EXTRAJUDICIAL"))  extra += saldo;
+        if (fase.includes("PREVENTIVA"))     preventiva += saldo;
+      });
+      return { admin, extra, preventiva };
+    }
+
+
+
+
+function renderTarjetasPorSucursal(base, sucursal){
+  // 1) Totales por fase para el encabezado de la sucursal
+  const { admin, extra, preventiva } = sumarPorFaseSucursal(base, sucursal);
+  const totalSucursal = base
+    .filter(r => r.Sucursal === sucursal)
+    .reduce((acc, r) => acc + toNumberSafe(r["Saldo Total"]), 0);
+
+  // 2) Agrupar créditos por asesor
+  const porAsesor = {};
+  base
+    .filter(r => r.Sucursal === sucursal)
+    .forEach(r => {
+      const ejecutivo = r.Ejecutivo || "SIN ASESOR";
+      (porAsesor[ejecutivo] ||= []).push(r);
+    });
+
+  const cont = document.getElementById("contenido");
+  cont.classList.add("compact-list");
+
+  // 🔹 Encabezado sucursal
+  const h4 = document.createElement("div");
+  h4.className = "mt-1 mb-1";
+  h4.innerHTML = `
+    <div class="d-flex align-items-center flex-wrap gap-1 text-muted"
+         style="font-size:0.70rem; opacity:1.0;">
+      <span class="fw-semibold">Sucursal: ${sucursal}</span>
+      <span>Administrativa: ${admin.toLocaleString("es-MX",{style:"currency",currency:"MXN"})}</span>
+      <span>Extrajudicial: ${extra.toLocaleString("es-MX",{style:"currency",currency:"MXN"})}</span>
+      <span>Preventiva: ${preventiva.toLocaleString("es-MX",{style:"currency",currency:"MXN"})}</span>
+      <span>Total: ${totalSucursal.toLocaleString("es-MX",{style:"currency",currency:"MXN"})}</span>
+    </div>
+  `;
+  cont.appendChild(h4);
+
+  let nombresAsesores = Object.keys(porAsesor);
+  if (nombresAsesores.length === 0){
+    const alert = document.createElement("div");
+    alert.className = "alert alert-info";
+    alert.textContent = "Sin registros con los criterios seleccionados en esta sucursal.";
+    cont.appendChild(alert);
+    return;
+  }
+
+  // Ordenar asesores por monto total DESC
+  nombresAsesores.sort((a, b) => {
+    const ta = (porAsesor[a] || []).reduce((acc, r) => acc + toNumberSafe(r["Saldo Total"]), 0);
+    const tb = (porAsesor[b] || []).reduce((acc, r) => acc + toNumberSafe(r["Saldo Total"]), 0);
+    return tb - ta;
+  });
+
+  nombresAsesores.forEach((asesor, idx) => {
+    const listaOriginal = porAsesor[asesor];
+
+    // 🔹 NUEVO: ordenar créditos de ese asesor por días de atraso DESC
+    const lista = [...listaOriginal].sort((a, b) => {
+      const da = toNumberSafe(valDiasAtr(a));
+      const db = toNumberSafe(valDiasAtr(b));
+      return db - da; // mayor → menor
+    });
+
+    const faseSums = lista.reduce((acc, r) => {
+      const fase = norm(valFase(r));
+      const saldo = toNumberSafe(r["Saldo Total"]);
+      if (fase.includes("ADMINISTRATIVA")) acc.admin += saldo;
+      if (fase.includes("EXTRAJUDICIAL"))  acc.extra += saldo;
+      if (fase.includes("PREVENTIVA"))     acc.preventiva += saldo;
+      return acc;
+    }, { admin: 0, extra: 0, preventiva: 0 });
+
+    const aTotal = lista.reduce((acc, r) => acc + toNumberSafe(r["Saldo Total"]), 0);
+    const totalFmt = aTotal.toLocaleString("es-MX",{style:"currency",currency:"MXN"});
+
+    const collapseId = `cred-${sucursal.replace(/\s+/g, '_')}-${idx}`;
+
+    const filasCred = lista.map(c => {
+      const saldo = valSaldo(c).toLocaleString("es-MX",{style:"currency",currency:"MXN"});
+      const diasAtr = valDiasAtr(c);
+      const dsgParsed = parseDiasSinGestion(c["Dias sin Gestion"]);
+      const dsgDisplay = (dsgParsed === null) ? "SIN GESTIÓN" : dsgParsed;
+
+      const p = valPorcentajePagado(c);
+      const pDisplay = isNaN(p) ? "" : `${p.toFixed(2)}%`;
+
+      return `
+        <tr>
+          <td>${c.Linea ?? ""}</td>
+          <td>${valSocio(c)}</td>
+          <td>${c.Nombre ?? ""}</td>
+          <td class="text-end">${saldo}</td>
+          <td class="text-center">${diasAtr}</td>
+          <td class="text-center">${dsgDisplay}</td>
+          <td class="text-center">${pDisplay}</td>
+        </tr>`;
+    }).join("");
+
+    const card = document.createElement("div");
+    card.className = "card card-compact";
+
+    card.innerHTML = `
+      <div class="card-header">
+        <div class="header-line"
+             data-bs-toggle="collapse"
+             data-bs-target="#${collapseId}"
+             style="cursor:pointer;">
+          <div class="asesor text-truncate">
+            ${asesor}
+          </div>
+          <div class="meta">
+            <span class="chip blue">
+              Admin: ${faseSums.admin.toLocaleString("es-MX",{style:"currency",currency:"MXN"})}
+            </span>
+            <span class="chip blue">
+              Extra: ${faseSums.extra.toLocaleString("es-MX",{style:"currency",currency:"MXN"})}
+            </span>
+            <span class="chip blue">
+              Prev: ${faseSums.preventiva.toLocaleString("es-MX",{style:"currency",currency:"MXN"})}
+            </span>
+            <span class="chip dark">
+              Total: ${totalFmt}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-body">
+        <div class="kpi"><strong>${lista.length}</strong> créditos</div>
+        <div class="kpi">Suma: <strong>${totalFmt}</strong></div>
+        <div style="margin-left:auto"></div>
+        <button class="btn btn-warning btn-sm btn-vista-previa">Vista Previa</button>
+      </div>
+
+      <div id="${collapseId}" class="collapse">
+        <div class="table-responsive border-top">
+          <table class="table table-sm table-bordered mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Crédito</th>
+                <th>Socio</th>
+                <th>Nombre</th>
+                <th>Saldo</th>
+                <th>Días atr.</th>
+                <th>Días s/gestión</th>
+                <th>% pagado</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${filasCred}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+
+    const btnPrev = card.querySelector(".btn-vista-previa");
+    if (btnPrev) {
+      btnPrev.onclick = () => {
+        sucursalSeleccionada = sucursal;
+        // 👇 también la vista previa usa la lista ya ordenada
+        mostrarVistaPrevia(asesor, lista);
+      };
+    }
+
+    cont.appendChild(card);
+  });
+}
+
+
+
+   
+  
+    async function cargarDatos(){
+      const coordSel = document.getElementById("coordinadorSelect").value;
+      if(!coordSel){ alert("Selecciona el coordinador."); return; }
+
+      const selSucEl = document.getElementById("sucursalSelect");
+      const sucSel = (selSucEl.value)||"TODAS";
+      const diasFiltro = parseInt(document.getElementById("diasMinimos").value)||30;
+
+      // 1) Por coordinador (código)
+      let base = (coordSel==="OFICINA_CENTRAL") ? data.slice()
+               : data.filter(r => valCoordCode(r) === coordSel);
+
+      // 2) Por sucursal
+      if (sucSel!=="TODAS") base = base.filter(r => (r.Sucursal||"") === sucSel);
+
+      // 3) Por cartera (fase)
+      carteraSeleccionada = document.getElementById("carteraSelect").value;
+      base = creditosBaseFiltradosPorCartera(base);
+
+ // 4) ¿Qué mostrar?
+mostrarModo = document.getElementById("mostrarSelect").value;
+
+if (mostrarModo === "SIN") {
+  base = base.filter(d => estaSinGestion(d["Dias sin Gestion"]));
+
+} else if (mostrarModo === "PAGOS_UNICOS") {
+  base = base.filter(cumplePagosUnicos);
+
+} else if (mostrarModo === "PAGOS_UNICOS_POR_VENCER") {
+  base = base.filter(cumplePagosUnicosPorVencer);
+
+} else if (mostrarModo === "MAYOR_40K") {
+  base = base.filter(r => valSaldo(r) >= 40000);
+
+} else if (mostrarModo === "PORC_PAGO_BAJO") {
+  base = base.filter(r => {
+    const p = valPorcentajePagado(r);
+    return !isNaN(p) && p <= 10.0;
+  });
+
+} else if (mostrarModo === "AUTO_ATRASO") {
+  base = base.filter(cumpleCreditosAutomaticosEnAtraso);
+
+} else if (mostrarModo === "RIESGO_SEMANA") {
+  const hoy = mxNow();
+  const domingo = getSundayOfThisWeek(hoy);
+  base = base.filter(r => llegaA89EnFecha(r, domingo));
+
+} else if (mostrarModo === "RIESGO_FIN_MES") {
+  const hoy = mxNow();
+  const finMes = getLastDayOfCurrentMonth(hoy);
+  base = base.filter(r => llegaA89EnFecha(r, finMes));
+
+} else { // TODOS
+
+} else { // TODOS
+  base = base.filter(d => {
+    const dias = parseDiasSinGestion(d["Dias sin Gestion"]);
+    const diasFiltro = parseInt(document.getElementById("diasMinimos").value) || 30;
+    return (dias === null) || (typeof dias === "number" && dias >= diasFiltro);
+  });
+}
+
+
+// Guarda el resultado y pinta el resumen
+ultimaBaseFiltrada = base.slice();
+renderResumenFiltrado(ultimaBaseFiltrada);
+
+
+
+      // Render
+      const cont=document.getElementById("contenido"); cont.innerHTML="";
+      const sucursales=[...new Set(base.map(d=>d.Sucursal))].filter(Boolean).sort((a,b)=>a.localeCompare(b,'es'));
+      if(!sucursales.length){
+        cont.innerHTML=`<div class="alert alert-info">No se encontraron créditos con los criterios seleccionados.</div>`; return;
+      }
+      for(const s of sucursales){ renderTarjetasPorSucursal(base, s); }
+    }
+
+    /* ===================== Vista previa + Agenda ===================== */
+    function getResponsableActual(){
+      const coordVal = document.getElementById("coordinadorSelect").value;
+      if (!coordVal) return "";
+      if (coordVal === "OFICINA_CENTRAL") {
+        const sub = document.getElementById("subFirmanteSelect").value || "";
+        return sub.trim();
+      }
+      return (nombresCoordinadores[coordVal] || "").trim();
+    }
+    function getUsuarioCreadorCode(){
+      const coordVal = document.getElementById("coordinadorSelect").value;
+      if (coordVal && coordVal !== "OFICINA_CENTRAL") return coordVal;
+      const sub = (document.getElementById("subFirmanteSelect").value || "").trim();
+      if (!sub) return "";
+      const code = NAME_TO_CODE[norm(sub)] || sub;
+      return code || "";
+    }
+
+    function mostrarVistaPrevia(asesor, creditos){
+      asesorSeleccionado=asesor; creditosSeleccionados=creditos;
+      const telEjecutivo =
+        (creditos.find(c=>c["Telefono Ejecutivo"])?.["Telefono Ejecutivo"]) ??
+        (creditos.find(c=>c.Telefono_Ejecutivo)?.Telefono_Ejecutivo) ??
+        (creditos.find(c=>c.TelefonoEjecutivo)?.TelefonoEjecutivo) ?? "";
+
+      document.getElementById("asesorTitulo").innerHTML =
+        `Asesor: <strong>${asesor}</strong> | Tel: ${telEjecutivo || "s/n"} | Sucursal: ${sucursalSeleccionada}`;
+
+      const tbody=document.getElementById("tablaPreview"); tbody.innerHTML="";
+      let total=0;
+      creditos.forEach(c=>{
+        const saldo=valSaldo(c); total+=saldo;
+        const dsgParsed=parseDiasSinGestion(c["Dias sin Gestion"]); const dsgDisplay=(dsgParsed===null)?"SIN GESTIÓN":dsgParsed;
+        const fvISO = normDateYYYYMMDD(getFechaVencimientoRaw(c)) || "";
+        const realizoUG=valRealizoUltimaGestion(c), fechaUG=valFechaUltimaGestion(c), tipoUG=valTipoGestion(c);
+
+        tbody.innerHTML += `
+          <tr>
+            <td>${c.Linea ?? ""}</td>
+            <td>${valProducto(c)}</td>
+            <td>${valSocio(c)}</td>
+            <td>${c.Nombre ?? ""}</td>
+            <td class="text-end">${saldo.toLocaleString("es-MX",{style:"currency",currency:"MXN"})}</td>
+            <td class="text-center">${valDiasAtr(c)}</td>
+            <td class="text-center">${dsgDisplay}</td>
+            <td class="text-center">${valFase(c)}</td>
+            <td class="text-center">${fvISO}</td>
+            <td>${realizoUG || ""}</td>
+            <td class="text-center">${fechaUG || ""}</td>
+            <td>${tipoUG || ""}</td>
+            <td class="text-center estatus-cell"></td>
+          </tr>`;
+      });
+      document.getElementById("totalPreview").textContent = `TOTAL: ${total.toLocaleString("es-MX",{style:"currency",currency:"MXN"})}`;
+
+      const btnExhorto=document.getElementById("btnGenerarExhorto");
+      const btnActa=document.getElementById("btnGenerarActa");
+      const btnDocxExhorto=document.getElementById("btnDocxExhorto");
+      const btnDocxActa=document.getElementById("btnDocxActa");
+
+      btnExhorto.onclick=async()=>{ btnExhorto.disabled=true; try{ await generarPDF(asesorSeleccionado, sucursalSeleccionada, creditosSeleccionados, "exhorto"); } finally{ btnExhorto.disabled=false; } };
+      btnActa.onclick=async()=>{ btnActa.disabled=true; try{ await generarPDF(asesorSeleccionado, sucursalSeleccionada, creditosSeleccionados, "acta"); } finally{ btnActa.disabled=false; } };
+      btnDocxExhorto.onclick=async()=>{ btnDocxExhorto.disabled=true; try{ await generarDOCX(asesorSeleccionado, sucursalSeleccionada, creditosSeleccionados, "exhorto"); } finally{ btnDocxExhorto.disabled=false; } };
+      btnDocxActa.onclick=async()=>{ btnDocxActa.disabled=true; try{ await generarDOCX(asesorSeleccionado, sucursalSeleccionada, creditosSeleccionados, "acta"); } finally{ btnDocxActa.disabled=false; } };
+
+      document.getElementById("btnAgendaPreview").onclick = () => {
+        const responsable = getResponsableActual();
+        if (!responsable) { alert("Selecciona el 'Coordinador que firma' (o un firmante de Oficina Central)."); return; }
+        document.getElementById("agendaTitulo").textContent = `${sucursalSeleccionada} — ${asesorSeleccionado}`;
+        document.getElementById("agendaRealizaRO").value = responsable;
+        document.getElementById("agendaFechaRegistroRO").value = mxISODateTime();
+        new bootstrap.Modal(document.getElementById("agendaModal")).show();
+        buildItemsFromPreview();
+      };
+
+      document.getElementById("btnExportExcel").onclick = exportarPreviewAExcel;
+
+      new bootstrap.Modal(document.getElementById("vistaPreviaModal")).show();
+      marcarAgendadosEnPreview();
+    }
+
+    /* ===================== Excel, DOCX, PDF y Agenda ===================== */
+function exportarFiltradoAExcel(){
+  if (!ultimaBaseFiltrada.length) { alert("No hay datos filtrados para exportar."); return; }
+  const headers = ["Sucursal","Asesor","Crédito","Producto","Socio","Nombre","Saldo","Días atraso","Días sin gestión","Fase","Venc.","Realizó Últ. Gestión","Fecha Últ. Gestión","Tipo de Gestión"];
+  const rows = ultimaBaseFiltrada.map(c=>[
+    c.Sucursal || "",
+    c.Ejecutivo || "",
+    c.Linea || "",
+    valProducto(c),
+    valSocio(c),
+    c.Nombre || "",
+    Number(toNumberSafe(c["Saldo Total"])),
+    Number(toNumberSafe(valDiasAtr(c))),
+    (()=>{ const dsg=parseDiasSinGestion(c["Dias sin Gestion"]); return dsg===null ? "SIN GESTIÓN" : Number(dsg); })(),
+    valFase(c),
+    normDateYYYYMMDD(getFechaVencimientoRaw(c)) || "",
+    valRealizoUltimaGestion(c) || "",
+    valFechaUltimaGestion(c) || "",
+    valTipoGestion(c) || ""
+  ]);
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+  ws['!cols'] = [{wch:14},{wch:18},{wch:10},{wch:12},{wch:10},{wch:26},{wch:14},{wch:12},{wch:14},{wch:15},{wch:10},{wch:18},{wch:14},{wch:18}];
+
+  // Formatos numéricos
+  const range = XLSX.utils.decode_range(ws['!ref']);
+  for (let r=1; r<=range.e.r; r++){
+    const cSaldo = XLSX.utils.encode_cell({r, c:6}); if(ws[cSaldo]) ws[cSaldo].t='n', ws[cSaldo].z='"$"#,##0.00';
+    const cAtr   = XLSX.utils.encode_cell({r, c:7}); if(ws[cAtr]&&typeof ws[cAtr].v==='number') ws[cAtr].t='n';
+    const cSin   = XLSX.utils.encode_cell({r, c:8}); if(ws[cSin]&&typeof ws[cSin].v==='number') ws[cSin].t='n';
+  }
+
+  XLSX.utils.book_append_sheet(wb, ws, "Filtrado");
+  XLSX.writeFile(wb, `Concentrado_Filtrado_${mxISODate()}.xlsx`);
+}
+
+function exportarFiltradoPorSucursal(){
+  if (!ultimaBaseFiltrada.length) { alert("No hay datos filtrados para exportar."); return; }
+  const wb = XLSX.utils.book_new();
+  const headers = ["Asesor","Crédito","Producto","Socio","Nombre","Saldo","Días atraso","Días sin gestión","Fase","Venc.","Realizó Últ. Gestión","Fecha Últ. Gestión","Tipo de Gestión"];
+
+  const porSuc = {};
+  ultimaBaseFiltrada.forEach(r => (porSuc[r.Sucursal||"SIN_SUCURSAL"] ||= []).push(r));
+
+  Object.entries(porSuc).forEach(([suc, lista])=>{
+    const rows = lista.map(c=>[
+      c.Ejecutivo || "",
+      c.Linea || "",
+      valProducto(c),
+      valSocio(c),
+      c.Nombre || "",
+      Number(toNumberSafe(c["Saldo Total"])),
+      Number(toNumberSafe(valDiasAtr(c))),
+      (()=>{ const dsg=parseDiasSinGestion(c["Dias sin Gestion"]); return dsg===null ? "SIN GESTIÓN" : Number(dsg); })(),
+      valFase(c),
+      normDateYYYYMMDD(getFechaVencimientoRaw(c)) || "",
+      valRealizoUltimaGestion(c) || "",
+      valFechaUltimaGestion(c) || "",
+      valTipoGestion(c) || ""
+    ]);
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+    ws['!cols'] = [{wch:18},{wch:10},{wch:12},{wch:10},{wch:26},{wch:14},{wch:12},{wch:14},{wch:15},{wch:10},{wch:18},{wch:14},{wch:18}];
+
+    // formatos
+    const range = XLSX.utils.decode_range(ws['!ref']);
+    for (let r=1; r<=range.e.r; r++){
+      const cSaldo = XLSX.utils.encode_cell({r, c:5}); if(ws[cSaldo]) ws[cSaldo].t='n', ws[cSaldo].z='"$"#,##0.00';
+      const cAtr   = XLSX.utils.encode_cell({r, c:6}); if(ws[cAtr]&&typeof ws[cAtr].v==='number') ws[cAtr].t='n';
+      const cSin   = XLSX.utils.encode_cell({r, c:7}); if(ws[cSin]&&typeof ws[cSin].v==='number') ws[cSin].t='n';
+    }
+
+    // Nombre de hoja seguro (máx 31 chars sin [/\\?*] etc.)
+    const sheetName = String(suc||"SIN_SUC").substring(0,31).replace(/[\\/?*:[]]/g,"_");
+    XLSX.utils.book_append_sheet(wb, ws, sheetName || "Hoja");
+  });
+
+  XLSX.writeFile(wb, `Concentrado_PorSucursal_${mxISODate()}.xlsx`);
+}
+
+// Listeners de exportación
+document.addEventListener("DOMContentLoaded", ()=>{
+  const b1 = document.getElementById("btnExportFiltrado");
+  const b2 = document.getElementById("btnExportSucursales");
+  if (b1) b1.addEventListener("click", exportarFiltradoAExcel);
+  if (b2) b2.addEventListener("click", exportarFiltradoPorSucursal);
+});
+
+    function exportarPreviewAExcel(){
+      if (!Array.isArray(creditosSeleccionados) || creditosSeleccionados.length === 0){ alert("No hay datos para exportar."); return; }
+      const headers = ["Crédito","Producto","Socio","Nombre del Socio","Saldo","Días atraso","Días sin gestión","Fase","Venc.","Realizó Últ. Gestión","Fecha Últ. Gestión","Tipo de Gestión","Estatus"];
+      const rows = creditosSeleccionados.map(c=>[
+        c.Linea ?? "", valProducto(c), valSocio(c), c.Nombre ?? "",
+        Number(toNumberSafe(c["Saldo Total"])), Number(toNumberSafe(valDiasAtr(c))),
+        (()=>{ const dsg=parseDiasSinGestion(c["Dias sin Gestion"]); return dsg===null ? "SIN GESTIÓN" : Number(dsg); })(),
+        valFase(c), normDateYYYYMMDD(getFechaVencimientoRaw(c)) || "",
+        valRealizoUltimaGestion(c) || "", valFechaUltimaGestion(c) || "", valTipoGestion(c) || "", ""
+      ]);
+      const sheetData=[headers, ...rows];
+      const wb=XLSX.utils.book_new(); const ws=XLSX.utils.aoa_to_sheet(sheetData);
+      const range=XLSX.utils.decode_range(ws['!ref']);
+      for(let r=1;r<=range.e.r;r++){
+        const cSaldo=XLSX.utils.encode_cell({r, c:4}); if(ws[cSaldo]) ws[cSaldo].t='n', ws[cSaldo].z='"$"#,##0.00';
+        const cAtr=XLSX.utils.encode_cell({r, c:5}); if(ws[cAtr]&&typeof ws[cAtr].v==='number') ws[cAtr].t='n';
+        const cSin=XLSX.utils.encode_cell({r, c:6}); if(ws[cSin]&&typeof ws[cSin].v==='number') ws[cSin].t='n';
+      }
+      ws['!cols']=[{wch:10},{wch:12},{wch:10},{wch:26},{wch:14},{wch:12},{wch:14},{wch:15},{wch:10},{wch:26},{wch:14},{wch:18},{wch:20}];
+      XLSX.utils.book_append_sheet(wb, ws, "Vista Previa");
+      const safe=s=>String(s||"").replace(/[\\/:*?"<>|]+/g,"_").replace(/\s+/g," ").trim();
+      const asesor=safe(asesorSeleccionado||"ASESOR");
+      const suc=safe(sucursalSeleccionada||"SUCURSAL");
+      const fecha=mxISODate();
+      XLSX.writeFile(wb, `VistaPrevia_${asesor}_${suc}_${fecha}.xlsx`);
+    }
+
+    function buildItemsFromPreview(){
+      const hoy=mxISODate(); const tbody=document.getElementById("agendaTbody"); tbody.innerHTML="";
+      if (!Array.isArray(creditosSeleccionados) || !creditosSeleccionados.length){
+        tbody.innerHTML = `<tr><td colspan="16" class="text-center text-muted">No hay filas en la vista previa.</td></tr>`; return;
+      }
+      creditosSeleccionados.forEach((c,i)=>{
+        const saldo=valSaldo(c); const dsgParsed=parseDiasSinGestion(c["Dias sin Gestion"]);
+        const dsgDisplay=(dsgParsed===null)?"SIN GESTIÓN":dsgParsed;
+        const tr=document.createElement("tr");
+        tr.innerHTML=`
+          <td class="tdCenter">${i+1}</td>
+          <td class="tdCredito mono">${c.Linea ?? ""}</td>
+          <td class="tdSocio mono">${valSocio(c)}</td>
+          <td class="tdNombre">${c.Nombre ?? ""}</td>
+          <td class="tdSucursal">${sucursalSeleccionada || (c.Sucursal ?? "")}</td>
+          <td class="tdAsesor">${asesorSeleccionado || (c.Ejecutivo ?? "")}</td>
+          <td class="tdProducto">${valProducto(c)}</td>
+          <td class="tdSaldo">${saldo.toLocaleString("es-MX",{style:"currency",currency:"MXN"})}</td>
+          <td class="tdDiasAtr tdCenter">${valDiasAtr(c)}</td>
+          <td class="tdDiasSinGes tdCenter">${dsgDisplay}</td>
+          <td class="tdFase tdCenter">${valFase(c)}</td>
+          <td class="tdRealizoUG">${valRealizoUltimaGestion(c) || ""}</td>
+          <td class="tdFechaUG tdCenter">${valFechaUltimaGestion(c) || ""}</td>
+          <td class="tdTipoUG">${valTipoGestion(c) || ""}</td>
+          <td><input type="date" class="form-control form-control-sm fecha-prog" value="${hoy}"></td>
+          <td><input type="text" class="form-control form-control-sm obs-prog" maxlength="320" placeholder="Observación (máx. 320)"></td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    /* ===== PDF helpers (header/footer en todas las páginas + firmas en ACTA) ===== */
+    function pageEnv(doc){
+      const HEADER={x:50,y:20,w:500,h:80};
+      const CONTENT_TOP=HEADER.y+HEADER.h+20, FOOTER_RESERVE=90;
+      return {
+        CONTENT_TOP, FOOTER_RESERVE,
+        marginFor:(left=50,right=50)=>({ top: CONTENT_TOP, left, right, bottom: FOOTER_RESERVE }),
+        didDrawPage:()=>{ if(HEADER_DATA){ try{ doc.addImage(HEADER_DATA,"PNG",HEADER.x,HEADER.y,HEADER.w,HEADER.h);}catch{} } }
+      };
+    }
+    function addParagraph(doc, text, startY, env, left=50, right=50){
+      doc.autoTable({ startY, body:[[text]], theme:"plain", styles:{ fontSize:9, halign:"justify", cellPadding:1.2 }, margin:env.marginFor(left,right), didDrawPage:env.didDrawPage });
+      return (doc.lastAutoTable && doc.lastAutoTable.finalY) || startY;
+    }
+
+    async function generarPDF(asesor,sucursal,creditos,tipo){
+      await ensureHeaderFooterLoaded();
+      const { jsPDF } = window.jspdf;
+      const doc=new jsPDF("p","pt","a4"); doc.setLineHeightFactor(1.0);
+      const env=pageEnv(doc);
+      const fecha=mxNow().toLocaleDateString("es-MX",{day:"2-digit",month:"long",year:"numeric"});
+      const diasMinimos=parseInt(document.getElementById("diasMinimos").value)||30;
+
+      const inicial=document.getElementById("coordinadorSelect").value;
+      const subFirmanteVal=document.getElementById("subFirmanteSelect").value || inicial;
+      let firmanteCoord;
+      if(inicial==="OFICINA_CENTRAL"){ firmanteCoord=subFirmanteVal||"__________________________"; }
+      else if(nombresCoordinadores[subFirmanteVal]){ firmanteCoord=nombresCoordinadores[subFirmanteVal]; }
+      else { firmanteCoord=nombresCoordinadores[inicial]||"__________________________"; }
+
+      const textos=getTextosDocumento(tipo, diasMinimos, asesor, sucursal, firmanteCoord);
+
+      let y=env.CONTENT_TOP; const pageWidth=doc.internal.pageSize.getWidth();
+      doc.setFontSize(10); doc.text(`Fecha: ${fecha}`,50,y); y+=18;
+      doc.setFontSize(14); doc.text(textos.titulo,pageWidth/2,y,{align:"center"}); y+=18;
+      doc.setFontSize(12); doc.text(textos.subtitulo||"",pageWidth/2,y,{align:"center"}); y+=24;
+      doc.setFontSize(11); doc.text(`Para: ${asesor}`,50,y); y+=14; doc.text(`Sucursal: ${sucursal}`,50,y); y+=10;
+
+      y = addParagraph(doc, textos.intro, y, env, 50, 50);
+      y = (doc.lastAutoTable?.finalY || y) + 12;
+
+      const rows = creditos.map(c=>{
+        const dsgParsed=parseDiasSinGestion(c["Dias sin Gestion"]);
+        const dsgDisplay=(dsgParsed===null)?"SIN GESTIÓN":dsgParsed;
+        const fvISO=normDateYYYYMMDD(getFechaVencimientoRaw(c))||"";
+        const realizoUG=valRealizoUltimaGestion(c), fechaUG=valFechaUltimaGestion(c), tipoUG=valTipoGestion(c);
+        return [c.Linea ?? "", valProducto(c), valSocio(c), c.Nombre ?? "",
+          toNumberSafe(c["Saldo Total"]).toLocaleString("es-MX",{style:"currency",currency:"MXN"}),
+          valDiasAtr(c), dsgDisplay, valFase(c), fvISO, realizoUG||"", fechaUG||"", tipoUG||"" ];
+      });
+
+      doc.autoTable({
+        startY:y,
+        head:[["Crédito","Producto","Socio","Nombre del Socio","Saldo","Días atraso","Días sin gestión","Fase","Venc.","Realizó Últ. Gestión","Fecha Últ. Gestión","Tipo de Gestión"]],
+        body:rows,
+        styles:{ fontSize:8, cellPadding:1.3, lineWidth:.1, valign:"middle" },
+        headStyles:{ fillColor:[0,0,0], textColor:[255,255,255], halign:"center", fontSize:8 },
+        columnStyles:{ 0:{halign:"center"},1:{halign:"center"},2:{halign:"left"},3:{halign:"left"},4:{halign:"right"},
+                       5:{halign:"center"},6:{halign:"center"},7:{halign:"center"},8:{halign:"center"},9:{halign:"left"},
+                       10:{halign:"center"},11:{halign:"left"} },
+        margin:env.marginFor(40,40),
+        didDrawPage:env.didDrawPage
+      });
+      y=(doc.lastAutoTable?.finalY || y)+8;
+      const totalImporte=creditos.reduce((acc,c)=> acc + toNumberSafe(c["Saldo Total"]), 0);
+      doc.setFontSize(11);
+      doc.text(`TOTAL: ${totalImporte.toLocaleString("es-MX",{style:"currency",currency:"MXN"})}`, pageWidth/2, y, {align:"center"}); y+=12;
+if (tipo === "acta") {
+  // 1) Párrafos del acta
+  y = addParagraph(doc, textos.hechos,        y, env, 50, 50); y = (doc.lastAutoTable?.finalY || y) + 6;
+  y = addParagraph(doc, textos.faltas,        y, env, 50, 50); y = (doc.lastAutoTable?.finalY || y) + 6;
+  y = addParagraph(doc, textos.determinacion, y, env, 50, 50); y = (doc.lastAutoTable?.finalY || y) + 180;
+
+  // 2) Cierre (último párrafo ANTES de firmas)
+  y = addParagraph(doc, textos.cierre, y, env, 50, 50);
+  y = (doc.lastAutoTable?.finalY || y) + 36;
+
+  // 3) Antes de dibujar firmas, asegurar espacio; si no, nueva página
+  //    Altura aproximada del bloque de firmas (2 filas + títulos) ~ 160–180pt
+  const neededForSignatures = 190;
+  const usableBottom = doc.internal.pageSize.getHeight() - env.FOOTER_RESERVE;
+  if (y + neededForSignatures > usableBottom) {
+    doc.addPage();
+    // Reponer header en nueva página
+    env.didDrawPage();
+    y = env.CONTENT_TOP;
+  }
+
+  // 4) Firmas (2x2) después del último párrafo
+  const colW = (pageWidth - 100) / 2;
+  const drawSignature = (x, baseY, name, title) => {
+    const lineY = baseY + 18;
+    doc.setLineWidth(0.5);
+    // línea de firma
+    doc.line(50 + x, lineY, 50 + x + colW - 20, lineY);
+    // nombre
+    doc.setFontSize(10);
+    doc.text(name, 50 + x + (colW - 20) / 2, lineY + 14, { align: "center" });
+    // título
+    doc.setFontSize(9);
+    doc.text(title, 50 + x + (colW - 20) / 2, lineY + 28, { align: "center" });
+  };
+
+  const N = s => (s || "").toString().toUpperCase();
+  const firm1Name  = N(firmanteCoord),  firm1Title  = "COORDINADOR DE RECUPERACIÓN";
+  const firm2Name  = N(asesor),         firm2Title  = "ASESOR DE CRÉDITOS Y RECUPERACIÓN INDIVIDUAL";
+  const gerente    = getDireccionPorSucursal(sucursal)?.GERENTE
+                  || getDireccionPorSucursal(sucursal)?.Gerente
+                  || textos.gerenteSucursal || "__________________________";
+  const firm3Name  = N(gerente),        firm3Title  = "GERENTE DE SUCURSAL";
+  const firm4Name  = "LIC. ADÁN GUTIÉRREZ HERNÁNDEZ";
+  const firm4Title = "GERENTE DE RECUPERACIÓN EXTRAJUDICIAL";
+
+  // Fila 1
+  drawSignature(0,        y, firm1Name, firm1Title);
+  drawSignature(colW,     y, firm2Name, firm2Title);
+  y += 120;
+
+  // Título “TESTIGOS”
+  doc.setFontSize(10);
+  doc.text("TESTIGOS", pageWidth / 2, y, { align: "center" });
+  y += 60;
+
+  // Fila 2
+  drawSignature(0,        y, firm3Name, firm3Title);
+  drawSignature(colW,     y, firm4Name, firm4Title);
+  y += 70;
+
+} else {
+  // (EXHORTO)… tu código actual
+}
+
+      
+      // Footer imagen + numeración
+      const pageCount=doc.getNumberOfPages();
+      for(let i=1;i<=pageCount;i++){
+        doc.setPage(i);
+        const pageW=doc.internal.pageSize.getWidth(), pageH=doc.internal.pageSize.getHeight();
+        const footerWidth=500, footerHeight=50, footerX=(pageW-footerWidth)/2, footerY=pageH-footerHeight-20;
+        if(FOOTER_DATA){ try{ doc.addImage(FOOTER_DATA,"PNG",footerX,footerY,footerWidth,footerHeight);}catch{} }
+        doc.setFontSize(9); doc.text(`Página ${i} de ${pageCount}`, pageW-60, footerY-6, {align:"right"});
+      }
+      const nombreArchivo=(tipo==="acta"?"ACTA_ADMINISTRATIVA":"EXHORTO");
+      doc.save(`${nombreArchivo}_${asesor.replace(/ /g,"_")}_${norm(sucursal).replace(/[^A-Z0-9_]/g,"")}.pdf`);
+    }
+
+    // ==== NUEVO: Header/Footer nativos fijos en Word (.docx) ====
+    function createImageHeaderFooter(imgBase64, width, height, isHeader = true) {
+      if (!imgBase64) return undefined;
+      const bytes = base64ToUint8Array(
+        imgBase64.replace(/^data:image\/png;base64,/, "")
+      );
+      const run = new docx.ImageRun({
+        data: bytes,
+        transformation: { width, height }
+      });
+      const paragraph = new docx.Paragraph({
+        alignment: docx.AlignmentType.CENTER,
+        children: [run]
+      });
+      return isHeader
+        ? new docx.Header({ children: [paragraph] })
+        : new docx.Footer({ children: [paragraph] });
+    }
+
+    // ==== DOCX principal (con header/footer nativos + tabla como imagen + firmas en ACTA) ====
+    async function generarDOCX(asesor, sucursal, creditos, tipo){
+      // Asegurar encabezado/pie
+      await ensureHeaderFooterLoaded();
+
+      // Capturar tabla como imagen
+      const capture = await capturePreviewTableAsPNG();
+
+      // Cargar docx
+      const ok = await ensureDocxLoaded();
+      if (!ok || !window.docx) {
+        generarDOC_WordHTML_Fallback(asesor, sucursal, creditos, tipo, capture);
+        return;
+      }
+
+      const {
+        Document, Packer, Paragraph, TextRun,
+        HeadingLevel, AlignmentType, ImageRun,
+        Table, TableRow, TableCell, WidthType
+      } = window.docx;
+
+      const diasMinimos = parseInt(document.getElementById("diasMinimos").value) || 30;
+      const inicial = document.getElementById("coordinadorSelect").value;
+      const subFirmanteVal = document.getElementById("subFirmanteSelect").value || inicial;
+
+      let firmanteCoord;
+      if (inicial === "OFICINA_CENTRAL") {
+        firmanteCoord = subFirmanteVal || "__________________________";
+      } else if (nombresCoordinadores[subFirmanteVal]) {
+        firmanteCoord = nombresCoordinadores[subFirmanteVal];
+      } else {
+        firmanteCoord = nombresCoordinadores[inicial] || "__________________________";
+      }
+
+      const textos = getTextosDocumento(tipo, diasMinimos, asesor, sucursal, firmanteCoord);
+
+const p = (text, opts = {}) =>
+  new Paragraph({
+    alignment: AlignmentType.JUSTIFIED,   // 👈 Por defecto: justificado
+    children: [ new TextRun({ text }) ],
+    ...opts
+  });
+
+const pBold = (text, opts = {}) =>
+  new Paragraph({
+    alignment: AlignmentType.JUSTIFIED,   // 👈 Por defecto: justificado
+    children: [ new TextRun({ text, bold: true }) ],
+    ...opts
+  }); 
+
+      const children = [];
+      children.push(new Paragraph({ text: textos.titulo, heading: HeadingLevel.HEADING_2, alignment: AlignmentType.CENTER }));
+      if (textos.subtitulo) children.push(p(textos.subtitulo, { alignment: AlignmentType.CENTER }));
+      children.push(p(`Para: ${asesor}`));
+      children.push(p(`Sucursal: ${sucursal}`));
+      children.push(p(" "));
+      textos.intro.split("\n\n").forEach(b => children.push(p(b)));
+      children.push(p(" "));
+
+      if (capture && capture.dataUrl){
+        const maxWidthPx = 600;
+        const ratio = capture.widthPx / capture.heightPx;
+        const width = Math.min(maxWidthPx, capture.widthPx);
+        const height = Math.round(width / ratio);
+        const base64 = capture.dataUrl.replace(/^data:image\/png;base64,/, "");
+        const bytes = base64ToUint8Array(base64);
+        children.push(
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            children: [ new ImageRun({ data: bytes, transformation: { width, height } }) ]
+          })
+        );
+        const totalImporte = creditos.reduce((acc,c)=> acc + toNumberSafe(c["Saldo Total"]), 0);
+        children.push(p(" "));
+        children.push(pBold(`TOTAL: ${totalImporte.toLocaleString("es-MX",{style:"currency",currency:"MXN"})}`, { alignment: AlignmentType.CENTER }));
+        children.push(p(" "));
+      }
+
+      if (tipo === "acta") {
+        ["hechos","faltas","determinacion","cierre"].forEach(k => {
+          if (textos[k]) { textos[k].split("\n\n").forEach(b => children.push(p(b))); children.push(p(" ")); }
+        });
+
+        // Firmas 2x2 (DOCX)
+        const N = s => (s||"").toString().toUpperCase();
+        const firm1Name = N(firmanteCoord),  firm1Title = "COORDINADOR DE RECUPERACIÓN";
+        const firm2Name = N(asesor),         firm2Title = "ASESOR DE CRÉDITOS Y RECUPERACIÓN INDIVIDUAL";
+        const gerente = getDireccionPorSucursal(sucursal)?.GERENTE
+                      || getDireccionPorSucursal(sucursal)?.Gerente
+                      || textos.gerenteSucursal || "__________________________";
+        const firm3Name = N(gerente),        firm3Title = "GERENTE DE SUCURSAL";
+        const firm4Name = "LIC. ADÁN GUTIÉRREZ HERNÁNDEZ",
+              firm4Title = "GERENTE DE RECUPERACIÓN EXTRAJUDICIAL";
+
+        const line = () => new Paragraph({ alignment: AlignmentType.CENTER, children: [ new TextRun({ text:"_______________________________" }) ] });
+        const nameP = (t) => new Paragraph({ alignment: AlignmentType.CENTER, children: [ new TextRun({ text:t }) ] });
+        const titleP = (t) => new Paragraph({ alignment: AlignmentType.CENTER, children: [ new TextRun({ text:t }) ] });
+        const cellFirm = (name, title) =>
+          new TableCell({ width:{ size:50, type:WidthType.PERCENTAGE }, children: [ line(), nameP(name), titleP(title) ] });
+
+        const firmasTable = new Table({
+          width: { size: 100, type: WidthType.PERCENTAGE },
+          rows: [
+            new TableRow({ children: [ cellFirm(firm1Name, firm1Title), cellFirm(firm2Name, firm2Title) ] }),
+            new TableRow({ children: [ new TableCell({ children:[ new Paragraph({ alignment: AlignmentType.CENTER, children:[ new TextRun({ text:"TESTIGOS" }) ] }) ], columnSpan:2 }) ] }),
+            new TableRow({ children: [ cellFirm(firm3Name, firm3Title), cellFirm(firm4Name, firm4Title) ] })
+          ]
+        });
+        children.push(new Paragraph({ text:" " }));
+        children.push(firmasTable);
+        children.push(new Paragraph({ text:" " }));
+      } else {
+        if (textos.postTabla) {
+          textos.postTabla.split("\n\n").forEach(b => children.push(p(b)));
+          children.push(p(" "));
+          children.push(pBold("Atentamente", { alignment: AlignmentType.CENTER }));
+          children.push(p("_______________________________", { alignment: AlignmentType.CENTER }));
+          children.push(p("Coordinación de Recuperación", { alignment: AlignmentType.CENTER }));
+        }
+      }
+
+      // Header/Footer fijos (nativos)
+      let sectionHeader = undefined;
+      let sectionFooter = undefined;
+      if (HEADER_DATA) { sectionHeader = createImageHeaderFooter(HEADER_DATA, 500, 70, true); }
+      if (FOOTER_DATA) { sectionFooter = createImageHeaderFooter(FOOTER_DATA, 500, 50, false); }
+
+      const wordDoc = new Document({
+        sections: [{
+          headers: { default: sectionHeader },
+          footers: { default: sectionFooter },
+          properties: {
+            page: { margin: { top: 1440, right: 720, bottom: 1440, left: 720 } } // 2.54cm
+          },
+          children
+        }]
+      });
+
+      const blob = await Packer.toBlob(wordDoc);
+      const nombreArchivo = (tipo==="acta" ? "ACTA_ADMINISTRATIVA" : "EXHORTO");
+      const a=document.createElement("a");
+      a.href=URL.createObjectURL(blob);
+      a.download=`${nombreArchivo}_${asesor.replace(/ /g,"_")}_${norm(sucursal).replace(/[^A-Z0-9_]/g,"")}.docx`;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 1200);
+    }
+
+    // ==== Fallback .doc (Word-HTML) si docx no está disponible ====
+    function generarDOC_WordHTML_Fallback(asesor, sucursal, creditos, tipo, capture){
+      try{
+        const totalImporte=creditos.reduce((acc,c)=> acc + toNumberSafe(c["Saldo Total"]), 0).toLocaleString("es-MX",{style:"currency",currency:"MXN"});
+        const title = (tipo==="acta" ? "ACTA ADMINISTRATIVA" : "EXHORTO");
+        let html = `
+          <html xmlns:o='urn:schemas-microsoft-com:office:office'
+                xmlns:w='urn:schemas-microsoft-com:office:word'
+                xmlns='http://www.w3.org/TR/REC-html40'>
+          <head><meta charset="utf-8"><title>${title}</title>
+          <style>
+            @page { size: 21cm 29.7cm; margin: 2.54cm; }
+            body { font-family: Calibri, Arial, sans-serif; font-size: 11pt; }
+	    h1,h2,h3 { text-align:center; }
+	    p { text-align: justify; }   /* 👈 Justifica  párrafos en el .DOC */
+            .center { text-align:center; }
+            .firmas { width:100%; margin-top:18pt; }
+            .firmas td { width:50%; text-align:center; vertical-align:top; padding:12pt; }
+          </style></head>
+          <body>
+        `;
+        if (HEADER_DATA) html += `<div class="center"><img src="${HEADER_DATA}" style="width:500px;height:auto"/></div>`;
+        html += `<h2>${title}</h2>
+          <p><strong>Para:</strong> ${asesor}<br/><strong>Sucursal:</strong> ${sucursal}</p>`;
+
+        if (capture && capture.dataUrl){
+          html += `<div class="center"><img src="${capture.dataUrl}" style="max-width:16cm;height:auto"/></div>`;
+          html += `<p class="center"><strong>TOTAL:</strong> ${totalImporte}</p>`;
+        }
+
+        // Firmas simples si ACTA
+        if (tipo==="acta"){
+          const inicial=document.getElementById("coordinadorSelect").value;
+          const subFirmanteVal=document.getElementById("subFirmanteSelect").value || inicial;
+          let firmanteCoord;
+          if(inicial==="OFICINA_CENTRAL"){ firmanteCoord=subFirmanteVal||"__________________________"; }
+          else if(nombresCoordinadores[subFirmanteVal]){ firmanteCoord=nombresCoordinadores[subFirmanteVal]; }
+          else { firmanteCoord=nombresCoordinadores[inicial]||"__________________________"; }
+          const dir=getDireccionPorSucursal(sucursal)||{};
+          const gerente=dir.GERENTE||dir.Gerente||"__________________________";
+          html += `
+          <table class="firmas" border="0" cellspacing="0" cellpadding="0">
+            <tr>
+              <td>_______________________________<br/>${(firmanteCoord||"").toUpperCase()}<br/><small>COORDINADOR DE RECUPERACIÓN</small></td>
+              <td>_______________________________<br/>${(asesor||"").toUpperCase()}<br/><small>ASESOR DE CRÉDITOS Y RECUPERACIÓN INDIVIDUAL</small></td>
+            </tr>
+            <tr><td colspan="2" class="center"><strong>TESTIGOS</strong></td></tr>
+            <tr>
+              <td>_______________________________<br/>${(gerente||"").toUpperCase()}<br/><small>GERENTE DE SUCURSAL</small></td>
+              <td>_______________________________<br/>LIC. ADÁN GUTIÉRREZ HERNÁNDEZ<br/><small>GERENTE DE RECUPERACIÓN EXTRAJUDICIAL</small></td>
+            </tr>
+          </table>`;
+        }
+
+        if (FOOTER_DATA) html += `<div class="center"><img src="${FOOTER_DATA}" style="width:500px;height:auto"/></div>`;
+        html += `</body></html>`;
+
+        const blob = new Blob(['\ufeff', html], {type: 'application/msword'});
+        const nombreArchivo=(tipo==="acta"?"ACTA_ADMINISTRATIVA":"EXHORTO");
+        const a=document.createElement("a");
+        a.href=URL.createObjectURL(blob);
+        a.download=`${nombreArchivo}_${asesor.replace(/ /g,"_")}_${norm(sucursal).replace(/[^A-Z0-9_]/g,"")}.doc`;
+        document.body.appendChild(a); a.click();
+        setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 1200);
+      }catch(e){
+        alert("❌ Error al generar DOC (fallback): "+(e.message||e));
+      }
+    }
+
+    /* ===================== GAS API / Agenda guardada ===================== */
+    async function guardarAgendaEnSheet(payload){
+      const res=await fetch(GAS_API_URL,{ method:"POST", headers:{ "Content-Type":"text/plain" }, body: JSON.stringify(payload) });
+      const j=await res.json(); if(!res.ok || !j.ok) throw new Error(j.error || `HTTP ${res.status}`); return j;
+    }
+    async function consultarAgendaEnSheet({fecha=null, desde=null, usuario=null, q=null} = {}){
+      const u=new URL(GAS_API_URL);
+      u.searchParams.set("action","list");
+      if(fecha) u.searchParams.set("fecha",fecha);
+      if(desde) u.searchParams.set("desde",desde);
+      if(usuario) u.searchParams.set("usuario",usuario);
+      if(q) u.searchParams.set("q",q);
+      const res=await fetch(u.toString(),{method:"GET",cache:"no-store"});
+      const j=await res.json(); if(!res.ok || !j.ok) throw new Error(j.error || `HTTP ${res.status}`); return j.items || [];
+    }
+
+    document.getElementById("btnGuardarAgenda").addEventListener("click", async () => {
+      if (guardandoAgenda) return;
+      guardandoAgenda = true;
+      const btn = document.getElementById("btnGuardarAgenda");
+      const oldLabel = btn.innerHTML; btn.disabled = true; btn.innerHTML = 'Guardando…';
+      try{
+        const responsable = getResponsableActual(); if(!responsable) throw new Error("Selecciona el 'Coordinador que firma'.");
+        const creadoPor = getUsuarioCreadorCode(); if(!creadoPor) throw new Error("No se pudo determinar el 'usuario que crea'.");
+        const filas = document.querySelectorAll("#agendaTbody tr"); if(!filas.length) throw new Error("No hay filas para guardar.");
+
+        const items=[]; let algunaFecha=null;
+        filas.forEach(tr=>{
+          const obj={
+            fecha_programada: tr.querySelector(".fecha-prog")?.value || "",
+            credito: tr.querySelector(".tdCredito")?.innerText.trim() || "",
+            socio:   tr.querySelector(".tdSocio")?.innerText.trim() || "",
+            nombre:  tr.querySelector(".tdNombre")?.innerText.trim() || "",
+            sucursal: tr.querySelector(".tdSucursal")?.innerText.trim() || "",
+            asesor:   tr.querySelector(".tdAsesor")?.innerText.trim() || "",
+            producto: tr.querySelector(".tdProducto")?.innerText.trim() || "",
+            saldo:    tr.querySelector(".tdSaldo")?.innerText.trim() || "",
+            dias_atraso: tr.querySelector(".tdDiasAtr")?.innerText.trim() || "",
+            dias_sin_gestion: tr.querySelector(".tdDiasSinGes")?.innerText.trim() || "",
+            fase: tr.querySelector(".tdFase")?.innerText.trim() || "",
+            observaciones: tr.querySelector(".obs-prog")?.value || "",
+            responsable,
+            realizo_ultima_gestion: tr.querySelector(".tdRealizoUG")?.innerText.trim() || "",
+            fecha_ultima_gestion:   tr.querySelector(".tdFechaUG")?.innerText.trim() || "",
+            tipo_ultima_gestion:    tr.querySelector(".tdTipoUG")?.innerText.trim() || ""
+          };
+          if(!algunaFecha && obj.fecha_programada) algunaFecha=obj.fecha_programada;
+          items.push(obj);
+        });
+        if(!algunaFecha) throw new Error("Falta la 'Fecha programada' en al menos una fila.");
+
+        const out=await guardarAgendaEnSheet({ creado_por: creadoPor, items, responsable });
+        alert(`✅ Guardado. Insertadas: ${out.inserted ?? 0}. Omitidas por duplicado: ${out.skipped ?? 0}.`);
+        bootstrap.Modal.getInstance(document.getElementById("agendaModal"))?.hide();
+      }catch(e){ alert("❌ Error al guardar en Sheets: " + (e.message || e)); }
+      finally{ guardandoAgenda=false; btn.disabled=false; btn.innerHTML=oldLabel; }
+    });
+
+    async function cargarAgendasDesdeSheets(){
+      try{
+        const fecha=document.getElementById("filtroFechaAgenda").value || mxISODate();
+        const usuario=(document.getElementById("filtroUsuarioAgendaInput").value || "").trim().toUpperCase();
+        if(!usuario){
+          alert("Ingresa el usuario (código) creador, ej. ALCNCA.");
+          document.getElementById("agendaListaTbody").innerHTML = `<tr><td colspan="17" class="text-center text-muted">Ingresa un usuario.</td></tr>`; return;
+        }
+        let items=await consultarAgendaEnSheet({ fecha, usuario });
+        items=(items||[]).filter(r => norm((r.creado_por||""))===norm(usuario) && normDateYYYYMMDD(r.fecha_programada)===fecha);
+
+        const tbody=document.getElementById("agendaListaTbody"); tbody.innerHTML="";
+        if(!items.length){ tbody.innerHTML=`<tr><td colspan="17" class="text-center text-muted">Sin resultados.</td></tr>`; return; }
+
+        items.sort((a,b)=>
+          (a.fecha_programada||"").localeCompare(b.fecha_programada||"") ||
+          (a.sucursal||"").localeCompare(b.sucursal||"") ||
+          (a.asesor||"").localeCompare(b.asesor||"")
+        );
+
+        items.forEach((r,i)=>{
+          const tr=document.createElement("tr");
+          tr.innerHTML=`
+            <td class="text-center">${i+1}</td>
+            <td class="mono">${r.fecha_registro || r.fecha_registro_iso || ""}</td>
+            <td class="tdCenter">${normDateYYYYMMDD(r.fecha_programada) || ""}</td>
+            <td>${r.credito || ""}</td>
+            <td class="mono">${r.socio || ""}</td>
+            <td>${r.nombre || ""}</td>
+            <td>${r.sucursal || ""}</td>
+            <td>${r.asesor || ""}</td>
+            <td>${r.producto || ""}</td>
+            <td class="tdSaldo">${r.saldo || ""}</td>
+            <td class="tdCenter">${r.dias_atraso || ""}</td>
+            <td class="tdCenter">${r.dias_sin_gestion || ""}</td>
+            <td class="tdCenter">${r.fase || ""}</td>
+            <td>${r.realizo_ultima_gestion || ""}</td>
+            <td class="tdCenter">${normDateYYYYMMDD(r.fecha_ultima_gestion) || (r.fecha_ultima_gestion || "")}</td>
+            <td>${r.tipo_ultima_gestion || ""}</td>
+            <td>${r.observaciones || ""}</td>`;
+          tbody.appendChild(tr);
+        });
+      }catch(err){ alert("Error cargando agenda desde Sheets: " + (err.message || err)); }
+    }
+
+    async function marcarAgendadosEnPreview() {
+      try {
+        const hoyISO = mxISODate();
+        const ag = await consultarAgendaEnSheet({ desde: hoyISO });
+        const setCredAgendados = new Set(
+          (ag || [])
+            .filter(r => r.credito && r.fecha_programada)
+            .map(r => onlyDigits(r.credito))
+            .filter(Boolean)
+        );
+        const rows = document.querySelectorAll("#tablaPreview tr");
+        rows.forEach(row => {
+          const credito = onlyDigits(row.children?.[0]?.innerText || "");
+          const estTd = row.querySelector(".estatus-cell");
+          if (!estTd) return;
+          if (credito && setCredAgendados.has(credito)) {
+            estTd.innerHTML += (estTd.innerHTML ? " " : "") + '<span class="badge bg-success">AGENDADO</span>';
+          }
+        });
+      } catch (e) {
+        console.warn("No se pudo marcar AGENDADO:", e);
+      }
+    }
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
