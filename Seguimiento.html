@@ -313,6 +313,9 @@ h1.mb-3{ margin-bottom: .5rem !important; }
  	<option value="MAYOR_40K">Monto mayor a $40,000</option>
         <option value="PORC_PAGO_BAJO">% de pago menor a 10%</option>
 	<option value="AUTO_ATRASO">Créditos automáticos en atraso</option>
+	<option value="RIESGO_DIA">Riesgo del Día (89 días de atraso hoy)</option>
+	<option value="RIESGO_SEMANA">Riesgo de Semana (llega a 89 al domingo)</option>
+	<option value="RIESGO_FIN_MES">Riesgo Fin de Mes (llega a 89 al último día del mes)</option>
       </select>
     </div>
 
@@ -521,6 +524,48 @@ h1.mb-3{ margin-bottom: .5rem !important; }
       .replace(/\s+/g," ").trim().toUpperCase();
 
     function mxNow(){ return new Date(new Date().toLocaleString("en-US",{ timeZone:"America/Mexico_City" })); }
+// ===== Helpers: fechas objetivo para "riesgo" =====
+function startOfDay(d){
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+function diffDays(fromDate, toDate){
+  const a = startOfDay(fromDate).getTime();
+  const b = startOfDay(toDate).getTime();
+  return Math.round((b - a) / 86400000);
+}
+
+// Domingo de la semana actual (si hoy es domingo => hoy)
+function getSundayOfThisWeek(today){
+  const d = startOfDay(today);
+  const dow = d.getDay(); // 0=Dom,1=Lun,...6=Sáb
+  const delta = (7 - dow) % 7;
+  const out = new Date(d);
+  out.setDate(out.getDate() + delta);
+  return out;
+}
+
+// Último día del mes actual
+function getLastDayOfCurrentMonth(today){
+  const d = startOfDay(today);
+  return new Date(d.getFullYear(), d.getMonth() + 1, 0);
+}
+
+// Regla: está en rango para llegar a 89 (incluye hoy=89)
+function enRangoPara89(r, targetDate){
+  const diasAtr = toNumberSafe(valDiasAtr(r));
+  if (!isFinite(diasAtr)) return false;
+
+  const hoy = mxNow();
+  const delta = diffDays(hoy, targetDate);
+  if (delta < 0) return false;
+
+  const min = 89 - delta;
+  const max = 89;
+
+  // Mostrar solo dentro del rango (incluye 89)
+  return diasAtr >= min && diasAtr <= max;
+}
     function pad2(n){ return String(n).padStart(2,'0'); }
     function mxISODate(){ const d=mxNow(); return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; }
     function mxISODateTime(){ const d=mxNow(); return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}T${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`; }
@@ -1338,6 +1383,29 @@ if (mostrarModo === "SIN") {
 
 } else if (mostrarModo === "AUTO_ATRASO") {
   base = base.filter(cumpleCreditosAutomaticosEnAtraso);
+
+} else if (mostrarModo === "RIESGO_DIA") {
+  base = base.filter(r => toNumberSafe(valDiasAtr(r)) === 89);
+
+} else if (mostrarModo === "RIESGO_SEMANA") {
+  const hoy = mxNow();
+  const domingo = getSundayOfThisWeek(hoy);
+  base = base.filter(r => enRangoPara89(r, domingo));
+
+} else if (mostrarModo === "RIESGO_FIN_MES") {
+  const hoy = mxNow();
+  const finMes = getLastDayOfCurrentMonth(hoy);
+
+  const delta = diffDays(hoy, finMes);
+  const min = 89 - delta;
+  const max = 89;
+
+  base = base.filter(r => {
+    const diasAtr = toNumberSafe(valDiasAtr(r));
+    return isFinite(diasAtr) && diasAtr >= min && diasAtr <= max;
+  });
+
+  console.log(`RIESGO_FIN_MES: hoy=${hoy.toDateString()} finMes=${finMes.toDateString()} Δ=${delta} rango=${min}..${max}`);
 
 } else { // TODOS
   base = base.filter(d => {
