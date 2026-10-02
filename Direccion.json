@@ -1,602 +1,754 @@
 [
- {
-   "SUCURSAL": 1,
-   "Nombre_Sucursal": "Etla",
-   "MUNICIPIO": "Villa De Etla",
-   "ESTADO": " Oaxaca",
-   "GERENTE": "FRANCISCO ANTONIO JIMÉNEZ VALDIVIESO ",
-   "DIRECCION": "Centenario No.10, Centro, Villa De Etla, Oaxaca. Cp. 68200 "
- },
- {
-   "SUCURSAL": 2,
-   "Nombre_Sucursal": "Oaxaca",
-   "MUNICIPIO": "Oaxaca De Juárez",
-   "ESTADO": " Oaxaca",
-   "GERENTE": "ALFREDO CARLOS   PÉREZ",
-   "DIRECCION": "Valerio Trujano No. 508, Centro, Oaxaca De Juárez, Oaxaca. C.P. 68000 "
- },
- {
-   "SUCURSAL": 3,
-   "Nombre_Sucursal": "Zaachila",
-   "MUNICIPIO": " Villa De Zaachila",
-   "ESTADO": " Oaxaca",
-   "GERENTE": "RAFAEL ÁNGEL VÁSQUEZ  JIMÉNEZ",
-   "DIRECCION": "Calz. Vicente Guerrero No.206, Barrio Del Niño, Villa De Zaachila, Oaxaca. C.P. 71250"
- },
- {
-   "SUCURSAL": 4,
-   "Nombre_Sucursal": "Miahuatlán",
-   "MUNICIPIO": " Miahuatlán De Porfirio Díaz",
-   "ESTADO": " Oaxaca",
-   "GERENTE": "MARÍA DE JESÚS GARCÍA  RODRÍGUEZ",
-   "DIRECCION": "Calle 3 De Octubre No. 411, Centro, Miahuatlán De Porfirio Díaz, Oaxaca. C.P. 70805 "
- },
- {
-   "SUCURSAL": 5,
-   "Nombre_Sucursal": "Ocotlán",
-   "MUNICIPIO": " Ocotlán De Morelos",
-   "ESTADO": " Oaxaca",
-   "GERENTE": "JOSÉ ANTONIO MARTÍNEZ LOPEZLUCHO",
-   "DIRECCION": "Dirección:  Aldama No.4, Centro, Ocotlán De Morelos, Oaxaca. C.P. 71510 "
- },
- {
-   "SUCURSAL": 6,
-   "Nombre_Sucursal": "Tehuacán",
-   "MUNICIPIO": " Tehuacán",
-   "ESTADO": " Puebla",
-   "GERENTE": "ERIKA GALENO MORALES",
-   "DIRECCION": "Av. Independencia Oriente No. 517, Centro, Tehuacán, Puebla. C.P. 75700 "
- },
- {
-   "SUCURSAL": 7,
-   "Nombre_Sucursal": "Tlacolula",
-   "MUNICIPIO": " Tlacolula De Matamoros",
-   "ESTADO": " Oaxaca",
-   "GERENTE": "WILBERT RODRÍGUEZ  MARTÍNEZ",
-   "DIRECCION": "Av. 2 De Abril No.24, Centro, Tlacolula De Matamoros, Oaxaca. C.P. 70400 "
- },
- {
-   "SUCURSAL": 8,
-   "Nombre_Sucursal": "Pochutla",
-   "MUNICIPIO": " San Pedro Pochutla",
-   "ESTADO": " Oaxaca",
-   "GERENTE": "LETICIA LUIS JIMÉNEZ",
-   "DIRECCION": "Av.Lázaro Cárdenas S/N, Centro, San Pedro Pochutla, Oaxaca. C.P. 70900 "
- },
- {
-   "SUCURSAL": 9,
-   "Nombre_Sucursal": "Orizaba",
-   "MUNICIPIO": " Orizaba",
-   "ESTADO": " Veracruz",
-   "GERENTE": "UBALDO IVÁN CONTRERAS FLORES ",
-   "DIRECCION": "Oriente 4 No.126, Centro, Orizaba, Veracruz. C.P. 94300"
- },
- {
-   "SUCURSAL": 11,
-   "Nombre_Sucursal": "Pinotepa",
-   "MUNICIPIO": " Pinotepa Nacional",
-   "ESTADO": " Oaxaca",
-   "GERENTE": "BLANCA LÓPEZ MENDOZA ",
-   "DIRECCION": "Av. Ing. Norberto Aguirre Palancares No. 502 Esq. 2a. Norte, Centro, Pinotepa Nacional, Oaxaca. C.P. 71600"
- },
- {
-   "SUCURSAL": 12,
-   "Nombre_Sucursal": "Zimatlán",
-   "MUNICIPIO": " Zimatlán De Álvarez",
-   "ESTADO": " Oaxaca",
-   "GERENTE": "MARIA TEREZA ESPERANZA MALDONADO",
-   "DIRECCION": "Calle 16 De Septiembre No. 401, Centro, Zimatlán De Álvarez, Oaxaca. C.P. 71200"
- },
- {
-   "SUCURSAL": 13,
-   "Nombre_Sucursal": "Acapulco",
-   "MUNICIPIO": "  Acapulco De Juárez",
-   "ESTADO": " Guerrero",
-   "GERENTE": "JOSÉ ANTONIO CRUZ GASPAR",
-   "DIRECCION": " Av. Cuauhtemoc No. 229, Fraccionamiento Marroquín,  Acapulco De Juárez, Guerrero. C.P. 39640"
- },
- {
-   "SUCURSAL": 14,
-   "Nombre_Sucursal": "Ometepec",
-   "MUNICIPIO": " Ometepec Guerrero C.P. 41700",
-   "ESTADO": " Oaxaca",
-   "GERENTE": "LUIS ALBERTO HERNÁNDEZ RAMÍREZ",
-   "DIRECCION": "Boulevard Juan N Alvarez No. 2, Centro, Ometepec Guerrero C.P. 41700"
- },
- {
-   "SUCURSAL": 15,
-   "Nombre_Sucursal": "Valle Nacional",
-   "MUNICIPIO": " San Juan Bautista Valle Nacional. Oaxaca. C.P. 68480",
-   "ESTADO": " Oaxaca",
-   "GERENTE": "VACANTE",
-   "DIRECCION": "Avenida Juárez No. 589, Centro, San Juan Bautista Valle Nacional. Oaxaca. C.P. 68480"
- },
- {
-   "SUCURSAL": 16,
-   "Nombre_Sucursal": "Tierra Blanca",
-   "MUNICIPIO": " Tierra Blanca",
-   "ESTADO": " Veracruz",
-   "GERENTE": "FERNANDO  MORALES  FLORES",
-   "DIRECCION": "Av. Aquiles Serdán No. 600, Centro, Tierra Blanca, Veracruz. C.P. 95100 "
- },
- {
-   "SUCURSAL": 17,
-   "Nombre_Sucursal": "Reforma",
-   "MUNICIPIO": " Oaxaca De Juárez",
-   "ESTADO": " Oaxaca",
-   "GERENTE": "OMAR ALEJANDRO NAVA ARELLANES",
-   "DIRECCION": "Belisario Domínguez No. 524, Reforma, Oaxaca De Juárez, Oaxaca. C.P. 68050"
- },
- {
-   "SUCURSAL": 18,
-   "Nombre_Sucursal": "Puebla",
-   "MUNICIPIO": " Puebla. C.P. 72000 ",
-   "ESTADO": " Oaxaca",
-   "GERENTE": "JUAN ENRIQUE PULIDO CALVO",
-   "DIRECCION": "4 Poniente Esquina 9 Norte No. 721, Centro, Puebla. C.P. 72000 "
- },
- {
-   "SUCURSAL": 19,
-   "Nombre_Sucursal": "Veracruz",
-   "MUNICIPIO": " Ignacio De La Llave Veracruz",
-   "ESTADO": " Veracruz",
-   "GERENTE": "MARCELO GALVÁN MARTÍNEZ",
-   "DIRECCION": "Avenida Díaz Mirón No. 704-1, Centro, Ignacio De La Llave Veracruz, Veracruz. C.P. 91700 "
- },
- {
-   "SUCURSAL": 20,
-   "Nombre_Sucursal": "Loma Bonita",
-   "MUNICIPIO": " Loma Bonita",
-   "ESTADO": " Oaxaca",
-   "GERENTE": "ANA LAURA CANO TORRES",
-   "DIRECCION": "16 De Septiembre No. 8, Centro, Loma Bonita, Oaxaca. C.P. 68400 "
- },
- {
-   "SUCURSAL": 22,
-   "Nombre_Sucursal": "Puerto Escondido",
-   "MUNICIPIO": " Puerto Escondido",
-   "ESTADO": " Oaxaca",
-   "GERENTE": "EDGAR LÓPEZ VELASQUEZ",
-   "DIRECCION": "Tercera Poniente No. 601, Sector Juárez, Centro, Puerto Escondido, Oaxaca. C.P. 71980"
- },
- {
-   "SUCURSAL": 23,
-   "Nombre_Sucursal": "Huautla",
-   "MUNICIPIO": " Huautla De Jiménez",
-   "ESTADO": " Oaxaca",
-   "GERENTE": "ELIDA SANCHEZ RODRIGUEZ",
-   "DIRECCION": "Av. Juárez No.8, Centro, Huautla De Jiménez, Oaxaca. C.P. 68500 "
- },
- {
-   "SUCURSAL": 24,
-   "Nombre_Sucursal": "Tuxtepec",
-   "MUNICIPIO": " San Juan Bautista Tuxtepec",
-   "ESTADO": " Oaxaca",
-   "GERENTE": "LEONEL LUIS ACEVEDO",
-   "DIRECCION": "Dirección:  Av. 20 De Noviembre No. 1586,  La Piragua, San Juan Bautista Tuxtepec, Oaxaca."
- },
- {
-   "SUCURSAL": 25,
-   "Nombre_Sucursal": "Cancún",
-   "MUNICIPIO": " Cancún",
-   "ESTADO": " Quintana Roo",
-   "GERENTE": "MICHAEL ORTEGA  RAMOS",
-   "DIRECCION": "Smza 513 Mza 1 Lote 1 Local 2 Av. Nichupté Y Chac Mool, Cancún, Quintana Roo.  C.P. 77535"
- },
- {
-   "SUCURSAL": 26,
-   "Nombre_Sucursal": "Tuxtla Gutiérrez",
-   "MUNICIPIO": " Tuxtla Gutierrez",
-   "ESTADO": "Chiapas",
-   "GERENTE": "GABRIELA PATRICIA VÁZQUEZ GARCÍA",
-   "DIRECCION": "Calle 5ta Poniente Norte No.576 Esq. 1ra Norte Poniente, Centro, Tuxtla Gutierrez Chiapas.C.P. 29000"
- },
- {
-   "SUCURSAL": 27,
-   "Nombre_Sucursal": "Guadalajara",
-   "MUNICIPIO": " Guadalajara",
-   "ESTADO": " Jalisco",
-   "GERENTE": "STEVEN ALEJANDRO MORENO ROMERO",
-   "DIRECCION": "Andrés Terán No. 566, Col. Villa Señor, Barrio Santa Teresita, Guadalajara, Jalisco. Cp: 44600 "
- },
- {
-   "SUCURSAL": 28,
-   "Nombre_Sucursal": "Canteras",
-   "MUNICIPIO": " Oaxaca De Juárez",
-   "ESTADO": " Oaxaca",
-   "GERENTE": "ALMA DELIA VALDEZ MIRELES",
-   "DIRECCION": "Carr. Internacional 802, Agencia Municipal Sta Maria Ixcotel, Oaxaca De Juárez, Oax. Cp: 71229 Número De Local 01"
- },
- {
-   "SUCURSAL": 29,
-   "Nombre_Sucursal": "Tlaxiaco",
-   "MUNICIPIO": " Heroica Ciudad De Tlaxiaco",
-   "ESTADO": " Oaxaca",
-   "GERENTE": "SUSANA NICOLÁS LÓPEZ",
-   "DIRECCION": "Calle Rayón No.13, En Contra Esquina Carretera Yucudaa, Heroica Ciudad De Tlaxiaco, Oaxaca. C.P. 69800 "
- },
- {
-   "SUCURSAL": 30,
-   "Nombre_Sucursal": "Tapanatepec",
-   "MUNICIPIO": " San Pedro Tapanatepec",
-   "ESTADO": " Oaxaca",
-   "GERENTE": "JOSÉ LUIS CRUZ AVENDAÑO",
-   "DIRECCION": "Avenida 16 De Septiembre No.82, Centro, San Pedro Tapanatepec, Oaxaca. C.P. 70180"
- },
- {
-   "SUCURSAL": 31,
-   "Nombre_Sucursal": "Huatulco",
-   "MUNICIPIO": " Huatulco",
-   "ESTADO": " Oaxaca",
-   "GERENTE": "BRENDA LILIANA LANDETA SÁNCHEZ",
-   "DIRECCION": " Calle Macuhitle No. 305, Sector H, La Crucecita, Bahia De Santa Cruz, Huatulco, Oaxaca. C.P. 70989"
- },
- {
-   "SUCURSAL": 33,
-   "Nombre_Sucursal": "Murguia",
-   "MUNICIPIO": "Oaxaca De Juárez",
-   "ESTADO": " Oaxaca",
-   "GERENTE": "GUZMAN SANTIAGO  MARTINEZ",
-   "DIRECCION": " Murgía No. 505, Centro, Oaxaca De Juárez, Oaxaca. C.P. 68000 "
- },
- {
-   "SUCURSAL": 34,
-   "Nombre_Sucursal": "Huajuapan",
-   "MUNICIPIO": " Heroica Ciudad De Huajuapan De León",
-   "ESTADO": " Oaxaca",
-   "GERENTE": "ANEL JOSEFINA JUÁREZ  GARCÍA",
-   "DIRECCION": "Micaela Galindo No.3, Centro, Heroica Ciudad De Huajuapan De León, Oaxaca. C.P. 69000   "
- },
- {
-   "SUCURSAL": 35,
-   "Nombre_Sucursal": "Chetumal",
-   "MUNICIPIO": " Chetumal",
-   "ESTADO": " Quintana Roo",
-   "GERENTE": "MARTIN CONCEPCION CANCHE DZUL",
-   "DIRECCION": "Avenida Belice No. 206, Centro, Chetumal, Quintana Roo. Cp. 77000 "
- },
- {
-   "SUCURSAL": 36,
-   "Nombre_Sucursal": "Izamal",
-   "MUNICIPIO": "Izamal",
-   "ESTADO": " Yucatán ",
-   "GERENTE": "MIGUEL ÁNGEL PECH ARJONA",
-   "DIRECCION": "Calle 32 No. 285 Por 29 Y 31, Centro, Izamal, Yucatán C.P. 97540 "
- },
- {
-   "SUCURSAL": 37,
-   "Nombre_Sucursal": "Tizimin",
-   "MUNICIPIO": "Tizimin",
-   "ESTADO": " Yucatán ",
-   "GERENTE": "CÉSAR ALBERTO MEX LÓPEZ",
-   "DIRECCION": "Calle 53 No. 405 Por 52 Y 54, Centro, Tizimín, Yucatán. C.P. 97700 "
- },
- {
-   "SUCURSAL": 38,
-   "Nombre_Sucursal": "Valladolid",
-   "MUNICIPIO": "Valladolid",
-   "ESTADO": " Yucatán ",
-   "GERENTE": "JOSÉ RICARDO CAAMAL BORGES",
-   "DIRECCION": "Calle 39, No. 185 E Y F Por 32 Y 34, Santa Ana Sector 6, Valladolid, Yucatán C.P. 97784 "
- },
- {
-   "SUCURSAL": 39,
-   "Nombre_Sucursal": "Hoctun",
-   "MUNICIPIO": "Hoctun",
-   "ESTADO": " Yucatán ",
-   "GERENTE": "RICARDO ARIEL IUIT MUKUL",
-   "DIRECCION": "Calle 25 No. 105 Por 22 Y 24. Hoctún, Yucatán C.P. 97480"
- },
- {
-   "SUCURSAL": 40,
-   "Nombre_Sucursal": "Chemax",
-   "MUNICIPIO": "Chemax",
-   "ESTADO": " Yucatán ",
-   "GERENTE": "ARTURO MAZÚM NOH",
-   "DIRECCION": "Calle 21 A No.98-B Esquina Calle 18 A, Chemax, Yucatán. C.P. 97770"
- },
- {
-   "SUCURSAL": 41,
-   "Nombre_Sucursal": "Acanceh",
-   "MUNICIPIO": "Acanceh",
-   "ESTADO": " Yucatán ",
-   "GERENTE": "CONSUELO ANGELA FUENTES VILLA",
-   "DIRECCION": "Calle 21 No. 100, Por Calle 20 Y 16, Centro, Acancéh, Yucatán. C.P. 97380 "
- },
- {
-   "SUCURSAL": 42,
-   "Nombre_Sucursal": "Piste",
-   "MUNICIPIO": "Piste",
-   "ESTADO": " Yucatán ",
-   "GERENTE": "CARLOS FELIPE MAY CUPUL",
-   "DIRECCION": "Calle 10 No. 52-B, Pisté, Tinum,  C.P. 97751"
- },
- {
-   "SUCURSAL": 43,
-   "Nombre_Sucursal": "Tunkas",
-   "MUNICIPIO": "Tunkas",
-   "ESTADO": " Yucatán ",
-   "GERENTE": "DIEGO ERNESTO CASTRO PEÑA",
-   "DIRECCION": "Calle 32 No. 105 A, Tunkás, Yucatán.  C.P. 97650"
- },
- {
-   "SUCURSAL": 44,
-   "Nombre_Sucursal": "Cenotillo",
-   "MUNICIPIO": "Cenotillo",
-   "ESTADO": " Yucatán ",
-   "GERENTE": "AZARIAS GAMALIEL MALDONADO BALAM",
-   "DIRECCION": "Calle 17 No. 157-C, Por Calle 18 Y 20, Cenotillo, Yucatán. C.P. 97640 "
- },
- {
-   "SUCURSAL": 45,
-   "Nombre_Sucursal": "Espita",
-   "MUNICIPIO": "Espita",
-   "ESTADO": " Yucatán ",
-   "GERENTE": "AZALIA GUADALUPE SALAS MENDEZ",
-   "DIRECCION": "Calle 24 No. 204, Por Calle 25 Y 27, Espita, Yucatán.  C.P. 97730"
- },
- {
-   "SUCURSAL": 46,
-   "Nombre_Sucursal": "Panaba",
-   "MUNICIPIO": "Panaba",
-   "ESTADO": " Yucatán ",
-   "GERENTE": "JOSÉ ROMÁN XULUC CHAN",
-   "DIRECCION": "Calle 25 No. 100-B, Por Calle 18 Y 20, Panabá, Yucatán.  C.P. 97610 "
- },
- {
-   "SUCURSAL": 47,
-   "Nombre_Sucursal": "Kantunilkin",
-   "MUNICIPIO": " Lázaro Cárdenas",
-   "ESTADO": " Quintana Roo",
-   "GERENTE": "FRANCISCO DE LA CRUZ  ARAUJO  MARTÍN",
-   "DIRECCION": "Calle 18 De Marzo Esq Avenida Gral Rafael E. Melgar, Kantunilkin, Municipio Lázaro Cárdenas, Quintana Roo. C.P. 77300"
- },
- {
-   "SUCURSAL": 48,
-   "Nombre_Sucursal": "Ticul",
-   "MUNICIPIO": "Ticul",
-   "ESTADO": " Yucatán ",
-   "GERENTE": "JOSÉ FRANCISCO MAY CHAN",
-   "DIRECCION": "Calle 23 No. 218, Letra \"J\" Por Calle 30 Y 32, Centro, Ticul, Yucatán. C.P. 97860"
- },
- {
-   "SUCURSAL": 49,
-   "Nombre_Sucursal": "Mérida",
-   "MUNICIPIO": "Mérida",
-   "ESTADO": " Yucatán ",
-   "GERENTE": "FRANCISCO JAVIER PERAZA BONILLA",
-   "DIRECCION": "Calle 61 No. 508, Por Calle 62 Y 64, Centro,  Mérida, Yucatán. C.P. 97000"
- },
- {
-   "SUCURSAL": 51,
-   "Nombre_Sucursal": "Champotón",
-   "MUNICIPIO": "Champoton",
-   "ESTADO": "Campeche",
-   "GERENTE": "VICTOR SAMUEL MARTÍNEZ CELIS",
-   "DIRECCION": "Dirección:  Calle 27 No. 7 Esquina Calle 36, Centro, Champotón, Campeche. C.P. 24400"
- },
- {
-   "SUCURSAL": 52,
-   "Nombre_Sucursal": "Santa Rosa",
-   "MUNICIPIO": "Santa Rosa",
-   "ESTADO": " Oaxaca",
-   "GERENTE": "YUTSIL GUADALUPE BENITEZ SANCHEZ ",
-   "DIRECCION": "Carretera Internacional Cristobal Colón Km 541.5. Col. Cuauhtémoc, Oaxaca De Juárez, Oaxaca."
- },
- {
-   "SUCURSAL": 53,
-   "Nombre_Sucursal": "Tonalá",
-   "MUNICIPIO": "Tonala",
-   "ESTADO": "Chiapas",
-   "GERENTE": "ESAÚ LUIS MARTÍNEZ",
-   "DIRECCION": "Dirección:  Avenida Hidalgo No. 173, Barrio Nuevo Tonalá Chiapas."
- },
- {
-   "SUCURSAL": 54,
-   "Nombre_Sucursal": "Ixtepec",
-   "MUNICIPIO": " Ciudad Ixtepec",
-   "ESTADO": " Oaxaca",
-   "GERENTE": "RUBÍ DEL CARMEN RIOS BUSTAMANTE",
-   "DIRECCION": "Dirección:  Calle 16 De Septiembre No. 115, Estación, Ciudad Ixtepec, Oaxaca."
- },
- {
-   "SUCURSAL": 55,
-   "Nombre_Sucursal": "Uman",
-   "MUNICIPIO": " Uman",
-   "ESTADO": " Yucatán ",
-   "GERENTE": "ABRAHAM ALEJANDRO  QUINTERO  CHIN",
-   "DIRECCION": "Calle 20 No. 63a Por 15 Y 17, Centro, Uman, Yucatan. C.P. 97390"
- },
- {
-   "SUCURSAL": 56,
-   "Nombre_Sucursal": "Matías Romero",
-   "MUNICIPIO": " Matias Romero",
-   "ESTADO": " Oaxaca",
-   "GERENTE": "CARLOS MARÍN JIMÉNEZ",
-   "DIRECCION": "Hombres Ilustres Esquina Con Tierra Y Libertad S/N, Matias Romero, Oaxaca. C.P. 77300 "
- },
- {
-   "SUCURSAL": 57,
-   "Nombre_Sucursal": "Xoxocotlán",
-   "MUNICIPIO": " Santa Cruz Xoxocotlán",
-   "ESTADO": " Oaxaca",
-   "GERENTE": "JESUS IBÁÑEZ MÉNDEZ",
-   "DIRECCION": "Calle Hornos No. 412 Esquina Servidumbre De Paso, Noche Buena, Santa Cruz Xoxocotlán, Oaxaca. C.P. 71233 "
- },
- {
-   "SUCURSAL": 58,
-   "Nombre_Sucursal": "Poncitlán",
-   "MUNICIPIO": " Poncitlán Centro",
-   "ESTADO": " Jalisco",
-   "GERENTE": "VICTOR HUGO CRUZ CRUZ",
-   "DIRECCION": "Dirección:  Álvaro Obregón No. 288, Poncitlán Centro, Jalisco. Cp: 45950"
- },
- {
-   "SUCURSAL": 59,
-   "Nombre_Sucursal": "Putla",
-   "MUNICIPIO": " Putla Villa De Guerrero",
-   "ESTADO": " Oaxaca",
-   "GERENTE": "VACANTE",
-   "DIRECCION": "Morelos No. 6, Esq. Hidalgo Y Oaxaca, Centro, Putla Villa De Guerrero, Oax. C.P. 71000"
- },
- {
-   "SUCURSAL": 60,
-   "Nombre_Sucursal": "Teziutlán",
-   "MUNICIPIO": " Teziutlán. Puebla. C.P. 73800",
-   "ESTADO": " Oaxaca",
-   "GERENTE": "EDGAR OSCAR MATÍAS GARCÍA",
-   "DIRECCION": "Av. Cuauhtémoc 910, Esq. Javier Mina, Centro, Teziutlán. Puebla. C.P. 73800"
- },
- {
-   "SUCURSAL": 61,
-   "Nombre_Sucursal": "Universidad",
-   "MUNICIPIO": " Santa Cruz Xoxocotlán",
-   "ESTADO": " Oaxaca",
-   "GERENTE": "JESÚS POBLETE ZÁRATE",
-   "DIRECCION": "Av. Universidad No.100, Esq. Las Aguilas Y Priv. Plaza Del Valle, Col. Exhacienda De Candiani, Santa Cruz Xoxocotlán, Oaxaca. C.P. 71233"
- },
- {
-   "SUCURSAL": 62,
-   "Nombre_Sucursal": "Plaza Crystal",
-   "MUNICIPIO": " Puebla",
-   "ESTADO": " Puebla",
-   "GERENTE": "DIANA JANETE HERNÁNDEZ  ÁVILA",
-   "DIRECCION": "Circuito Juan Pablo Ii No. 118 , Colonia Las Palmas, Puebla, Puebla. C.P. 72550"
- },
- {
-   "SUCURSAL": 63,
-   "Nombre_Sucursal": "Coatepec",
-   "MUNICIPIO": " Coatepec",
-   "ESTADO": " Veracruz",
-   "GERENTE": "NAYELI MARTINEZ ALONSO",
-   "DIRECCION": "Calle Melchor Ocampo No. 91, Colonia Centro, Coatepec, Veracruz.  C.P. 91500"
- },
- {
-   "SUCURSAL": 64,
-   "Nombre_Sucursal": "Carrillo Puerto",
-   "MUNICIPIO": " Felipe Carrillo Puerto",
-   "ESTADO": " Quintana Roo",
-   "GERENTE": "RODRIGO MATIAS PEREZ ",
-   "DIRECCION": "Calle 62 Entre 69 Y 67 No. 780, Colonia Cecilio Chi, Felipe Carrillo Puerto, Quintana Roo. C.P. 77200"
- },
- {
-   "SUCURSAL": 65,
-   "Nombre_Sucursal": "Ticua",
-   "MUNICIPIO": "Santa Catarina Ticua",
-   "ESTADO": " Oaxaca",
-   "GERENTE": "VACANTE",
-   "DIRECCION": "Av. 25 De Noviembre S/N, Centro, Municipio Santa Catarina Ticua, Oaxaca. C.P. 71125"
- },
- {
-   "SUCURSAL": 66,
-   "Nombre_Sucursal": "Ayutla",
-   "MUNICIPIO": "San Pedro Y San Pablo Ayutla",
-   "ESTADO": " Oaxaca",
-   "GERENTE": "RAYMUNDO MERLÍN  CRUZ ",
-   "DIRECCION": "Calle Ayuujk Kajp Num 9, Colonia Centro, Municipio San Pedro Y San Pablo Ayutla, Oaxaca. C.P. 70283"
- },
- {
-   "SUCURSAL": 67,
-   "Nombre_Sucursal": "Juxtlahuaca",
-   "MUNICIPIO": " Santiago Juxtlahuaca",
-   "ESTADO": " Oaxaca",
-   "GERENTE": "EDSON ÁVILA RAYMUNDO",
-   "DIRECCION": "Avenida Lázaro Cárdenas S/N, Santiago Juxtlahuaca, Oaxaca. C.P. 69700"
- },
- {
-   "SUCURSAL": 68,
-   "Nombre_Sucursal": "Ejutla",
-   "MUNICIPIO": " Hca. Ejutla De Crespo",
-   "ESTADO": " Oaxaca",
-   "GERENTE": "LUIS ANGEL MENDEZ TINOCO",
-   "DIRECCION": "Porfirio Díaz No. 52, Esq. Calle Reforma, Col. Centro, Hca. Ejutla De Crespo, Oaxaca. C.P. 71500"
- },
- {
-   "SUCURSAL": 69,
-   "Nombre_Sucursal": "Río Grande",
-   "MUNICIPIO": " Rio Grande",
-   "ESTADO": " Oaxaca",
-   "GERENTE": "DANIEL ALBERTO MEJÍA  ORTÍZ",
-   "DIRECCION": "Dirección:Margarita Maza, Sn, Col. Balbuena, Rio Grande, Oaxaca. C.P. 71837"
- },
- {
-   "SUCURSAL": 70,
-   "Nombre_Sucursal": "Juquila",
-   "MUNICIPIO": " Santa Catarina Juquila",
-   "ESTADO": " Oaxaca",
-   "GERENTE": "ANICETO MOLINA MARTINEZ",
-   "DIRECCION": "Calle Unión Núm. 84, Col. Barrio De La Asunción, Santa Catarina Juquila, Oaxaca. C.P. 71900"
- },
- {
-   "SUCURSAL": 71,
-   "Nombre_Sucursal": "Nochixtlan",
-   "MUNICIPIO": " Asunción Nochixtlán",
-   "ESTADO": " Oaxaca",
-   "GERENTE": "JUAN MANUEL GÓMEZ TORRES",
-   "DIRECCION": "Calle Nicolás Bravo, Núm. 10-D, Col. Barrio De Las Flores, Asunción Nochixtlán, Oaxaca. C.P. 69600"
- },
- {
-   "SUCURSAL": 72,
-   "Nombre_Sucursal": "Sola De Vega",
-   "MUNICIPIO": " Villa Sola De Vega",
-   "ESTADO": " Oaxaca",
-   "GERENTE": "MAGALY BOLAÑOS MORALES",
-   "DIRECCION": "Calle José María De La Vega, Núm. 1, Esquina Guerrero. Col. San Miguel Sola, Villa Sola De Vega, Oaxaca. C.P. 71410"
- },
- {
-   "SUCURSAL": 73,
-   "Nombre_Sucursal": "Tepeaca",
-   "MUNICIPIO": " Tepeaca Puebla Cp: 75200",
-   "ESTADO": " Oaxaca",
-   "GERENTE": "FRANCISCO SALVADOR CRUZ HERNÁNDEZ",
-   "DIRECCION": "Avenida Hidalgo Num 212, Entre Calle 2 Oriente Y 4 Oriente, Colonia Centro, Tepeaca Puebla Cp: 75200"
- },
- {
-   "SUCURSAL": 74,
-   "Nombre_Sucursal": "Motul",
-   "MUNICIPIO": " Motul",
-   "ESTADO": " Yucatán ",
-   "GERENTE": "JOSE MIGUEL KANXOC KUMUL",
-   "DIRECCION": "Calle 27 Núm. 300 Letra B Por Calle 24 Y Calle 26 Col. Centro Motul Yucatan C.P. 97430"
- },
- {
-   "SUCURSAL": 75,
-   "Nombre_Sucursal": "Tijuana",
-   "MUNICIPIO": " Ciudad De Tijuana",
-   "ESTADO": " Baja California Norte",
-   "GERENTE": "ROBERTO LÓPEZ NAVA",
-   "DIRECCION": "Loc 11-12, Ubicado En El Lote 001, Manzana Número 075, Colonia La Mesa, Número 5173; Boulevard General Lázaro Cárdenas, Ciudad De Tijuana, Baja California Norte,  Código Postal: 22105"
- },
- {
-   "SUCURSAL": 76,
-   "Nombre_Sucursal": "Apizaco",
-   "MUNICIPIO": "Apizaco",
-   "ESTADO": " Oaxaca",
-   "GERENTE": "NANCY BAÑOS LUNA",
-   "DIRECCION": "No Se Tiene"
- },
- {
-   "SUCURSAL": 77,
-   "Nombre_Sucursal": "Chignahuapan",
-   "MUNICIPIO": "Chignahuapan",
-   "ESTADO": " Oaxaca",
-   "GERENTE": "ALONSO FERNANDO MORALES VASQUEZ",
-   "DIRECCION": "No Se Tiene"
- },
- {
-   "SUCURSAL": 78,
-   "Nombre_Sucursal": "Salina Cruz",
-   "MUNICIPIO": "Salina Cruz",
-   "ESTADO": " Oaxaca",
-   "GERENTE": "ANA PATRICIA TOLEDO SÁNCHEZ",
-   "DIRECCION": "No Se Tiene"
- },
- {
-   "SUCURSAL": 79,
-   "Nombre_Sucursal": "Villa Alta",
-   "MUNICIPIO": "Villa Alta",
-   "ESTADO": " Oaxaca",
-   "GERENTE": "NUBIA TEODOCIO HUANTES",
-   "DIRECCION": "No Se Tiene"
- }
+  {
+    "SUCURSAL": "001",
+    "Nombre_Sucursal": "Etla",
+    "MUNICIPIO": "Villa De Etla",
+    "ESTADO": "Oaxaca",
+    "GERENTE": "JIMENEZ VALDIVIESO FRANCISCO ANTONIO",
+    "DIRECCION": "Centenario 10 Villa De Etla, Villa De Etla, Oaxaca, México. C.P.68200"
+  },
+  {
+    "SUCURSAL": "002",
+    "Nombre_Sucursal": "Oaxaca",
+    "MUNICIPIO": "Oaxaca De Juarez",
+    "ESTADO": "Oaxaca",
+    "GERENTE": "CARLOS PEREZ ALFREDO",
+    "DIRECCION": "Valerio Trujano 508 Centro, Oaxaca De Juarez, Oaxaca De Juarez, Oaxaca, México. C.P.68000"
+  },
+  {
+    "SUCURSAL": "003",
+    "Nombre_Sucursal": "Zaachila",
+    "MUNICIPIO": "Villa De Zaachila",
+    "ESTADO": "Oaxaca",
+    "GERENTE": "VASQUEZ JIMENEZ RAFAEL ANGEL",
+    "DIRECCION": "Vicente Guerrero 206 Villa De Zaachila, Villa De Zaachila, Oaxaca, México. C.P.71250"
+  },
+  {
+    "SUCURSAL": "004",
+    "Nombre_Sucursal": "Miahuatlán",
+    "MUNICIPIO": "Miahuatlan De Porfirio Diaz",
+    "ESTADO": "Oaxaca",
+    "GERENTE": "GARCIA RODRIGUEZ MARIA DE JESUS",
+    "DIRECCION": "Basilio Rojas 107 Centro, Miahuatlan De Porfirio Diaz, Miahuatlan De Porfirio Diaz, Oaxaca, México. C.P.70805"
+  },
+  {
+    "SUCURSAL": "005",
+    "Nombre_Sucursal": "Ocotlán",
+    "MUNICIPIO": "Ocotlan De Morelos",
+    "ESTADO": "Oaxaca",
+    "GERENTE": "RAMIREZ LOPEZ HUGO ALBERTO",
+    "DIRECCION": "Aldama 4 Ocotlan De Morelos, Ocotlan De Morelos, Oaxaca, México. C.P.71510"
+  },
+  {
+    "SUCURSAL": "006",
+    "Nombre_Sucursal": "Tehuacán",
+    "MUNICIPIO": "Tehuacan",
+    "ESTADO": "Puebla",
+    "GERENTE": "GALENO MORALES ERIKA",
+    "DIRECCION": "Independencia Oriente 545-B Tehuacan, Tehuacan, Puebla, México. C.P.75700"
+  },
+  {
+    "SUCURSAL": "007",
+    "Nombre_Sucursal": "Tlacolula",
+    "MUNICIPIO": "Tlacolula De Matamoros",
+    "ESTADO": "Oaxaca",
+    "GERENTE": "RODRIGUEZ MARTINEZ WILBERT",
+    "DIRECCION": "2 De Abril 24 Tlacolula De Matamoros, Tlacolula De Matamoros, Oaxaca, México. C.P.70400"
+  },
+  {
+    "SUCURSAL": "008",
+    "Nombre_Sucursal": "Pochutla",
+    "MUNICIPIO": "San Pedro Pochutla",
+    "ESTADO": "Oaxaca",
+    "GERENTE": "LUIS JIMENEZ LETICIA",
+    "DIRECCION": "Alberto Gallardo, Esq. El Éden Lote 2 San Pedro Pochutla, San Pedro Pochutla, Oaxaca, México. C.P.70900"
+  },
+  {
+    "SUCURSAL": "009",
+    "Nombre_Sucursal": "Orizaba",
+    "MUNICIPIO": "Orizaba",
+    "ESTADO": "Veracruz",
+    "GERENTE": "CONTRERAS FLORES UBALDO IVAN",
+    "DIRECCION": "Oriente 4 126 Centro, Orizaba, Orizaba, Veracruz, México. C.P.94300"
+  },
+  {
+    "SUCURSAL": "011",
+    "Nombre_Sucursal": "Pinotepa",
+    "MUNICIPIO": "Santiago Pinotepa Nacional",
+    "ESTADO": "Oaxaca",
+    "GERENTE": "LOPEZ MENDOZA BLANCA",
+    "DIRECCION": "Ing.Norberto Aguirre Palancares 502 Santiago Pinotepa Nacional, Santiago Pinotepa Nacional, Oaxaca, México. C.P.71600"
+  },
+  {
+    "SUCURSAL": "012",
+    "Nombre_Sucursal": "Zimatlán",
+    "MUNICIPIO": "Zimatlan De Alvarez",
+    "ESTADO": "Oaxaca",
+    "GERENTE": "ESPERANZA MALDONADO MARIA TEREZA",
+    "DIRECCION": "16 De Septiembre 401 Zimatlan, Zimatlan De Alvarez, Oaxaca, México. C.P.71200"
+  },
+  {
+    "SUCURSAL": "013",
+    "Nombre_Sucursal": "Acapulco",
+    "MUNICIPIO": "Acapulco De Juarez",
+    "ESTADO": "Guerrero",
+    "GERENTE": "JOAQUIN GARCIA LEONARDO",
+    "DIRECCION": "Cuauctemoc 21-A Acapulco De Juarez, Acapulco De Juarez, Guerrero, México. C.P.39640"
+  },
+  {
+    "SUCURSAL": "014",
+    "Nombre_Sucursal": "Ometepec",
+    "MUNICIPIO": "Ometepec",
+    "ESTADO": "Guerrero",
+    "GERENTE": "HERNANDEZ RAMIREZ LUIS ALBERTO",
+    "DIRECCION": "Juan N. Alvarez 7 Ometepec, Ometepec, Guerrero, México. C.P.41700"
+  },
+  {
+    "SUCURSAL": "015",
+    "Nombre_Sucursal": "Valle Nacional",
+    "MUNICIPIO": "San Juan Bautista Valle Nacional",
+    "ESTADO": "Oaxaca",
+    "GERENTE": "GALVAN MARTINEZ MARCELO",
+    "DIRECCION": "Juarez 589 San Juan Bautista Valle Nacional, San Juan Bautista Valle Nacional, Oaxaca, México. C.P.68480"
+  },
+  {
+    "SUCURSAL": "016",
+    "Nombre_Sucursal": "Tierra Blanca",
+    "MUNICIPIO": "Tierra Blanca",
+    "ESTADO": "Veracruz",
+    "GERENTE": "GALINDO LOZANO ALFREDO",
+    "DIRECCION": "Aquiles Serdan 600 Tierra Blanca, Tierra Blanca, Veracruz, México. C.P.95100"
+  },
+  {
+    "SUCURSAL": "017",
+    "Nombre_Sucursal": "Reforma",
+    "MUNICIPIO": "Oaxaca De Juarez",
+    "ESTADO": "Oaxaca",
+    "GERENTE": "NAVA ARELLANES OMAR ALEJANDRO",
+    "DIRECCION": "Belisario Dominguez 524 Colonia Reforma, Oaxaca De Juarez, Oaxaca De Juarez, Oaxaca, México. C.P.68050"
+  },
+  {
+    "SUCURSAL": "018",
+    "Nombre_Sucursal": "Puebla",
+    "MUNICIPIO": "Puebla",
+    "ESTADO": "Puebla",
+    "GERENTE": "ORTIZ VICTORIA CARLOS ALBERTO",
+    "DIRECCION": "4 Poniente Esquina 9 Norte 208 Heroica Puebla De Zaragoza, Puebla, Puebla, México. C.P.72000"
+  },
+  {
+    "SUCURSAL": "019",
+    "Nombre_Sucursal": "Veracruz",
+    "MUNICIPIO": "Veracruz",
+    "ESTADO": "Veracruz",
+    "GERENTE": "ORTIZ MARTINEZ FERNANDO JOSE",
+    "DIRECCION": "Diaz Miron 704-1 Colonia Centro, Veracruz, Veracruz, Veracruz, México. C.P.91700"
+  },
+  {
+    "SUCURSAL": "020",
+    "Nombre_Sucursal": "Loma Bonita",
+    "MUNICIPIO": "Loma Bonita",
+    "ESTADO": "Oaxaca",
+    "GERENTE": "CANO TORRES ANA LAURA",
+    "DIRECCION": "16 De Septiembre 48 Loma Bonita, Loma Bonita, Oaxaca, México. C.P.68400"
+  },
+  {
+    "SUCURSAL": "022",
+    "Nombre_Sucursal": "Puerto Escondido",
+    "MUNICIPIO": "San Pedro Mixtepec -Dto. 22 -",
+    "ESTADO": "Oaxaca",
+    "GERENTE": "LOPEZ VELASQUEZ EDGAR",
+    "DIRECCION": "Quinta Norte Lt 1 Centro, Puerto Escondido, San Pedro Mixtepec -Dto. 22 -, Oaxaca, México. C.P.71980"
+  },
+  {
+    "SUCURSAL": "023",
+    "Nombre_Sucursal": "Huautla",
+    "MUNICIPIO": "Huautla De Jimenez",
+    "ESTADO": "Oaxaca",
+    "GERENTE": "SANCHEZ RODRIGUEZ ELIDA",
+    "DIRECCION": "Juarez 8 Huautla De Jimenez, Huautla De Jimenez, Oaxaca, México. C.P.68500"
+  },
+  {
+    "SUCURSAL": "024",
+    "Nombre_Sucursal": "Tuxtepec",
+    "MUNICIPIO": "San Juan Bautista Tuxtepec",
+    "ESTADO": "Oaxaca",
+    "GERENTE": "LUIS ACEVEDO LEONEL",
+    "DIRECCION": "20 De Noviembre 1616 La Piragua, San Juan Bautista Tuxtepec, San Juan Bautista Tuxtepec, Oaxaca, México. C.P.68310"
+  },
+  {
+    "SUCURSAL": "025",
+    "Nombre_Sucursal": "Cancún",
+    "MUNICIPIO": "Benito Juarez",
+    "ESTADO": "Quintana Roo",
+    "GERENTE": "CAUICH MAY MARIA LOURDES",
+    "DIRECCION": "Nichupte Y Chacmol 513 Cancun, Benito Juarez, Quintana Roo, México. C.P.77535"
+  },
+  {
+    "SUCURSAL": "026",
+    "Nombre_Sucursal": "Tuxtla Gutiérrez",
+    "MUNICIPIO": "Tuxtla Gutierrez",
+    "ESTADO": "Chiapas",
+    "GERENTE": "ORTEGA RAMOS MICHAEL",
+    "DIRECCION": "5 Poniente Norte 576 Tuxtla Gutierrez, Tuxtla Gutierrez, Chiapas, México. C.P.29000"
+  },
+  {
+    "SUCURSAL": "027",
+    "Nombre_Sucursal": "Guadalajara",
+    "MUNICIPIO": "Guadalajara",
+    "ESTADO": "Jalisco",
+    "GERENTE": "CRUZ CRUZ ANA LUZ",
+    "DIRECCION": "Gabriel Ramos Millan 571 A Santa Teresita, Guadalajara, Guadalajara, Jalisco, México. C.P.44600"
+  },
+  {
+    "SUCURSAL": "028",
+    "Nombre_Sucursal": "Canteras",
+    "MUNICIPIO": "Santa Lucia Del Camino",
+    "ESTADO": "Oaxaca",
+    "GERENTE": "VALDEZ MIRELES ALMA DELIA",
+    "DIRECCION": "Internacional Cristobal Colon 802 Agencia Municipal Santa Maria Ixcotel, Santa Lucia Del Camino, Santa Lucia Del Camino, Oaxaca, México. C.P.71244"
+  },
+  {
+    "SUCURSAL": "029",
+    "Nombre_Sucursal": "Tlaxiaco",
+    "MUNICIPIO": "Heroica Ciudad De Tlaxiaco",
+    "ESTADO": "Oaxaca",
+    "GERENTE": "MATIAS GARCIA EDGAR OSCAR",
+    "DIRECCION": "Rayon 13 Heroica Ciudad De Tlaxiaco, Heroica Ciudad De Tlaxiaco, Oaxaca, México. C.P.69800"
+  },
+  {
+    "SUCURSAL": "030",
+    "Nombre_Sucursal": "Tapanatepec",
+    "MUNICIPIO": "San Pedro Tapanatepec",
+    "ESTADO": "Oaxaca",
+    "GERENTE": "CRUZ AVENDAÑO JOSE LUIS",
+    "DIRECCION": "16 De Septiembre 82 San Pedro Tapanatepec, San Pedro Tapanatepec, Oaxaca, México. C.P.70180"
+  },
+  {
+    "SUCURSAL": "031",
+    "Nombre_Sucursal": "Huatulco",
+    "MUNICIPIO": "Santa Maria Huatulco",
+    "ESTADO": "Oaxaca",
+    "GERENTE": "LANDETA SANCHEZ BRENDA LILIANA",
+    "DIRECCION": "Macuhitle 205 Crucecita, Santa Maria Huatulco, Oaxaca, México. C.P.70989"
+  },
+  {
+    "SUCURSAL": "033",
+    "Nombre_Sucursal": "Murguia",
+    "MUNICIPIO": "Oaxaca De Juarez",
+    "ESTADO": "Oaxaca",
+    "GERENTE": "SANTIAGO MARTINEZ GUZMAN",
+    "DIRECCION": "Murgia 505 Centro, Oaxaca De Juarez, Oaxaca De Juarez, Oaxaca, México. C.P.68000"
+  },
+  {
+    "SUCURSAL": "034",
+    "Nombre_Sucursal": "Huajuapan",
+    "MUNICIPIO": "Heroica Ciudad De Huajuapan De Leon",
+    "ESTADO": "Oaxaca",
+    "GERENTE": "JUAREZ GARCIA ANEL JOSEFINA",
+    "DIRECCION": "Micaela Galindos/N Heroica Ciudad De Huajuapan De Leon, Heroica Ciudad De Huajuapan De Leon, Oaxaca, México. C.P.69000"
+  },
+  {
+    "SUCURSAL": "035",
+    "Nombre_Sucursal": "Chetumal",
+    "MUNICIPIO": "Othon P. Blanco",
+    "ESTADO": "Quintana Roo",
+    "GERENTE": "CABALLERO SOBERANIS JORGE IVAN",
+    "DIRECCION": "Av. Belice 206 Chetumal, Othon P. Blanco, Quintana Roo, México. C.P.77000"
+  },
+  {
+    "SUCURSAL": "036",
+    "Nombre_Sucursal": "Izamal",
+    "MUNICIPIO": "Izamal",
+    "ESTADO": "Yucatan",
+    "GERENTE": "PECH ARJONA MIGUEL ANGEL",
+    "DIRECCION": "32 285 Izamal, Izamal, Yucatan, México. C.P.97540"
+  },
+  {
+    "SUCURSAL": "037",
+    "Nombre_Sucursal": "Tizimin",
+    "MUNICIPIO": "Tizimin",
+    "ESTADO": "Yucatan",
+    "GERENTE": "MEX LOPEZ CESAR ALBERTO",
+    "DIRECCION": "53 405 Tizimin, Tizimin, Yucatan, México. C.P.97700"
+  },
+  {
+    "SUCURSAL": "038",
+    "Nombre_Sucursal": "Valladolid",
+    "MUNICIPIO": "Valladolid",
+    "ESTADO": "Yucatan",
+    "GERENTE": "MAY CUPUL CARLOS FELIPE",
+    "DIRECCION": "39 185 Santa Ana, Valladolid, Valladolid, Yucatan, México. C.P.97780"
+  },
+  {
+    "SUCURSAL": "039",
+    "Nombre_Sucursal": "Hoctun",
+    "MUNICIPIO": "Hoctun",
+    "ESTADO": "Yucatan",
+    "GERENTE": "IUIT MUKUL RICARDO ARIEL",
+    "DIRECCION": "25 105 Hoctun, Hoctun, Yucatan, México. C.P.97480"
+  },
+  {
+    "SUCURSAL": "040",
+    "Nombre_Sucursal": "Chemax",
+    "MUNICIPIO": "Chemax",
+    "ESTADO": "Yucatan",
+    "GERENTE": "QUINTERO CHIN ABRAHAM ALEJANDRO",
+    "DIRECCION": "21 98-B Chemax, Chemax, Yucatan, México. C.P.97777"
+  },
+  {
+    "SUCURSAL": "041",
+    "Nombre_Sucursal": "Acanceh",
+    "MUNICIPIO": "Acanceh",
+    "ESTADO": "Yucatan",
+    "GERENTE": "POOL CUPUL DIONISIO",
+    "DIRECCION": "21 100 Acanceh, Acanceh, Yucatan, México. C.P.97380"
+  },
+  {
+    "SUCURSAL": "042",
+    "Nombre_Sucursal": "Piste",
+    "MUNICIPIO": "Tinum",
+    "ESTADO": "Yucatan",
+    "GERENTE": "CAAMAL BORGES JOSE RICARDO",
+    "DIRECCION": "10 52-B Tinum, Tinum, Yucatan, México. C.P.97751"
+  },
+  {
+    "SUCURSAL": "043",
+    "Nombre_Sucursal": "Tunkas",
+    "MUNICIPIO": "Tunkas",
+    "ESTADO": "Yucatan",
+    "GERENTE": "ARAUJO MARTIN FRANCISCO DE LA CRUZ",
+    "DIRECCION": "32 105-A Tunkas, Tunkas, Yucatan, México. C.P.97650"
+  },
+  {
+    "SUCURSAL": "044",
+    "Nombre_Sucursal": "Cenotillo",
+    "MUNICIPIO": "Cenotillo",
+    "ESTADO": "Yucatan",
+    "GERENTE": "ABAN CAB FELIPE LUCIANO",
+    "DIRECCION": "17 157-C Cenotillo, Cenotillo, Yucatan, México. C.P.97640"
+  },
+  {
+    "SUCURSAL": "045",
+    "Nombre_Sucursal": "Espita",
+    "MUNICIPIO": "Espita",
+    "ESTADO": "Yucatan",
+    "GERENTE": "SALAS MENDEZ AZALIA GUADALUPE",
+    "DIRECCION": "24 204 Espita, Espita, Yucatan, México. C.P.97730"
+  },
+  {
+    "SUCURSAL": "046",
+    "Nombre_Sucursal": "Panaba",
+    "MUNICIPIO": "Panaba",
+    "ESTADO": "Yucatan",
+    "GERENTE": "XULUC CHAN JOSE ROMAN",
+    "DIRECCION": "25 100-B Panaba, Panaba, Yucatan, México. C.P.97610"
+  },
+  {
+    "SUCURSAL": "047",
+    "Nombre_Sucursal": "Kantunilkin",
+    "MUNICIPIO": "Lazaro Cardenas",
+    "ESTADO": "Quintana Roo",
+    "GERENTE": "MAZUM NOH ARTURO",
+    "DIRECCION": "18 De Marzos/N Kantunilkin, Lazaro Cardenas, Quintana Roo, México. C.P.77300"
+  },
+  {
+    "SUCURSAL": "048",
+    "Nombre_Sucursal": "Ticul",
+    "MUNICIPIO": "Ticul",
+    "ESTADO": "Yucatan",
+    "GERENTE": "MAY CHAN JOSE FRANCISCO",
+    "DIRECCION": "23 218 - J Ticul, Ticul, Yucatan, México. C.P.97860"
+  },
+  {
+    "SUCURSAL": "049",
+    "Nombre_Sucursal": "Mérida",
+    "MUNICIPIO": "Merida",
+    "ESTADO": "Yucatan",
+    "GERENTE": "FUENTES VILLA CONSUELO ANGELA",
+    "DIRECCION": "61 508 Merida, Merida, Yucatan, México. C.P.97121"
+  },
+  {
+    "SUCURSAL": "051",
+    "Nombre_Sucursal": "Champotón",
+    "MUNICIPIO": "Champoton",
+    "ESTADO": "Campeche",
+    "GERENTE": "MARTINEZ CELIS VICTOR SAMUEL",
+    "DIRECCION": "27 7 Champoton, Champoton, Campeche, México. C.P.24400"
+  },
+  {
+    "SUCURSAL": "052",
+    "Nombre_Sucursal": "Santa Rosa",
+    "MUNICIPIO": "Oaxaca De Juarez",
+    "ESTADO": "Oaxaca",
+    "GERENTE": "BENITEZ SANCHEZ YUTSIL GUADALUPE",
+    "DIRECCION": "Cristobal Colons/N Oaxaca De Juarez, Oaxaca De Juarez, Oaxaca, México. C.P.68000"
+  },
+  {
+    "SUCURSAL": "053",
+    "Nombre_Sucursal": "Tonala",
+    "MUNICIPIO": "Tonala",
+    "ESTADO": "Chiapas",
+    "GERENTE": "VAZQUEZ GARCIA GABRIELA PATRICIA",
+    "DIRECCION": "Hidalgo 173 Tonala, Tonala, Chiapas, México. C.P.30500"
+  },
+  {
+    "SUCURSAL": "054",
+    "Nombre_Sucursal": "Ixtepec",
+    "MUNICIPIO": "Ciudad Ixtepec",
+    "ESTADO": "Oaxaca",
+    "GERENTE": "CRUZ FIGUEROA AARON",
+    "DIRECCION": "16 De Septiembre 15 Ciudad Ixtepec, Ciudad Ixtepec, Oaxaca, México. C.P.70110"
+  },
+  {
+    "SUCURSAL": "055",
+    "Nombre_Sucursal": "Uman",
+    "MUNICIPIO": "Uman",
+    "ESTADO": "Yucatan",
+    "GERENTE": "CANCHE DZIB MARTIN CONCEPCION",
+    "DIRECCION": "20 63A Uman, Uman, Uman, Yucatan, México. C.P.97390"
+  },
+  {
+    "SUCURSAL": "056",
+    "Nombre_Sucursal": "Matias Romero",
+    "MUNICIPIO": "Matias Romero Avendaño",
+    "ESTADO": "Oaxaca",
+    "GERENTE": "MARIN JIMENEZ CARLOS",
+    "DIRECCION": "Hombres Ilustres Esquina Tierra Y Libertad S/N Barrio Juarez Norte, Matias Romero Avendaño, Matias Romero Avendaño, Oaxaca, México. C.P.70300"
+  },
+  {
+    "SUCURSAL": "057",
+    "Nombre_Sucursal": "Xoxocotlán",
+    "MUNICIPIO": "Santa Cruz Xoxocotlan",
+    "ESTADO": "Oaxaca",
+    "GERENTE": "IBAÑEZ MENDEZ JESUS",
+    "DIRECCION": "Hornos 412 Santa Cruz Xoxocotlan, Santa Cruz Xoxocotlan, Santa Cruz Xoxocotlan, Oaxaca, México. C.P.71233"
+  },
+  {
+    "SUCURSAL": "058",
+    "Nombre_Sucursal": "Poncitlan",
+    "MUNICIPIO": "Poncitlan",
+    "ESTADO": "Jalisco",
+    "GERENTE": "CRUZ CRUZ VICTOR HUGO",
+    "DIRECCION": "Alvaro Obregon 288 Poncitlan, Poncitlan, Jalisco, México. C.P.45950"
+  },
+  {
+    "SUCURSAL": "059",
+    "Nombre_Sucursal": "Putla",
+    "MUNICIPIO": "Putla Villa De Guerrero",
+    "ESTADO": "Oaxaca",
+    "GERENTE": "GARMENDIA SILVA JAIME",
+    "DIRECCION": "Morelos 6 Barrio Centro, Putla Villa De Guerrero, Putla Villa De Guerrero, Oaxaca, México. C.P.71009"
+  },
+  {
+    "SUCURSAL": "060",
+    "Nombre_Sucursal": "Teziutlan",
+    "MUNICIPIO": "Teziutlan",
+    "ESTADO": "Puebla",
+    "GERENTE": "BAUTISTA LUIS KARLA IVETTE",
+    "DIRECCION": "Cuauhtemoc 910 Teziutlan, Teziutlan, Puebla, México. C.P.73800"
+  },
+  {
+    "SUCURSAL": "061",
+    "Nombre_Sucursal": "Universidad",
+    "MUNICIPIO": "Oaxaca De Juarez",
+    "ESTADO": "Oaxaca",
+    "GERENTE": "POBLETE ZARATE JESUS",
+    "DIRECCION": "Universidad 211 Ex Hacienda Candiani, Oaxaca De Juarez, Oaxaca De Juarez, Oaxaca, México. C.P.71233"
+  },
+  {
+    "SUCURSAL": "062",
+    "Nombre_Sucursal": "Plaza Crystal",
+    "MUNICIPIO": "Puebla",
+    "ESTADO": "Puebla",
+    "GERENTE": "REYES URQUIDE JOSE ALFREDO",
+    "DIRECCION": "Juan Pablo Ii 118 Las Palmas, Heroica Puebla De Zaragoza, Puebla, Puebla, México. C.P.72550"
+  },
+  {
+    "SUCURSAL": "063",
+    "Nombre_Sucursal": "Coatepec",
+    "MUNICIPIO": "Coatepec",
+    "ESTADO": "Veracruz",
+    "GERENTE": "DE JESUS ENCARNACION AGUSTIN",
+    "DIRECCION": "Melchor Ocampo 91 Centro, Coatepec, Coatepec, Veracruz, México. C.P.91500"
+  },
+  {
+    "SUCURSAL": "064",
+    "Nombre_Sucursal": "Carrillo Puerto",
+    "MUNICIPIO": "Felipe Carrillo Puerto",
+    "ESTADO": "Quintana Roo",
+    "GERENTE": "RUIZ ZAVALA ABIGAIL",
+    "DIRECCION": "62 780 Cecilio Chi, Felipe Carrillo Puerto, Felipe Carrillo Puerto, Quintana Roo, México. C.P.77200"
+  },
+  {
+    "SUCURSAL": "065",
+    "Nombre_Sucursal": "Ticua",
+    "MUNICIPIO": "Santa Catarina Ticua",
+    "ESTADO": "Oaxaca",
+    "GERENTE": "NICOLAS LOPEZ SUSANA",
+    "DIRECCION": "25 De Noviembres/N Santa Catarina Ticua, Santa Catarina Ticua, Oaxaca, México. C.P.71125"
+  },
+  {
+    "SUCURSAL": "066",
+    "Nombre_Sucursal": "Ayutla",
+    "MUNICIPIO": "San Pedro Y San Pablo Ayutla",
+    "ESTADO": "Oaxaca",
+    "GERENTE": "MERLIN CRUZ RAYMUNDO",
+    "DIRECCION": "Ayuujk Kajp 9 Centro, San Pedro Y San Pablo Ayutla, San Pedro Y San Pablo Ayutla, Oaxaca, México. C.P.70283"
+  },
+  {
+    "SUCURSAL": "067",
+    "Nombre_Sucursal": "Juxtlahuaca",
+    "MUNICIPIO": "Santiago Juxtlahuaca",
+    "ESTADO": "Oaxaca",
+    "GERENTE": "AVILA RAYMUNDO EDSON",
+    "DIRECCION": "General Lazaro Cardenass/N Centro, Santiago Juxtlahuaca, Santiago Juxtlahuaca, Oaxaca, México. C.P.69700"
+  },
+  {
+    "SUCURSAL": "068",
+    "Nombre_Sucursal": "Ejutla",
+    "MUNICIPIO": "Heroica Ciudad De Ejutla De Crespo",
+    "ESTADO": "Oaxaca",
+    "GERENTE": "MENDEZ TINOCO LUIS ANGEL",
+    "DIRECCION": "Porfirio Diaz 52 Centro, Heroica Ciudad De Ejutla De Crespo, Heroica Ciudad De Ejutla De Crespo, Oaxaca, México. C.P.71500"
+  },
+  {
+    "SUCURSAL": "069",
+    "Nombre_Sucursal": "Rio Grande",
+    "MUNICIPIO": "Villa De Tututepec De Melchor Ocampo",
+    "ESTADO": "Oaxaca",
+    "GERENTE": "MEJIA ORTIZ DANIEL ALBERTO",
+    "DIRECCION": "Margarita Mazas/N Colonia Balbuena, Rio Grande O Piedra Parada, Villa De Tututepec De Melchor Ocampo, Oaxaca, México. C.P.71837"
+  },
+  {
+    "SUCURSAL": "070",
+    "Nombre_Sucursal": "Juquila",
+    "MUNICIPIO": "Santa Catarina Juquila",
+    "ESTADO": "Oaxaca",
+    "GERENTE": "BOLAÑOS MORALES MAGALY",
+    "DIRECCION": "Union 84S/N Barrio La Asuncion, Santa Catarina Juquila, Santa Catarina Juquila, Oaxaca, México. C.P.71900"
+  },
+  {
+    "SUCURSAL": "071",
+    "Nombre_Sucursal": "Nochixtlan",
+    "MUNICIPIO": "Asuncion Nochixtlan",
+    "ESTADO": "Oaxaca",
+    "GERENTE": "RAMIREZ SANTIAGO RICARDO JOSE",
+    "DIRECCION": "Nicolas Bravo 10-D Barrio Las Flores, Asuncion Nochixtlan, Asuncion Nochixtlan, Oaxaca, México. C.P.69600"
+  },
+  {
+    "SUCURSAL": "072",
+    "Nombre_Sucursal": "Sola De Vega",
+    "MUNICIPIO": "Villa Sola De Vega",
+    "ESTADO": "Oaxaca",
+    "GERENTE": "MOLINA MARTINEZ ANICETO",
+    "DIRECCION": "Vicente Guerrero 1 Centro 1Ra. Seccion, Villa Sola De Vega, Villa Sola De Vega, Oaxaca, México. C.P.71410"
+  },
+  {
+    "SUCURSAL": "073",
+    "Nombre_Sucursal": "Tepeaca",
+    "MUNICIPIO": "Tepeaca",
+    "ESTADO": "Puebla",
+    "GERENTE": "CRUZ HERNANDEZ FRANCISCO SALVADOR",
+    "DIRECCION": "Hidalgo 206 Barrio El Calvario, Tepeaca, Tepeaca, Puebla, México. C.P.75200"
+  },
+  {
+    "SUCURSAL": "074",
+    "Nombre_Sucursal": "Motul",
+    "MUNICIPIO": "Motul",
+    "ESTADO": "Yucatan",
+    "GERENTE": "KANXOC KUMUL JOSE MIGUEL",
+    "DIRECCION": "27 300 B Centro, Motul De Carrillo Puerto, Motul, Yucatan, México. C.P.97430"
+  },
+  {
+    "SUCURSAL": "075",
+    "Nombre_Sucursal": "Tijuana",
+    "MUNICIPIO": "Tijuana",
+    "ESTADO": "Baja California Norte",
+    "GERENTE": "LOPEZ NAVA ROBERTO",
+    "DIRECCION": "Lazaro Cardenas 5173 La Mesa, Tijuana, Tijuana, Baja California Norte, México. C.P.22105"
+  },
+  {
+    "SUCURSAL": "076",
+    "Nombre_Sucursal": "Apizaco",
+    "MUNICIPIO": "Apizaco",
+    "ESTADO": "Tlaxcala",
+    "GERENTE": "MORENO ROMERO STEVEN ALEJANDRO",
+    "DIRECCION": "Cuahutemoc 3310 Fatima, Apizaco, Apizaco, Tlaxcala, México. C.P.90357"
+  },
+  {
+    "SUCURSAL": "077",
+    "Nombre_Sucursal": "Chignahuapan",
+    "MUNICIPIO": "Chignahuapan",
+    "ESTADO": "Puebla",
+    "GERENTE": "MONJARAZ REYES ELUCIANO",
+    "DIRECCION": "Allende 30 Colonia Centro, Ciudad De Chignahuapan, Chignahuapan, Puebla, México. C.P.73300"
+  },
+  {
+    "SUCURSAL": "078",
+    "Nombre_Sucursal": "Salina Cruz",
+    "MUNICIPIO": "Salina Cruz",
+    "ESTADO": "Oaxaca",
+    "GERENTE": "TOLEDO SANCHEZ ANA PATRICIA",
+    "DIRECCION": "5 De Mayo 15 Barrio Cantarranas, Salina Cruz, Salina Cruz, Oaxaca, México. C.P.70680"
+  },
+  {
+    "SUCURSAL": "079",
+    "Nombre_Sucursal": "Villa Alta",
+    "MUNICIPIO": "San Ildefonso Villa Alta",
+    "ESTADO": "Oaxaca",
+    "GERENTE": "TEODOCIO HUANTES NUBIA",
+    "DIRECCION": "5 De Mayo 10 Centro, San Ildefonso Villa Alta, San Ildefonso Villa Alta, Oaxaca, México. C.P.68800"
+  },
+  {
+    "SUCURSAL": "080",
+    "Nombre_Sucursal": "Telixtlahuaca",
+    "MUNICIPIO": "San Francisco Telixtlahuaca",
+    "ESTADO": "Oaxaca",
+    "GERENTE": "CRUZ CRUZ JOSE LUIS",
+    "DIRECCION": "Libertad 56 Centro B, San Francisco Telixtlahuaca, San Francisco Telixtlahuaca, Oaxaca, México. C.P.68213"
+  },
+  {
+    "SUCURSAL": "081",
+    "Nombre_Sucursal": "Escarcega",
+    "MUNICIPIO": "Escarcega",
+    "ESTADO": "Campeche",
+    "GERENTE": "MEX GONZALEZ FERNANDO RODRIGO",
+    "DIRECCION": "Calle 31 135 Salsipuedes I, Escarcega, Escarcega, Campeche, México. C.P.24350"
+  },
+  {
+    "SUCURSAL": "082",
+    "Nombre_Sucursal": "Zihuatanejo",
+    "MUNICIPIO": "Jose Azueta",
+    "ESTADO": "Guerrero",
+    "GERENTE": "NIÑO MATEO MARIA",
+    "DIRECCION": "Heroico Colegio Militar L8 Mza 1 Zihuatanejo Centro, Zihuatanejo, Jose Azueta, Guerrero, México. C.P.40890"
+  },
+  {
+    "SUCURSAL": "083",
+    "Nombre_Sucursal": "Tapachula",
+    "MUNICIPIO": "Tapachula",
+    "ESTADO": "Chiapas",
+    "GERENTE": "DIAZ MONROY ESTEFANIA",
+    "DIRECCION": "8A, Avenida Norte 84 Bis 8A Centro Sur Poniente, Tapachula De Cordova Y Ordoñez, Tapachula, Chiapas, México. C.P.30700"
+  },
+  {
+    "SUCURSAL": "084",
+    "Nombre_Sucursal": "Comitán",
+    "MUNICIPIO": "Comitán De Domínguez",
+    "ESTADO": "Chiapas",
+    "GERENTE": "HERNANDEZ DE LA TORRE VIRGINIA",
+    "DIRECCION": "Belisario Dominguez 83 Comitán De Domínguez, Comitán De Domínguez, Chiapas, México. C.P.30029"
+  },
+  {
+    "SUCURSAL": "085",
+    "Nombre_Sucursal": "Mexicali",
+    "MUNICIPIO": "Mexicali",
+    "ESTADO": "Baja California Norte",
+    "GERENTE": "BAÑOS LUNA NANCY",
+    "DIRECCION": "Mar Adriatico 651 Mexicali, Mexicali, Baja California Norte, México. C.P.21000"
+  },
+  {
+    "SUCURSAL": "086",
+    "Nombre_Sucursal": "Campeche",
+    "MUNICIPIO": "Campeche",
+    "ESTADO": "Campeche",
+    "GERENTE": "MALDONADO BALAM AZARIAS GAMALIEL",
+    "DIRECCION": "Ciriaco Vazquez 93 Barrio San Francisco, San Francisco De Campeche, Campeche, Campeche, México. C.P.24010"
+  },
+  {
+    "SUCURSAL": "087",
+    "Nombre_Sucursal": "Sayula",
+    "MUNICIPIO": "Sayula De Aleman",
+    "ESTADO": "Veracruz",
+    "GERENTE": "HERNANDEZ MARTINEZ MARIA FERNANDA",
+    "DIRECCION": "Benito Juárez 3-B Sayula De Aleman, Sayula De Aleman, Veracruz, México. C.P.96150"
+  },
+  {
+    "SUCURSAL": "088",
+    "Nombre_Sucursal": "Isla",
+    "MUNICIPIO": "Isla",
+    "ESTADO": "Veracruz",
+    "GERENTE": "HERNANDEZ RUIZ MARIBEL",
+    "DIRECCION": "Flores Magón Local 3 Num 530 Centro, Isla, Isla, Veracruz, México. C.P.95640"
+  },
+  {
+    "SUCURSAL": "089",
+    "Nombre_Sucursal": "San Andrés",
+    "MUNICIPIO": "San Andres Tuxtla",
+    "ESTADO": "Veracruz",
+    "GERENTE": "TOXTEGA RODRIGUEZ VICTOR ALBERTO",
+    "DIRECCION": "Revolucións/N San Andres Tuxtla, San Andres Tuxtla, Veracruz, México. C.P.95700"
+  },
+  {
+    "SUCURSAL": "090",
+    "Nombre_Sucursal": "Las Choapas",
+    "MUNICIPIO": "Las Choapas",
+    "ESTADO": "Veracruz",
+    "GERENTE": "MALPICA VIDAL ALVARO",
+    "DIRECCION": "20 De Noviembre 632 Las Choapas, Las Choapas, Veracruz, México. C.P.96980"
+  },
+  {
+    "SUCURSAL": "091",
+    "Nombre_Sucursal": "Tatahuicapan",
+    "MUNICIPIO": "Tatahuicapan De Juarez",
+    "ESTADO": "Veracruz",
+    "GERENTE": "SANGABRIEL HERNANDEZ SAUL",
+    "DIRECCION": "Miguel Hidalgo 14 Tatahuicapan, Tatahuicapan De Juarez, Veracruz, México. C.P.95950"
+  },
+  {
+    "SUCURSAL": "092",
+    "Nombre_Sucursal": "Cosoleacaque",
+    "MUNICIPIO": "Cosoleacaque",
+    "ESTADO": "Veracruz",
+    "GERENTE": "CERVANTES SALAZAR MARIA DEL PILAR",
+    "DIRECCION": "Hidalgo 93 L1 Barrio Primero, Cosoleacaque, Cosoleacaque, Veracruz, México. C.P.96350"
+  },
+  {
+    "SUCURSAL": "093",
+    "Nombre_Sucursal": "Hidalgotitlán",
+    "MUNICIPIO": "Hidalgotitlan",
+    "ESTADO": "Veracruz",
+    "GERENTE": "CARRERA CHAVEZ LIZETTE",
+    "DIRECCION": "Gutiérrez Zamoras/N Hidalgotitlan, Hidalgotitlan, Veracruz, México. C.P.96930"
+  },
+  {
+    "SUCURSAL": "094",
+    "Nombre_Sucursal": "Acayucan",
+    "MUNICIPIO": "Acayucan",
+    "ESTADO": "Veracruz",
+    "GERENTE": "BLANCO PALMA ANTONIO",
+    "DIRECCION": "Allende Esquina Constitución 11 Acayucan, Acayucan, Veracruz, México. C.P.96000"
+  },
+  {
+    "SUCURSAL": "095",
+    "Nombre_Sucursal": "Jáltipan",
+    "MUNICIPIO": "Jaltipan",
+    "ESTADO": "Veracruz",
+    "GERENTE": "SANTOS MARTÍNEZ KAREN HYPATIA",
+    "DIRECCION": "José María Morelos 104 Jaltipan De Morelos, Jaltipan, Veracruz, México. C.P.96200"
+  },
+  {
+    "SUCURSAL": "096",
+    "Nombre_Sucursal": "Jesús Carranza",
+    "MUNICIPIO": "Jesus Carranza",
+    "ESTADO": "Veracruz",
+    "GERENTE": "GARCIA LARA CHRISTOPHER",
+    "DIRECCION": "Miguel Hidalgos/N Jesus Carranza, Jesus Carranza, Veracruz, México. C.P.96950"
+  },
+  {
+    "SUCURSAL": "097",
+    "Nombre_Sucursal": "San Cristobal",
+    "MUNICIPIO": "San Cristobal De Las Casas",
+    "ESTADO": "Chiapas",
+    "GERENTE": "MATIAS PEREZ RODRIGO",
+    "DIRECCION": "Las Américas 3 San Cristobal De Las Casas, San Cristobal De Las Casas, Chiapas, México. C.P.29270"
+  },
+  {
+    "SUCURSAL": "098",
+    "Nombre_Sucursal": "Villaflores",
+    "MUNICIPIO": "Villaflores",
+    "ESTADO": "Chiapas",
+    "GERENTE": "GARCIA GARCIA BRENDA ITZEL",
+    "DIRECCION": "1A. Sur Oriente 15 Villaflores, Villaflores, Chiapas, México. C.P.30475"
+  }
 ]
